@@ -1,18 +1,35 @@
-import React, { useState, useEffect } from 'react';
-import { Link, NavLink } from 'react-router-dom';
-import { Menu, X, Heart, ShoppingBag } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom';
+import { Menu, X, Heart, ShoppingBag, Search, UserCog, ChevronDown } from 'lucide-react';
 import { getCartCount, subscribeCart } from '@/lib/cartStore';
 import logo from '@/assets/logonayemsend.png';
 
-const NAV_LINKS = [
-  { to: '/shop', label: 'Shop' },
-  { to: '/about', label: 'About' },
-  { to: '/contact', label: 'Contact' },
+const CATEGORY_LINKS = [
+  { key: 'full_sleeve_shirts', label: 'Full Sleeve Shirts' },
+  { key: 'half_sleeve_shirts', label: 'Half Sleeve Shirts' },
+  { key: 'formal_shirts', label: 'Formal Shirts' },
+  { key: 'polo', label: 'Polo' },
+  { key: 't_shirts', label: 'T-Shirts' },
+  { key: 'cargo', label: 'Cargo' },
+  { key: 'formal_pants', label: 'Formal Pants' },
 ];
 
 export default function Header() {
   const [cartCount, setCartCount] = useState(0);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [categoryOpen, setCategoryOpen] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [searchValue, setSearchValue] = useState('');
+  const [scrolled, setScrolled] = useState(false);
+  const searchInputRef = useRef(null);
+
+  const location = useLocation();
+  const navigate = useNavigate();
+  const isHome = location.pathname === '/';
+
+  // Transparent-over-hero only makes sense on the homepage; every other
+  // page always shows the solid header.
+  const transparent = isHome && !scrolled;
 
   useEffect(() => {
     const update = () => setCartCount(getCartCount());
@@ -21,102 +38,201 @@ export default function Header() {
     return unsubscribe;
   }, []);
 
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 60);
+    onScroll();
+    window.addEventListener('scroll', onScroll);
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
+
+  useEffect(() => {
+    if (searchOpen && searchInputRef.current) searchInputRef.current.focus();
+  }, [searchOpen]);
+
+  const handleSearchSubmit = (e) => {
+    e.preventDefault();
+    if (!searchValue.trim()) return;
+    navigate(`/shop?search=${encodeURIComponent(searchValue.trim())}`);
+    setSearchOpen(false);
+    setSearchValue('');
+  };
+
+  const linkColor = transparent ? 'text-white' : 'text-obsidian';
+  const linkHover = transparent ? 'hover:text-white/70' : 'hover:text-sand';
+
   const navLinkClass = ({ isActive }) =>
-    `uppercase tracking-[0.2em] text-xs transition-colors duration-300 hover:text-sand ${
-      isActive ? 'text-sand' : 'text-obsidian'
+    `uppercase tracking-[0.2em] text-xs transition-colors duration-300 ${linkHover} ${
+      isActive ? (transparent ? 'text-white' : 'text-sand') : linkColor
     }`;
 
   return (
-    <header className="sticky top-0 z-50 bg-white border-b border-obsidian/10">
-      <div className="max-w-[1440px] mx-auto px-5 md:px-10 h-20 flex items-center justify-between">
-        {/* Logo */}
-        <Link to="/" className="flex items-center gap-2 shrink-0">
-          <img src={logo} alt="SUNDAY" className="h-8 md:h-9 w-auto object-contain" />
-        </Link>
+    <header
+      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
+        transparent ? 'bg-transparent' : 'bg-white border-b border-obsidian/10 shadow-sm'
+      }`}
+    >
+      <div className="max-w-[1440px] mx-auto px-5 md:px-10 h-20 grid grid-cols-3 items-center">
+        {/* Left — Shop / Category / About */}
+        <nav className="hidden md:flex items-center gap-8">
+          <NavLink to="/shop" className={navLinkClass}>
+            Shop
+          </NavLink>
 
-        {/* Desktop Nav */}
-        <nav className="hidden md:flex items-center gap-10">
-          {NAV_LINKS.map((link) => (
-            <NavLink key={link.to} to={link.to} className={navLinkClass}>
-              {link.label}
-            </NavLink>
-          ))}
+          <div
+            className="relative"
+            onMouseEnter={() => setCategoryOpen(true)}
+            onMouseLeave={() => setCategoryOpen(false)}
+          >
+            <button
+              className={`flex items-center gap-1 uppercase tracking-[0.2em] text-xs transition-colors duration-300 ${linkColor} ${linkHover}`}
+            >
+              Category
+              <ChevronDown size={13} />
+            </button>
+            {categoryOpen && (
+              <div className="absolute top-full left-0 pt-3 w-52">
+                <div className="bg-white shadow-lg border border-obsidian/10 py-2">
+                  {CATEGORY_LINKS.map((c) => (
+                    <Link
+                      key={c.key}
+                      to={`/shop?category=${c.key}`}
+                      className="block px-4 py-2 text-xs uppercase tracking-wider text-obsidian hover:bg-mist hover:text-sand transition-colors duration-200"
+                      onClick={() => setCategoryOpen(false)}
+                    >
+                      {c.label}
+                    </Link>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+
+          <NavLink to="/about" className={navLinkClass}>
+            About
+          </NavLink>
         </nav>
 
-        {/* Right side */}
-        <div className="flex items-center gap-4 md:gap-6">
-          <Link
-            to="/login"
-            className="hidden md:inline-block uppercase tracking-[0.2em] text-xs text-obsidian hover:text-sand transition-colors duration-300"
+        {/* Mobile menu toggle (left slot on mobile) */}
+        <button
+          className={`md:hidden justify-self-start ${linkColor}`}
+          onClick={() => setMobileOpen((v) => !v)}
+          aria-label="Toggle menu"
+        >
+          {mobileOpen ? <X size={22} /> : <Menu size={22} />}
+        </button>
+
+        {/* Center — Logo */}
+        <Link to="/" className="justify-self-center flex items-center">
+          <img
+            src={logo}
+            alt="SUNDAY"
+            className={`h-8 md:h-9 w-auto object-contain transition-all duration-300 ${
+              transparent ? 'brightness-0 invert' : ''
+            }`}
+          />
+        </Link>
+
+        {/* Right — Search / Wishlist / Cart / Admin */}
+        <div className="flex items-center justify-self-end gap-4 md:gap-5">
+          <button
+            aria-label="Search"
+            onClick={() => setSearchOpen((v) => !v)}
+            className={`transition-colors duration-300 ${linkColor} ${linkHover}`}
           >
-            Login
-          </Link>
-          <span className="hidden md:inline text-obsidian/20">|</span>
-          <Link
-            to="/faq"
-            className="hidden md:inline-block uppercase tracking-[0.2em] text-xs text-obsidian hover:text-sand transition-colors duration-300"
-          >
-            Help
-          </Link>
-          <span className="hidden md:inline text-obsidian/20">|</span>
+            <Search size={19} strokeWidth={1.5} />
+          </button>
+
           <Link
             to="/wishlist"
             aria-label="Wishlist"
-            className="text-obsidian hover:text-sand transition-colors duration-300"
+            className={`hidden sm:inline-flex transition-colors duration-300 ${linkColor} ${linkHover}`}
           >
             <Heart size={19} strokeWidth={1.5} />
           </Link>
+
           <Link
             to="/cart"
             aria-label="Cart"
-            className="relative text-obsidian hover:text-sand transition-colors duration-300"
+            className={`relative transition-colors duration-300 ${linkColor} ${linkHover}`}
           >
             <ShoppingBag size={19} strokeWidth={1.5} />
             {cartCount > 0 && (
-              <span className="absolute -top-2 -right-2 w-4 h-4 rounded-full bg-obsidian text-white text-[9px] flex items-center justify-center">
+              <span className="absolute -top-2 -right-2 w-4 h-4 rounded-full bg-sand text-white text-[9px] flex items-center justify-center">
                 {cartCount}
               </span>
             )}
           </Link>
 
-          {/* Mobile menu toggle */}
-          <button
-            className="md:hidden text-obsidian"
-            onClick={() => setMobileOpen((v) => !v)}
-            aria-label="Toggle menu"
+          <Link
+            to="/admin"
+            aria-label="Admin"
+            className={`hidden sm:inline-flex transition-colors duration-300 ${linkColor} ${linkHover}`}
           >
-            {mobileOpen ? <X size={22} /> : <Menu size={22} />}
-          </button>
+            <UserCog size={19} strokeWidth={1.5} />
+          </Link>
         </div>
       </div>
+
+      {/* Expandable search bar */}
+      {searchOpen && (
+        <div className={`border-t ${transparent ? 'border-white/20 bg-black/40' : 'border-obsidian/10 bg-white'}`}>
+          <form
+            onSubmit={handleSearchSubmit}
+            className="max-w-[1440px] mx-auto px-5 md:px-10 py-4 flex items-center gap-3"
+          >
+            <Search size={16} className={transparent ? 'text-white' : 'text-obsidian/50'} />
+            <input
+              ref={searchInputRef}
+              type="text"
+              value={searchValue}
+              onChange={(e) => setSearchValue(e.target.value)}
+              placeholder="Search products..."
+              className={`flex-1 bg-transparent outline-none text-sm ${
+                transparent ? 'text-white placeholder-white/60' : 'text-obsidian placeholder-obsidian/40'
+              }`}
+            />
+            <button
+              type="button"
+              onClick={() => setSearchOpen(false)}
+              className={transparent ? 'text-white' : 'text-obsidian'}
+              aria-label="Close search"
+            >
+              <X size={18} />
+            </button>
+          </form>
+        </div>
+      )}
 
       {/* Mobile Nav */}
       {mobileOpen && (
         <div className="md:hidden border-t border-obsidian/10 bg-white px-5 py-6 flex flex-col gap-5">
-          {NAV_LINKS.map((link) => (
-            <NavLink
-              key={link.to}
-              to={link.to}
-              className={navLinkClass}
-              onClick={() => setMobileOpen(false)}
-            >
-              {link.label}
-            </NavLink>
-          ))}
+          <NavLink to="/shop" className={({ isActive }) => `uppercase tracking-[0.2em] text-xs ${isActive ? 'text-sand' : 'text-obsidian'}`} onClick={() => setMobileOpen(false)}>
+            Shop
+          </NavLink>
+          <div>
+            <p className="uppercase tracking-[0.2em] text-xs text-obsidian mb-3">Category</p>
+            <div className="flex flex-col gap-3 pl-3">
+              {CATEGORY_LINKS.map((c) => (
+                <Link
+                  key={c.key}
+                  to={`/shop?category=${c.key}`}
+                  className="text-xs uppercase tracking-wider text-obsidian/70"
+                  onClick={() => setMobileOpen(false)}
+                >
+                  {c.label}
+                </Link>
+              ))}
+            </div>
+          </div>
+          <NavLink to="/about" className={({ isActive }) => `uppercase tracking-[0.2em] text-xs ${isActive ? 'text-sand' : 'text-obsidian'}`} onClick={() => setMobileOpen(false)}>
+            About
+          </NavLink>
           <div className="h-px bg-obsidian/10" />
-          <Link
-            to="/login"
-            className="uppercase tracking-[0.2em] text-xs text-obsidian"
-            onClick={() => setMobileOpen(false)}
-          >
-            Login
+          <Link to="/wishlist" className="uppercase tracking-[0.2em] text-xs text-obsidian" onClick={() => setMobileOpen(false)}>
+            Wishlist
           </Link>
-          <Link
-            to="/faq"
-            className="uppercase tracking-[0.2em] text-xs text-obsidian"
-            onClick={() => setMobileOpen(false)}
-          >
-            Help
+          <Link to="/admin" className="uppercase tracking-[0.2em] text-xs text-obsidian" onClick={() => setMobileOpen(false)}>
+            Admin
           </Link>
         </div>
       )}
