@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom';
+import { Link, NavLink, useNavigate } from 'react-router-dom';
 import { Menu, X, Heart, ShoppingBag, Search, UserCog, ChevronDown } from 'lucide-react';
 import { getCartCount, subscribeCart } from '@/lib/cartStore';
 import logo from '@/assets/logonayemsend.png';
@@ -20,29 +20,15 @@ export default function Header() {
   const [categoryOpen, setCategoryOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchValue, setSearchValue] = useState('');
-  const [scrolled, setScrolled] = useState(false);
   const searchInputRef = useRef(null);
 
-  const location = useLocation();
   const navigate = useNavigate();
-  const isHome = location.pathname === '/';
-
-  // Transparent-over-hero only makes sense on the homepage; every other
-  // page always shows the solid header.
-  const transparent = isHome && !scrolled;
 
   useEffect(() => {
     const update = () => setCartCount(getCartCount());
     update();
     const unsubscribe = subscribeCart(update);
     return unsubscribe;
-  }, []);
-
-  useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 60);
-    onScroll();
-    window.addEventListener('scroll', onScroll);
-    return () => window.removeEventListener('scroll', onScroll);
   }, []);
 
   useEffect(() => {
@@ -57,20 +43,18 @@ export default function Header() {
     setSearchValue('');
   };
 
-  const linkColor = transparent ? 'text-white' : 'text-obsidian';
-  const linkHover = transparent ? 'hover:text-white/70' : 'hover:text-sand';
+  // Header is always transparent — normal (non-inverted) colors throughout,
+  // no scroll-based background/color switching.
+  const linkColor = 'text-obsidian';
+  const linkHover = 'hover:text-sand';
 
   const navLinkClass = ({ isActive }) =>
     `uppercase tracking-[0.2em] text-xs transition-colors duration-300 ${linkHover} ${
-      isActive ? (transparent ? 'text-white' : 'text-sand') : linkColor
+      isActive ? 'text-sand' : linkColor
     }`;
 
   return (
-    <header
-      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
-        transparent ? 'bg-transparent' : 'bg-white border-b border-obsidian/10 shadow-sm'
-      }`}
-    >
+    <header className="fixed top-0 left-0 right-0 z-50 bg-transparent">
       <div className="max-w-[1440px] mx-auto px-5 md:px-10 h-20 grid grid-cols-3 items-center">
         {/* Left — Shop / Category / About */}
         <nav className="hidden md:flex items-center gap-8">
@@ -123,13 +107,7 @@ export default function Header() {
 
         {/* Center — Logo */}
         <Link to="/" className="justify-self-center flex items-center">
-          <img
-            src={logo}
-            alt="SUNDAY"
-            className={`h-8 md:h-9 w-auto object-contain transition-all duration-300 ${
-              transparent ? 'brightness-0 invert' : ''
-            }`}
-          />
+          <img src={logo} alt="SUNDAY" className="h-8 md:h-9 w-auto object-contain" />
         </Link>
 
         {/* Right — Search / Wishlist / Cart / Admin */}
@@ -175,26 +153,24 @@ export default function Header() {
 
       {/* Expandable search bar */}
       {searchOpen && (
-        <div className={`border-t ${transparent ? 'border-white/20 bg-black/40' : 'border-obsidian/10 bg-white'}`}>
+        <div className="border-t border-obsidian/10 bg-white/95 backdrop-blur-sm">
           <form
             onSubmit={handleSearchSubmit}
             className="max-w-[1440px] mx-auto px-5 md:px-10 py-4 flex items-center gap-3"
           >
-            <Search size={16} className={transparent ? 'text-white' : 'text-obsidian/50'} />
+            <Search size={16} className="text-obsidian/50" />
             <input
               ref={searchInputRef}
               type="text"
               value={searchValue}
               onChange={(e) => setSearchValue(e.target.value)}
               placeholder="Search products..."
-              className={`flex-1 bg-transparent outline-none text-sm ${
-                transparent ? 'text-white placeholder-white/60' : 'text-obsidian placeholder-obsidian/40'
-              }`}
+              className="flex-1 bg-transparent outline-none text-sm text-obsidian placeholder-obsidian/40"
             />
             <button
               type="button"
               onClick={() => setSearchOpen(false)}
-              className={transparent ? 'text-white' : 'text-obsidian'}
+              className="text-obsidian"
               aria-label="Close search"
             >
               <X size={18} />
