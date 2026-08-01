@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
 import { supabase } from '@/lib/supabaseClient';
 import { motion } from 'framer-motion';
 import SectionHeader from '@/components/ui/SectionHeader';
@@ -24,8 +23,8 @@ export default function Home() {
         .order('created_at', { ascending: false })
         .limit(50);
       const products = all || [];
-      setFeatured(products.filter((p) => p.is_featured).slice(0, 4));
-      setNewArrivals(products.filter((p) => p.is_new_arrival).slice(0, 4));
+      setFeatured(products.filter((p) => p.is_featured));
+      setNewArrivals(products.filter((p) => p.is_new_arrival));
       setBestSellers(products.filter((p) => p.is_best_seller).slice(0, 4));
       setLoading(false);
     };
@@ -50,18 +49,16 @@ export default function Home() {
       {/* Featured Collection */}
       <section className="py-20 md:py-32 px-5 md:px-10">
         <div className="max-w-[1440px] mx-auto">
-          <SectionHeader label="Curated Selection" title="Featured Collection" />
+          <SectionHeader label="Curated Selection" title="Featured Collection" align="left" size="lg" />
           {loading ? (
             <div className="flex justify-center py-20">
               <div className="w-8 h-8 border-2 border-sand border-t-transparent rounded-full animate-spin" />
             </div>
           ) : featured.length > 0 ? (
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
+            <div className="grid grid-cols-2 lg:grid-cols-5 gap-4 md:gap-6">
               {featured.map((p, i) => <ProductCard key={p.id} product={p} index={i} />)}
             </div>
-          ) : (
-            <p className="text-center text-obsidian/40 tracking-wider text-sm">Collection coming soon</p>
-          )}
+          ) : null}
         </div>
       </section>
 
@@ -73,20 +70,12 @@ export default function Home() {
       {/* New Arrivals */}
       <section className="py-20 md:py-32 px-5 md:px-10">
         <div className="max-w-[1440px] mx-auto">
-          <SectionHeader label="Just Landed" title="New Arrivals" />
+          <SectionHeader label="Just Landed" title="New Arrivals" align="left" size="lg" />
           {!loading && newArrivals.length > 0 && (
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
+            <div className="grid grid-cols-2 lg:grid-cols-5 gap-4 md:gap-6">
               {newArrivals.map((p, i) => <ProductCard key={p.id} product={p} index={i} />)}
             </div>
           )}
-          <div className="text-center mt-12">
-            <Link
-              to="/shop"
-              className="inline-block border border-obsidian text-obsidian text-[11px] tracking-[0.2em] uppercase px-10 py-4 hover:bg-obsidian hover:text-white transition-all duration-500"
-            >
-              View All Products
-            </Link>
-          </div>
         </div>
       </section>
 
