@@ -1,0 +1,84 @@
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 36 24% 96%;
+    --foreground: 0 0% 11%;
+    --card: 0 0% 100%;
+    --card-foreground: 0 0% 11%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 0 0% 11%;
+    --primary: 352 51% 22%;
+    --primary-foreground: 36 24% 96%;
+    --secondary: 33 44% 84%;
+    --secondary-foreground: 0 0% 11%;
+    --muted: 36 20% 93%;
+    --muted-foreground: 0 0% 40%;
+    --accent: 35 39% 55%;
+    --accent-foreground: 0 0% 11%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 35 25% 80%;
+    --input: 35 20% 85%;
+    --ring: 35 39% 55%;
+    --chart-1: 352 51% 22%;
+    --chart-2: 35 39% 55%;
+    --chart-3: 33 44% 84%;
+    --chart-4: 0 0% 11%;
+    --chart-5: 36 24% 96%;
+    --radius: 0px;
+    --font-heading: 'Playfair Display', Georgia, serif;
+    --font-body: 'Inter', ui-sans-serif, system-ui, sans-serif;
+    --font-display: 'Playfair Display', Georgia, serif;
+    --font-mono: 'JetBrains Mono', ui-monospace, monospace;
+    --sidebar-background: 36 24% 96%;
+    --sidebar-foreground: 0 0% 11%;
+    --sidebar-primary: 352 51% 22%;
+    --sidebar-primary-foreground: 36 24% 96%;
+    --sidebar-accent: 36 20% 93%;
+    --sidebar-accent-foreground: 0 0% 11%;
+    --sidebar-border: 35 25% 80%;
+    --sidebar-ring: 35 39% 55%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground font-body antialiased;
+  }
+}
+
+::-webkit-scrollbar {
+  width: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: #B8935F;
+  border-radius: 3px;
+}
+
+::selection {
+  background: #561C24;
+  color: #F7F5F2;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.hide-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
