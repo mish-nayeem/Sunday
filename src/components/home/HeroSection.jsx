@@ -6,7 +6,7 @@ import heroImage from "../../assets/hero.jpeg";
 export default function HeroSection() {
   return (
     <section
-      className="relative h-[38vh] min-h-[320px] md:h-[60vh] md:min-h-[560px] flex items-end overflow-hidden text-white"
+      className="relative h-[40vh] min-h-[320px] md:h-[60vh] md:min-h-[560px] flex items-end overflow-hidden text-white"
       style={{
         backgroundImage: `url(${heroImage})`,
         backgroundSize: "cover",
