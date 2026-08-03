@@ -126,7 +126,7 @@ export default function Checkout() {
   };
 
   return (
-    <div className="pt-20 md:pt-24 min-h-screen">
+    <div className="min-h-screen">
       <div className="max-w-[1440px] mx-auto px-5 md:px-10 py-10 md:py-16">
         <Link to="/cart" className="inline-flex items-center gap-2 text-[11px] tracking-[0.15em] uppercase text-charcoal/50 hover:text-charcoal mb-8 transition-colors">
           <ArrowLeft size={14} /> Back to Bag

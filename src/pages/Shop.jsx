@@ -62,7 +62,7 @@ export default function Shop() {
   }, [category, sort, search]);
 
   return (
-    <div className="pt-20 md:pt-24">
+    <div>
       {/* Hero Banner */}
       <div className="bg-mist py-16 md:py-24 px-5 md:px-10">
         <div className="max-w-[1440px] mx-auto">
@@ -151,7 +151,7 @@ export default function Shop() {
             <p className="text-obsidian/40 tracking-wider text-sm">No products found</p>
           </div>
         ) : (
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 md:gap-3">
             {products.map((p, i) => <ProductCard key={p.id} product={p} index={i} />)}
           </div>
         )}

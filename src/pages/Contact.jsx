@@ -20,7 +20,7 @@ export default function Contact() {
   };
 
   return (
-    <div className="pt-20 md:pt-24 min-h-screen">
+    <div className="min-h-screen">
       <div className="bg-mist py-16 md:py-20 px-5 md:px-10">
         <div className="max-w-2xl mx-auto text-center">
           <p className="text-[11px] tracking-[0.3em] uppercase text-sand mb-3">Get In Touch</p>

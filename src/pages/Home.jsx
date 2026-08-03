@@ -55,7 +55,7 @@ export default function Home() {
               <div className="w-8 h-8 border-2 border-sand border-t-transparent rounded-full animate-spin" />
             </div>
           ) : featured.length > 0 ? (
-            <div className="grid grid-cols-2 lg:grid-cols-5 gap-4 md:gap-6">
+            <div className="grid grid-cols-2 lg:grid-cols-5 gap-2 md:gap-3">
               {featured.map((p, i) => <ProductCard key={p.id} product={p} index={i} />)}
             </div>
           ) : null}
@@ -72,7 +72,7 @@ export default function Home() {
         <div className="max-w-[1440px] mx-auto">
           <SectionHeader label="Just Landed" title="New Arrivals" align="left" size="lg" />
           {!loading && newArrivals.length > 0 && (
-            <div className="grid grid-cols-2 lg:grid-cols-5 gap-4 md:gap-6">
+            <div className="grid grid-cols-2 lg:grid-cols-5 gap-2 md:gap-3">
               {newArrivals.map((p, i) => <ProductCard key={p.id} product={p} index={i} />)}
             </div>
           )}

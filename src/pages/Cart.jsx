@@ -15,7 +15,7 @@ export default function Cart() {
 
   if (cart.length === 0) {
     return (
-      <div className="pt-20 md:pt-24 min-h-screen flex flex-col items-center justify-center text-center px-5">
+      <div className="min-h-screen flex flex-col items-center justify-center text-center px-5">
         <ShoppingBag size={40} strokeWidth={1} className="text-charcoal/20 mb-4" />
         <p className="text-charcoal/40 tracking-wider text-sm mb-6">Your bag is empty</p>
         <Link
@@ -29,7 +29,7 @@ export default function Cart() {
   }
 
   return (
-    <div className="pt-20 md:pt-24 min-h-screen">
+    <div className="min-h-screen">
       <div className="max-w-[1000px] mx-auto px-5 md:px-10 py-10 md:py-16">
         <h1 className="text-2xl md:text-3xl font-light tracking-wide mb-10">Your Bag</h1>
 

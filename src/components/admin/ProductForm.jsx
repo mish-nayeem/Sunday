@@ -4,16 +4,28 @@ import { Upload, X } from 'lucide-react';
 
 const categoryLabels = { full_sleeve_shirts: 'Full Sleeve Shirts', half_sleeve_shirts: 'Half Sleeve Shirts', formal_shirts: 'Formal Shirts', polo: 'Polo', t_shirts: 'T-Shirts', cargo: 'Cargo', formal_pants: 'Formal Pants' };
 
-export default function ProductForm({ onCreated }) {
+export default function ProductForm({ onCreated, product = null, onCancel }) {
+  const isEditing = !!product;
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [form, setForm] = useState({
-    name: '', category: 'full_sleeve_shirts', price: '', original_price: '',
-    cost_price: '', quantity: '', description: '', details: '', fabric: '',
-    care_instructions: '', sizes: 'S, M, L, XL, XXL', colors: '',
-    is_featured: false, is_new_arrival: false, is_best_seller: false
+    name: product?.name || '',
+    category: product?.category || 'full_sleeve_shirts',
+    price: product?.price ?? '',
+    original_price: product?.original_price ?? '',
+    cost_price: product?.cost_price ?? '',
+    quantity: product?.quantity ?? '',
+    description: product?.description || '',
+    details: product?.details || '',
+    fabric: product?.fabric || '',
+    care_instructions: product?.care_instructions || '',
+    sizes: product?.sizes?.length ? product.sizes.join(', ') : 'S, M, L, XL, XXL',
+    colors: product?.colors?.length ? product.colors.join(', ') : '',
+    is_featured: product?.is_featured || false,
+    is_new_arrival: product?.is_new_arrival || false,
+    is_best_seller: product?.is_best_seller || false
   });
-  const [images, setImages] = useState([]);
+  const [images, setImages] = useState(product?.images || []);
 
   const slugify = (s) => s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
 
@@ -46,7 +58,7 @@ export default function ProductForm({ onCreated }) {
     const perSize = Math.floor(qty / sizes.length);
     sizes.forEach((s, i) => { sizeStock[s] = i === 0 ? qty - perSize * (sizes.length - 1) : perSize; });
 
-    await supabase.from('products').insert({
+    const payload = {
       name: form.name,
       slug: slugify(form.name),
       category: form.category,
@@ -55,7 +67,6 @@ export default function ProductForm({ onCreated }) {
       cost_price: Number(form.cost_price) || 0,
       quantity: qty,
       size_stock: sizeStock,
-      sku: '',
       description: form.description,
       details: form.details,
       images,
@@ -67,8 +78,13 @@ export default function ProductForm({ onCreated }) {
       is_best_seller: form.is_best_seller,
       fabric: form.fabric,
       care_instructions: form.care_instructions,
-      sort_order: 0
-    });
+    };
+
+    if (isEditing) {
+      await supabase.from('products').update(payload).eq('id', product.id);
+    } else {
+      await supabase.from('products').insert({ ...payload, sku: '', sort_order: 0 });
+    }
 
     setSaving(false);
     onCreated();
@@ -88,7 +104,9 @@ export default function ProductForm({ onCreated }) {
 
   return (
     <form onSubmit={handleSubmit} className="bg-white border border-gold/20 p-6 mb-6">
-      <h3 className="text-[11px] tracking-[0.2em] uppercase font-medium mb-6">Add New Product</h3>
+      <h3 className="text-[11px] tracking-[0.2em] uppercase font-medium mb-6">
+        {isEditing ? `Edit Product — ${product.name}` : 'Add New Product'}
+      </h3>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {fields.map(f => (
           <div key={f.key}>
@@ -149,9 +167,16 @@ export default function ProductForm({ onCreated }) {
         ))}
       </div>
 
-      <button type="submit" disabled={saving} className="mt-6 bg-wine text-white text-[11px] tracking-wider uppercase px-6 py-2 hover:bg-wine/90 transition-colors disabled:opacity-50">
-        {saving ? 'Saving...' : 'Add Product'}
-      </button>
+      <div className="mt-6 flex items-center gap-3">
+        <button type="submit" disabled={saving} className="bg-wine text-white text-[11px] tracking-wider uppercase px-6 py-2 hover:bg-wine/90 transition-colors disabled:opacity-50">
+          {saving ? 'Saving...' : isEditing ? 'Save Changes' : 'Add Product'}
+        </button>
+        {onCancel && (
+          <button type="button" onClick={onCancel} className="text-[11px] tracking-wider uppercase px-6 py-2 border border-gold/30 hover:border-obsidian transition-colors">
+            Cancel
+          </button>
+        )}
+      </div>
     </form>
   );
 }

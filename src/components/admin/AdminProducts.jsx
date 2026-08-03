@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabaseClient';
-import { AlertTriangle, Plus } from 'lucide-react';
+import { AlertTriangle, Plus, Pencil, Trash2 } from 'lucide-react';
 import ProductForm from './ProductForm';
 
 const categoryLabels = { full_sleeve_shirts: 'Full Sleeve Shirts', half_sleeve_shirts: 'Half Sleeve Shirts', formal_shirts: 'Formal Shirts', polo: 'Polo', t_shirts: 'T-Shirts', cargo: 'Cargo', formal_pants: 'Formal Pants' };
@@ -11,6 +11,8 @@ export default function AdminProducts() {
   const [edits, setEdits] = useState({});
   const [saving, setSaving] = useState(null);
   const [showForm, setShowForm] = useState(false);
+  const [editingProduct, setEditingProduct] = useState(null);
+  const [deletingId, setDeletingId] = useState(null);
 
   const reload = async () => {
     const { data } = await supabase.from('products').select('*').order('created_at', { ascending: false }).limit(100);
@@ -38,6 +40,14 @@ export default function AdminProducts() {
     setSaving(null);
   };
 
+  const handleDelete = async (product) => {
+    if (!window.confirm(`Delete "${product.name}"? This can't be undone.`)) return;
+    setDeletingId(product.id);
+    await supabase.from('products').delete().eq('id', product.id);
+    setProducts(prev => prev.filter(p => p.id !== product.id));
+    setDeletingId(null);
+  };
+
   if (loading) {
     return (
       <div className="flex justify-center py-20">
@@ -57,12 +67,19 @@ export default function AdminProducts() {
           <span className="mx-2">·</span>
           Stock Value: <span className="font-mono font-medium text-obsidian">৳{totalValue.toLocaleString()}</span>
         </p>
-        <button onClick={() => setShowForm(!showForm)} className="flex items-center gap-2 text-[11px] tracking-wider uppercase bg-wine text-white px-4 py-2 hover:bg-wine/90 transition-colors">
+        <button onClick={() => { setEditingProduct(null); setShowForm(!showForm); }} className="flex items-center gap-2 text-[11px] tracking-wider uppercase bg-wine text-white px-4 py-2 hover:bg-wine/90 transition-colors">
           <Plus size={14} /> Add Product
         </button>
       </div>
 
-      {showForm && <ProductForm onCreated={() => { setShowForm(false); reload(); }} />}
+      {showForm && <ProductForm onCreated={() => { setShowForm(false); reload(); }} onCancel={() => setShowForm(false)} />}
+      {editingProduct && (
+        <ProductForm
+          product={editingProduct}
+          onCreated={() => { setEditingProduct(null); reload(); }}
+          onCancel={() => setEditingProduct(null)}
+        />
+      )}
 
       <div className="bg-white border border-sand/30 overflow-x-auto">
         <table className="w-full">
@@ -123,13 +140,30 @@ export default function AdminProducts() {
                     </div>
                   </td>
                   <td className="py-3 px-4">
-                    <button
-                      onClick={() => handleSave(product)}
-                      disabled={!hasEdit || saving === product.id}
-                      className={`text-[10px] tracking-wider uppercase px-3 py-1.5 transition-colors ${hasEdit ? 'bg-obsidian text-white hover:bg-obsidian/90' : 'bg-mist text-obsidian/30 cursor-not-allowed'}`}
-                    >
-                      {saving === product.id ? '...' : 'Save'}
-                    </button>
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => handleSave(product)}
+                        disabled={!hasEdit || saving === product.id}
+                        className={`text-[10px] tracking-wider uppercase px-3 py-1.5 transition-colors ${hasEdit ? 'bg-obsidian text-white hover:bg-obsidian/90' : 'bg-mist text-obsidian/30 cursor-not-allowed'}`}
+                      >
+                        {saving === product.id ? '...' : 'Save'}
+                      </button>
+                      <button
+                        onClick={() => { setShowForm(false); setEditingProduct(product); }}
+                        title="Edit product"
+                        className="w-7 h-7 flex items-center justify-center border border-sand/30 hover:border-obsidian hover:text-obsidian text-obsidian/50 transition-colors"
+                      >
+                        <Pencil size={13} />
+                      </button>
+                      <button
+                        onClick={() => handleDelete(product)}
+                        disabled={deletingId === product.id}
+                        title="Delete product"
+                        className="w-7 h-7 flex items-center justify-center border border-sand/30 hover:border-red-500 hover:text-red-500 text-obsidian/50 transition-colors disabled:opacity-40"
+                      >
+                        <Trash2 size={13} />
+                      </button>
+                    </div>
                   </td>
                 </tr>
               );

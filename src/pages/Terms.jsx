@@ -2,7 +2,7 @@ import React from 'react';
 
 export default function Terms() {
   return (
-    <div className="pt-20 md:pt-24 min-h-screen">
+    <div className="min-h-screen">
       <div className="bg-mist py-16 md:py-20 px-5 md:px-10 text-center">
         <h1 className="text-3xl md:text-4xl font-light tracking-wide">Terms & Conditions</h1>
       </div>

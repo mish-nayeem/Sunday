@@ -69,7 +69,7 @@ export default function ProductDetail() {
 
   if (loading) {
     return (
-      <div className="pt-20 flex justify-center items-center min-h-screen">
+      <div className="flex justify-center items-center min-h-screen">
         <div className="w-8 h-8 border-2 border-sand border-t-transparent rounded-full animate-spin" />
       </div>
     );
@@ -77,7 +77,7 @@ export default function ProductDetail() {
 
   if (!product) {
     return (
-      <div className="pt-20 flex flex-col items-center justify-center min-h-screen">
+      <div className="flex flex-col items-center justify-center min-h-screen">
         <p className="text-obsidian/40 mb-4">Product not found</p>
         <Link to="/shop" className="text-sm underline">Back to shop</Link>
       </div>
@@ -88,7 +88,7 @@ export default function ProductDetail() {
   const categoryLabels = { full_sleeve_shirts: 'Full Sleeve Shirts', half_sleeve_shirts: 'Half Sleeve Shirts', formal_shirts: 'Formal Shirts', polo: 'Polo', t_shirts: 'T-Shirts', cargo: 'Cargo', formal_pants: 'Formal Pants' };
 
   return (
-    <div className="pt-20 md:pt-24">
+    <div>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify({
         "@context": "https://schema.org",
         "@type": "Product",

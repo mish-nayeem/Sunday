@@ -23,7 +23,7 @@ export default function OrderConfirmation() {
 
   if (loading) {
     return (
-      <div className="pt-20 flex justify-center items-center min-h-screen">
+      <div className="flex justify-center items-center min-h-screen">
         <div className="w-8 h-8 border-2 border-sand border-t-transparent rounded-full animate-spin" />
       </div>
     );
@@ -31,7 +31,7 @@ export default function OrderConfirmation() {
 
   if (!order) {
     return (
-      <div className="pt-20 flex flex-col items-center justify-center min-h-screen text-center px-5">
+      <div className="flex flex-col items-center justify-center min-h-screen text-center px-5">
         <p className="text-charcoal/50 mb-4">We couldn't find that order.</p>
         <Link to="/" className="text-sm underline">Back to home</Link>
       </div>
@@ -42,7 +42,7 @@ export default function OrderConfirmation() {
   const whatsappMessage = encodeURIComponent(`Hi SUNDAY, I'd like to confirm my order ${order.order_id}.`);
 
   return (
-    <div className="pt-20 md:pt-24 min-h-screen">
+    <div className="min-h-screen">
       <div className="max-w-2xl mx-auto px-5 md:px-10 py-16 md:py-24 text-center">
         <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }}>
           <CheckCircle2 size={56} strokeWidth={1} className="mx-auto text-wine mb-6" />

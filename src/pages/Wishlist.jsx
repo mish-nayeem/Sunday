@@ -24,7 +24,7 @@ export default function Wishlist() {
   }, []);
 
   return (
-    <div className="pt-20 md:pt-24 min-h-screen">
+    <div className="min-h-screen">
       <div className="bg-mist py-16 md:py-20 px-5 md:px-10">
         <div className="max-w-[1440px] mx-auto text-center">
           <p className="text-[11px] tracking-[0.3em] uppercase text-sand mb-3">Saved For Later</p>
@@ -49,7 +49,7 @@ export default function Wishlist() {
             </Link>
           </div>
         ) : (
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 md:gap-3">
             {products.map((p, i) => <ProductCard key={p.id} product={p} index={i} />)}
           </div>
         )}
