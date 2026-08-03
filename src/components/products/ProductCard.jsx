@@ -29,7 +29,6 @@ export default function ProductCard({ product, index = 0 }) {
     navigate(`/product/${product.id}`);
   };
 
-  const badge = product.is_new_arrival ? 'NEW' : product.is_best_seller ? 'BEST SELLER' : null;
   const currentImg = images[imgIndex];
 
   return (
@@ -44,12 +43,6 @@ export default function ProductCard({ product, index = 0 }) {
     >
       <Link to={`/product/${product.id}`}>
         <div className="relative aspect-[3/4] overflow-hidden bg-mist mb-3 p-2 md:p-3">
-          {badge && (
-            <span className="absolute top-3 left-3 z-10 text-[10px] tracking-wider uppercase font-medium flex items-center gap-1">
-              {badge} <span className="text-gold">★</span>
-            </span>
-          )}
-
           <img
             src={currentImg}
             alt={product.name}
