@@ -145,7 +145,7 @@ export default function Header() {
 
         {/* Center — Logo */}
         <Link to="/" className="justify-self-center flex items-center">
-         <img src={logo} alt="SUNDAY" className="h-14 md:h-20 w-auto object-contain" />
+         <img src={logo} alt="SUNDAY" className="h-16 md:h-24 w-auto object-contain" />
         </Link>
 
         {/* Right — Search / Wishlist / Cart / Admin */}
