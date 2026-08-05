@@ -84,7 +84,7 @@ export default function ProductCard({ product, index = 0 }) {
             <button
               onClick={handleQuickAdd}
               title="View product"
-              className="absolute bottom-3 right-3 z-10 flex items-center justify-center text-obsidian opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity duration-300"
+          className="absolute bottom-3 right-3 z-10 flex items-center justify-center text-orange-500 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity duration-300"
             >
               <Plus size={22} strokeWidth={1.5} />
             </button>
