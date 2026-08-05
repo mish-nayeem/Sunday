@@ -9,11 +9,11 @@ const banners = [banner1, banner2, banner3];
 
 export default function FeaturedBanners() {
   return (
-    <section className="grid grid-cols-1 md:grid-cols-3">
+   <section className="max-w-4xl mx-auto px-5 md:px-10 flex flex-col py-6">
       {banners.map((image, i) => (
         <div key={i} className="flex flex-col">
           <div
-            className="h-[45vh] min-h-[320px] md:h-[65vh] md:min-h-[560px] overflow-hidden"
+            className="h-[40vh] min-h-[280px] md:h-[50vh] md:min-h-[420px] overflow-hidden"
             style={{
               backgroundImage: `url(${image})`,
               backgroundSize: 'cover',
