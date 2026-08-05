@@ -5,13 +5,30 @@ import { SlidersHorizontal, X } from 'lucide-react';
 import ProductCard from '@/components/products/ProductCard';
 
 const categoryLabels = {
-  full_sleeve_shirts: 'Full Sleeve Shirts',
-  half_sleeve_shirts: 'Half Sleeve Shirts',
-  formal_shirts: 'Formal Shirts',
+  shirt: 'Shirt',
+  t_shirts: 'T-Shirt',
   polo: 'Polo',
-  t_shirts: 'T-Shirts',
-  cargo: 'Cargo',
-  formal_pants: 'Formal Pants',
+  pant: 'Pant',
+};
+
+// Each nav category groups one or more underlying product categories in the database.
+const categoryGroups = {
+  shirt: ['full_sleeve_shirts', 'half_sleeve_shirts', 'formal_shirts'],
+  t_shirts: ['t_shirts'],
+  polo: ['polo'],
+  pant: ['formal_pants', 'cargo'],
+};
+
+const filterLabels = {
+  new_arrival: 'New Arrival',
+  best_seller: 'Best Seller',
+  featured: 'Featured Collection',
+};
+
+const filterColumns = {
+  new_arrival: 'is_new_arrival',
+  best_seller: 'is_best_seller',
+  featured: 'is_featured',
 };
 
 const sortOptions = [
@@ -28,9 +45,11 @@ export default function Shop() {
 
   const params = new URLSearchParams(window.location.search);
   const initialCat = params.get('category') || 'all';
+  const initialFilter = params.get('filter') || 'all';
   const initialSearch = params.get('search') || '';
 
   const [category, setCategory] = useState(initialCat);
+  const [filter, setFilter] = useState(initialFilter);
   const [search, setSearch] = useState(initialSearch);
   const [sort, setSort] = useState('-created_date');
 
@@ -41,7 +60,13 @@ export default function Shop() {
       const sortColumn = sortFieldRaw === 'created_date' ? 'created_at' : sortFieldRaw;
 
       let query = supabase.from('products').select('*');
-      if (category !== 'all') query = query.eq('category', category);
+      if (category !== 'all') {
+        const dbCategories = categoryGroups[category] || [category];
+        query = query.in('category', dbCategories);
+      }
+      if (filter !== 'all' && filterColumns[filter]) {
+        query = query.eq(filterColumns[filter], true);
+      }
       query = query.order(sortColumn, { ascending }).limit(100);
 
       const { data } = await query;
@@ -59,7 +84,7 @@ export default function Shop() {
       setLoading(false);
     };
     load();
-  }, [category, sort, search]);
+  }, [category, filter, sort, search]);
 
   return (
     <div>
@@ -73,7 +98,7 @@ export default function Shop() {
           >
             <p className="text-[11px] tracking-[0.3em] uppercase text-sand mb-3">The Archive</p>
             <h1 className="text-3xl md:text-5xl lg:text-6xl font-light tracking-wide">
-              {categoryLabels[category] || 'All Products'}
+              {categoryLabels[category] || filterLabels[filter] || 'All Products'}
             </h1>
           </motion.div>
         </div>
@@ -130,6 +155,14 @@ export default function Shop() {
                 {label}
               </button>
             ))}
+            {filter !== 'all' && (
+              <button
+                onClick={() => setFilter('all')}
+                className="flex items-center gap-1 text-[11px] tracking-[0.1em] text-obsidian/50 hover:text-obsidian"
+              >
+                <X size={12} /> Clear filter ({filterLabels[filter]})
+              </button>
+            )}
             {search && (
               <button
                 onClick={() => setSearch('')}

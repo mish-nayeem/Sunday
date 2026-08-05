@@ -5,18 +5,22 @@ import { getCartCount, subscribeCart } from '@/lib/cartStore';
 import logo from '@/assets/logonayemsend.png';
 
 const CATEGORY_LINKS = [
-  { key: 'full_sleeve_shirts', label: 'Full Sleeve Shirts' },
-  { key: 'half_sleeve_shirts', label: 'Half Sleeve Shirts' },
-  { key: 'formal_shirts', label: 'Formal Shirts' },
+  { key: 'shirt', label: 'Shirt' },
+  { key: 't_shirts', label: 'T-Shirt' },
   { key: 'polo', label: 'Polo' },
-  { key: 't_shirts', label: 'T-Shirts' },
-  { key: 'cargo', label: 'Cargo' },
-  { key: 'formal_pants', label: 'Formal Pants' },
+  { key: 'pant', label: 'Pant' },
+];
+
+const SHOP_LINKS = [
+  { key: 'new_arrival', label: 'New Arrival' },
+  { key: 'best_seller', label: 'Best Seller' },
+  { key: 'featured', label: 'Featured Collection' },
 ];
 
 export default function Header() {
   const [cartCount, setCartCount] = useState(0);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [shopOpen, setShopOpen] = useState(false);
   const [categoryOpen, setCategoryOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchValue, setSearchValue] = useState('');
@@ -55,12 +59,35 @@ export default function Header() {
 
   return (
     <header className="fixed top-0 left-0 right-0 z-50 bg-transparent">
-      <div className="max-w-[1440px] mx-auto px-5 md:px-10 h-20 grid grid-cols-3 items-center">
+     <div className=" mx-auto px-8 lg:px-10 h-20 md:h-20 grid grid-cols-3 items-center">
         {/* Left — Shop / Category / About */}
         <nav className="hidden md:flex items-center gap-8">
-          <NavLink to="/shop" className={navLinkClass}>
-            Shop
-          </NavLink>
+        
+          <div
+            className="relative"
+            onMouseEnter={() => setShopOpen(true)}
+            onMouseLeave={() => setShopOpen(false)}
+          >
+            <NavLink to="/shop" className={navLinkClass}>
+              Shop
+            </NavLink>
+            {shopOpen && (
+              <div className="absolute top-full left-0 pt-3 w-56">
+                <div className="bg-white shadow-lg border border-obsidian/10 py-2">
+                  {SHOP_LINKS.map((s) => (
+                    <Link
+                      key={s.key}
+                      to={`/shop?filter=${s.key}`}
+                      className="block px-4 py-2 text-xs uppercase tracking-wider text-obsidian hover:bg-mist hover:text-sand transition-colors duration-200"
+                      onClick={() => setShopOpen(false)}
+                    >
+                      {s.label}
+                    </Link>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
 
           <div
             className="relative"
@@ -107,11 +134,15 @@ export default function Header() {
 
         {/* Center — Logo */}
         <Link to="/" className="justify-self-center flex items-center">
-          <img src={logo} alt="SUNDAY" className="h-20 md:h-24 w-auto object-contain" />
+          <img
+  src={logo}
+  alt="SUNDAY"
+  className="h-16 md:h-20 w-auto object-contain"
+/>
         </Link>
 
         {/* Right — Search / Wishlist / Cart / Admin */}
-        <div className="flex items-center justify-self-end gap-4 md:gap-5">
+        <div className="flex items-center justify-self-end gap-6">
           <button
             aria-label="Search"
             onClick={() => setSearchOpen((v) => !v)}
@@ -182,9 +213,23 @@ export default function Header() {
       {/* Mobile Nav */}
       {mobileOpen && (
         <div className="md:hidden border-t border-obsidian/10 bg-white px-5 py-6 flex flex-col gap-5">
-          <NavLink to="/shop" className={({ isActive }) => `uppercase tracking-[0.2em] text-xs ${isActive ? 'text-sand' : 'text-obsidian'}`} onClick={() => setMobileOpen(false)}>
-            Shop
-          </NavLink>
+          <div>
+            <NavLink to="/shop" className={({ isActive }) => `uppercase tracking-[0.2em] text-xs ${isActive ? 'text-sand' : 'text-obsidian'}`} onClick={() => setMobileOpen(false)}>
+              Shop
+            </NavLink>
+            <div className="flex flex-col gap-3 pl-3 mt-3">
+              {SHOP_LINKS.map((s) => (
+                <Link
+                  key={s.key}
+                  to={`/shop?filter=${s.key}`}
+                  className="text-xs uppercase tracking-wider text-obsidian/70"
+                  onClick={() => setMobileOpen(false)}
+                >
+                  {s.label}
+                </Link>
+              ))}
+            </div>
+          </div>
           <div>
             <p className="uppercase tracking-[0.2em] text-xs text-obsidian mb-3">Category</p>
             <div className="flex flex-col gap-3 pl-3">
