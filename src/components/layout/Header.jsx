@@ -24,6 +24,7 @@ export default function Header() {
   const [categoryOpen, setCategoryOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchValue, setSearchValue] = useState('');
+  const [scrolled, setScrolled] = useState(false);
   const searchInputRef = useRef(null);
 
   const navigate = useNavigate();
@@ -39,6 +40,13 @@ export default function Header() {
     if (searchOpen && searchInputRef.current) searchInputRef.current.focus();
   }, [searchOpen]);
 
+  useEffect(() => {
+    const handleScroll = () => setScrolled(window.scrollY > 40);
+    handleScroll();
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
   const handleSearchSubmit = (e) => {
     e.preventDefault();
     if (!searchValue.trim()) return;
@@ -47,8 +55,8 @@ export default function Header() {
     setSearchValue('');
   };
 
-  // Header is always transparent — normal (non-inverted) colors throughout,
-  // no scroll-based background/color switching.
+  // Navbar starts solid white at the top of the page, then becomes
+  // transparent once the user scrolls down.
   const linkColor = 'text-obsidian';
   const linkHover = 'hover:text-sand';
 
@@ -58,7 +66,11 @@ export default function Header() {
     }`;
 
   return (
-    <header className="fixed top-0 left-0 right-0 z-50 bg-transparent">
+    <header
+      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
+        scrolled ? 'bg-transparent shadow-none' : 'bg-white shadow-sm'
+      }`}
+    >
       <div className="max-w-[1440px] mx-auto px-6 md:px-14 h-28 md:h-36 grid grid-cols-3 items-center">
         {/* Left — Shop / Category / About */}
         <nav className="hidden md:flex items-center gap-12 lg:gap-16">
@@ -233,25 +245,4 @@ export default function Header() {
                   key={c.key}
                   to={`/shop?category=${c.key}`}
                   className="text-xs uppercase tracking-wider text-obsidian/70"
-                  onClick={() => setMobileOpen(false)}
-                >
-                  {c.label}
-                </Link>
-              ))}
-            </div>
-          </div>
-          <NavLink to="/about" className={({ isActive }) => `uppercase tracking-[0.2em] text-xs ${isActive ? 'text-sand' : 'text-obsidian'}`} onClick={() => setMobileOpen(false)}>
-            About
-          </NavLink>
-          <div className="h-px bg-obsidian/10" />
-          <Link to="/wishlist" className="uppercase tracking-[0.2em] text-xs text-obsidian" onClick={() => setMobileOpen(false)}>
-            Wishlist
-          </Link>
-          <Link to="/admin" className="uppercase tracking-[0.2em] text-xs text-obsidian" onClick={() => setMobileOpen(false)}>
-            Admin
-          </Link>
-        </div>
-      )}
-    </header>
-  );
-}
+                  onClick={() => setMobileO
