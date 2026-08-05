@@ -55,7 +55,7 @@ export default function Home() {
               <div className="w-8 h-8 border-2 border-sand border-t-transparent rounded-full animate-spin" />
             </div>
           ) : featured.length > 0 ? (
-            <div className="grid grid-cols-2 lg:grid-cols-5 gap-2 md:gap-3">
+            <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 md:gap-5">
               {featured.map((p, i) => <ProductCard key={p.id} product={p} index={i} />)}
             </div>
           ) : null}
