@@ -59,10 +59,9 @@ export default function Header() {
 
   return (
     <header className="fixed top-0 left-0 right-0 z-50 bg-transparent">
-     <div className=" mx-auto px-8 lg:px-10 h-20 md:h-20 grid grid-cols-3 items-center">
+      <div className="max-w-[1440px] mx-auto px-6 md:px-14 h-28 md:h-36 grid grid-cols-3 items-center">
         {/* Left — Shop / Category / About */}
-        <nav className="hidden md:flex items-center gap-8">
-        
+        <nav className="hidden md:flex items-center gap-12 lg:gap-16">
           <div
             className="relative"
             onMouseEnter={() => setShopOpen(true)}
@@ -134,15 +133,11 @@ export default function Header() {
 
         {/* Center — Logo */}
         <Link to="/" className="justify-self-center flex items-center">
-          <img
-  src={logo}
-  alt="SUNDAY"
-  className="h-16 md:h-20 w-auto object-contain"
-/>
+          <img src={logo} alt="SUNDAY" className="h-20 md:h-28 w-auto object-contain" />
         </Link>
 
         {/* Right — Search / Wishlist / Cart / Admin */}
-        <div className="flex items-center justify-self-end gap-6">
+        <div className="flex items-center justify-self-end gap-5 md:gap-7">
           <button
             aria-label="Search"
             onClick={() => setSearchOpen((v) => !v)}
