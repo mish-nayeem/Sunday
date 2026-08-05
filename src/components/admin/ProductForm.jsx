@@ -29,8 +29,10 @@ export default function ProductForm({ onCreated, product = null, onCancel }) {
 
   const slugify = (s) => s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
 
+  const MAX_IMAGES = 2;
+
   const handleUpload = async (e) => {
-    const files = Array.from(e.target.files);
+    const files = Array.from(e.target.files).slice(0, MAX_IMAGES - images.length);
     if (files.length === 0) return;
     setUploading(true);
     for (const file of files) {
@@ -137,7 +139,7 @@ export default function ProductForm({ onCreated, product = null, onCancel }) {
       </div>
 
       <div className="mt-4">
-        <label className="text-[10px] tracking-wider uppercase text-charcoal/50 block mb-2">Product Images</label>
+        <label className="text-[10px] tracking-wider uppercase text-charcoal/50 block mb-2">Product Images ({images.length}/{MAX_IMAGES})</label>
         <div className="flex gap-3 flex-wrap">
           {images.map((url, i) => (
             <div key={i} className="relative w-20 h-24 group">
@@ -147,10 +149,12 @@ export default function ProductForm({ onCreated, product = null, onCancel }) {
               </button>
             </div>
           ))}
-          <label className="w-20 h-24 border border-dashed border-gold/30 flex items-center justify-center cursor-pointer hover:border-wine transition-colors">
-            {uploading ? <div className="w-5 h-5 border-2 border-gold border-t-transparent rounded-full animate-spin" /> : <Upload size={18} className="text-charcoal/30" />}
-            <input type="file" accept="image/*" multiple className="hidden" onChange={handleUpload} />
-          </label>
+          {images.length < MAX_IMAGES && (
+            <label className="w-20 h-24 border border-dashed border-gold/30 flex items-center justify-center cursor-pointer hover:border-wine transition-colors">
+              {uploading ? <div className="w-5 h-5 border-2 border-gold border-t-transparent rounded-full animate-spin" /> : <Upload size={18} className="text-charcoal/30" />}
+              <input type="file" accept="image/*" multiple className="hidden" onChange={handleUpload} />
+            </label>
+          )}
         </div>
       </div>
 
