@@ -4,6 +4,7 @@ import { motion } from 'framer-motion';
 import SectionHeader from '@/components/ui/SectionHeader';
 import ProductCard from '@/components/products/ProductCard';
 import HeroSection from '@/components/home/HeroSection';
+import FeaturedBanners from '@/components/home/FeaturedBanners';
 import CategoriesSection from '@/components/home/CategoriesSection';
 import WhyChooseSection from '@/components/home/WhyChooseSection';
 import ReviewsSection from '@/components/home/ReviewsSection';
@@ -61,6 +62,8 @@ export default function Home() {
           ) : null}
         </div>
       </section>
+
+      <FeaturedBanners />
 
       {/* Divider */}
       <div className="max-w-[1440px] mx-auto px-5 md:px-10">
