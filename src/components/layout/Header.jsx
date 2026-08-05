@@ -245,4 +245,25 @@ export default function Header() {
                   key={c.key}
                   to={`/shop?category=${c.key}`}
                   className="text-xs uppercase tracking-wider text-obsidian/70"
-                  onClick={() => setMobileO
+                  onClick={() => setMobileOpen(false)}
+                >
+                  {c.label}
+                </Link>
+              ))}
+            </div>
+          </div>
+          <NavLink to="/about" className={({ isActive }) => `uppercase tracking-[0.2em] text-xs ${isActive ? 'text-sand' : 'text-obsidian'}`} onClick={() => setMobileOpen(false)}>
+            About
+          </NavLink>
+          <div className="h-px bg-obsidian/10" />
+          <Link to="/wishlist" className="uppercase tracking-[0.2em] text-xs text-obsidian" onClick={() => setMobileOpen(false)}>
+            Wishlist
+          </Link>
+          <Link to="/admin" className="uppercase tracking-[0.2em] text-xs text-obsidian" onClick={() => setMobileOpen(false)}>
+            Admin
+          </Link>
+        </div>
+      )}
+    </header>
+  );
+}
