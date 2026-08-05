@@ -71,7 +71,7 @@ export default function Header() {
         scrolled ? 'bg-transparent shadow-none' : 'bg-white shadow-sm'
       }`}
     >
-      <div className="max-w-[1440px] mx-auto px-6 md:px-14 h-28 md:h-36 grid grid-cols-3 items-center">
+     <div className="max-w-[1440px] mx-auto px-6 md:px-12 h-20 md:h-24 grid grid-cols-3 items-center">
         {/* Left — Shop / Category / About */}
         <nav className="hidden md:flex items-center gap-12 lg:gap-16">
           <div
@@ -145,7 +145,7 @@ export default function Header() {
 
         {/* Center — Logo */}
         <Link to="/" className="justify-self-center flex items-center">
-          <img src={logo} alt="SUNDAY" className="h-20 md:h-28 w-auto object-contain" />
+         <img src={logo} alt="SUNDAY" className="h-14 md:h-20 w-auto object-contain" />
         </Link>
 
         {/* Right — Search / Wishlist / Cart / Admin */}
