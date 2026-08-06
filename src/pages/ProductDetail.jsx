@@ -126,9 +126,9 @@ export default function ProductDetail() {
 
       {/* Product */}
       <div className="max-w-[1600px] mx-auto px-5 md:px-10 pb-20 md:pb-32">
-        <div className="grid grid-cols-1 lg:grid-cols-[1fr_420px] gap-8 lg:gap-16">
+        <div className="grid grid-cols-1 lg:grid-cols-[1fr_420px] gap-8 lg:gap-16 items-start">
           {/* Gallery — side by side, 2 per row, stacked up-down */}
-          <div className="grid grid-cols-2 gap-2">
+          <div className="grid grid-cols-2 gap-2 auto-rows-max">
             {images.map((img, i) => (
               <div key={i} className="relative aspect-[3/4] overflow-hidden bg-mist">
                 <img
