@@ -127,8 +127,8 @@ export default function ProductDetail() {
       {/* Product */}
       <div className="max-w-[1600px] mx-auto px-5 md:px-10 pb-20 md:pb-32">
         <div className="grid grid-cols-1 lg:grid-cols-[1fr_420px] gap-8 lg:gap-16">
-          {/* Gallery — all images shown large, stacked */}
-          <div className="flex flex-col gap-2">
+          {/* Gallery — side by side, 2 per row, stacked up-down */}
+          <div className="grid grid-cols-2 gap-2">
             {images.map((img, i) => (
               <div key={i} className="relative aspect-[3/4] overflow-hidden bg-mist">
                 <img
@@ -292,6 +292,17 @@ export default function ProductDetail() {
                   <p className="text-[10px] tracking-wider uppercase text-obsidian/50">Quality Assured</p>
                 </div>
               </div>
+
+              {/* Small thumbnails of the same gallery images, at the very bottom */}
+              {images.length > 1 && (
+                <div className="flex gap-2 mt-6">
+                  {images.map((img, i) => (
+                    <div key={i} className="w-12 h-14 overflow-hidden bg-mist border border-obsidian/10">
+                      <img src={img} alt="" className="w-full h-full object-cover" />
+                    </div>
+                  ))}
+                </div>
+              )}
             </motion.div>
           </div>
         </div>
