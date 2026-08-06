@@ -127,22 +127,35 @@ export default function ProductDetail() {
       {/* Product */}
       <div className="max-w-[1600px] mx-auto px-5 md:px-10 pb-20 md:pb-32">
         <div className="grid grid-cols-1 lg:grid-cols-[1fr_420px] gap-8 lg:gap-16 items-start">
-          {/* Gallery — side by side, 2 per row, stacked up-down. Full width if only 1 image. */}
-          <div className={`grid gap-2 auto-rows-max ${images.length > 1 ? 'grid-cols-2' : 'grid-cols-1'}`}>
-            {images.map((img, i) => (
-              <div key={i} className="relative aspect-[3/4] overflow-hidden bg-mist">
-                <img
-                  src={img}
-                  alt={`${product.name} ${i + 1}`}
-                  className="w-full h-full object-cover"
-                />
-                {i === 0 && discount && (
-                  <span className="absolute top-4 left-4 bg-burgundy text-white text-[10px] tracking-[0.15em] uppercase px-3 py-1.5 font-mono font-bold">
-                    -{product.discount_percentage}%
-                  </span>
-                )}
+          {/* Left column — gallery + thumbnails */}
+          <div>
+            <div className={`grid gap-2 auto-rows-max ${images.length > 1 ? 'grid-cols-2' : 'grid-cols-1'}`}>
+              {images.map((img, i) => (
+                <div key={i} className="relative aspect-[3/4] overflow-hidden bg-mist">
+                  <img
+                    src={img}
+                    alt={`${product.name} ${i + 1}`}
+                    className="w-full h-full object-cover"
+                  />
+                  {i === 0 && discount && (
+                    <span className="absolute top-4 left-4 bg-burgundy text-white text-[10px] tracking-[0.15em] uppercase px-3 py-1.5 font-mono font-bold">
+                      -{product.discount_percentage}%
+                    </span>
+                  )}
+                </div>
+              ))}
+            </div>
+
+            {/* Small thumbnails of the same gallery images, below the main gallery */}
+            {images.length > 1 && (
+              <div className="flex gap-2 mt-2">
+                {images.map((img, i) => (
+                  <div key={i} className="w-12 h-14 overflow-hidden bg-mist border border-obsidian/10">
+                    <img src={img} alt="" className="w-full h-full object-cover" />
+                  </div>
+                ))}
               </div>
-            ))}
+            )}
           </div>
 
           {/* Info */}
@@ -293,16 +306,6 @@ export default function ProductDetail() {
                 </div>
               </div>
 
-              {/* Small thumbnails of the same gallery images, at the very bottom */}
-              {images.length > 1 && (
-                <div className="flex gap-2 mt-6">
-                  {images.map((img, i) => (
-                    <div key={i} className="w-12 h-14 overflow-hidden bg-mist border border-obsidian/10">
-                      <img src={img} alt="" className="w-full h-full object-cover" />
-                    </div>
-                  ))}
-                </div>
-              )}
             </motion.div>
           </div>
         </div>
