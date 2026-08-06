@@ -5,14 +5,12 @@ import SectionHeader from '@/components/ui/SectionHeader';
 import ProductCard from '@/components/products/ProductCard';
 import HeroSection from '@/components/home/HeroSection';
 import FeaturedBanners from '@/components/home/FeaturedBanners';
-import CategoriesSection from '@/components/home/CategoriesSection';
 import WhyChooseSection from '@/components/home/WhyChooseSection';
 import ReviewsSection from '@/components/home/ReviewsSection';
 import InstagramSection from '@/components/home/InstagramSection';
 
 export default function Home() {
   const [featured, setFeatured] = useState([]);
-  const [newArrivals, setNewArrivals] = useState([]);
   const [bestSellers, setBestSellers] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -25,7 +23,6 @@ export default function Home() {
         .limit(50);
       const products = all || [];
       setFeatured(products.filter((p) => p.is_featured));
-      setNewArrivals(products.filter((p) => p.is_new_arrival));
       setBestSellers(products.filter((p) => p.is_best_seller).slice(0, 4));
       setLoading(false);
     };
@@ -69,20 +66,6 @@ export default function Home() {
       <div className="max-w-[1440px] mx-auto px-5 md:px-10">
         <div className="h-px bg-sand/30" />
       </div>
-
-      {/* New Arrivals */}
-      <section className="py-20 md:py-32 px-5 md:px-10">
-        <div className="max-w-[1440px] mx-auto">
-          <SectionHeader label="Just Landed" title="New Arrivals" align="left" size="lg" />
-          {!loading && newArrivals.length > 0 && (
-            <div className="grid grid-cols-2 lg:grid-cols-5 gap-2 md:gap-3">
-              {newArrivals.map((p, i) => <ProductCard key={p.id} product={p} index={i} />)}
-            </div>
-          )}
-        </div>
-      </section>
-
-      <CategoriesSection />
 
       {/* Best Sellers */}
       <section className="py-20 md:py-32 px-5 md:px-10 bg-mist">
