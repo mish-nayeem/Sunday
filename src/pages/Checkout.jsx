@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { supabase } from '@/lib/supabaseClient';
 import { motion } from 'framer-motion';
-import { Truck, ShieldCheck, ArrowLeft } from 'lucide-react';
+import { Truck, ShieldCheck, ArrowLeft, Copy, Check } from 'lucide-react';
 import { getCart, clearCart } from '@/lib/cartStore';
 
 const districts = [
@@ -10,12 +10,22 @@ const districts = [
   'Comilla', 'Gazipur', 'Narayanganj', 'Cox\'s Bazar', 'Jessore', 'Bogra', 'Dinajpur',
 ];
 
+// TODO: put your real bKash merchant/personal number here
+const BKASH_NUMBER = '01629178834';
+
+const SHIPPING_METHODS = [
+  { key: 'inside_dhaka', label: 'Inside Dhaka', price: 80 },
+  { key: 'outside_dhaka_advance', label: 'Outside Dhaka — Advance Pay', price: 200 },
+];
+
 export default function Checkout() {
   const navigate = useNavigate();
   const [cart, setCart] = useState(getCart());
   const [form, setForm] = useState({ full_name: '', email: '', mobile: '', address: '', district: '', area: '', notes: '' });
+  const [shippingMethod, setShippingMethod] = useState('inside_dhaka');
+  const [bkashTrxId, setBkashTrxId] = useState('');
+  const [numberCopied, setNumberCopied] = useState(false);
   const [submitting, setSubmitting] = useState(false);
-  const [settings, setSettings] = useState(null);
 
   useEffect(() => {
     if (cart.length === 0) {
@@ -23,18 +33,23 @@ export default function Checkout() {
     }
   }, [cart.length, navigate]);
 
-  useEffect(() => {
-    supabase.from('settings').select('*').limit(1).then(({ data }) => {
-      if (data && data.length > 0) setSettings(data[0]);
-    });
-  }, []);
-
   const subtotal = cart.reduce((s, i) => s + i.price * i.quantity, 0);
-  const deliveryCharge = form.district === 'Dhaka' ? (settings?.dhaka_delivery_charge ?? 60) : form.district ? (settings?.outside_dhaka_delivery_charge ?? 120) : 0;
+  const selectedMethod = SHIPPING_METHODS.find(m => m.key === shippingMethod);
+  const deliveryCharge = selectedMethod?.price || 0;
   const total = subtotal + deliveryCharge;
+  const isAdvancePay = shippingMethod === 'outside_dhaka_advance';
+
+  const handleCopyNumber = async () => {
+    try {
+      await navigator.clipboard.writeText(BKASH_NUMBER);
+      setNumberCopied(true);
+      setTimeout(() => setNumberCopied(false), 2000);
+    } catch (e) { /* clipboard not available */ }
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (isAdvancePay && !bkashTrxId.trim()) return;
     setSubmitting(true);
 
     const oid = 'SND-' + Date.now().toString(36).toUpperCase();
@@ -63,8 +78,10 @@ export default function Checkout() {
       subtotal,
       delivery_charge: deliveryCharge,
       total,
-      payment_method: 'cod',
-      payment_status: 'unpaid',
+      payment_method: isAdvancePay ? 'bkash_advance' : 'cod',
+      payment_status: isAdvancePay ? 'advance_paid' : 'unpaid',
+      bkash_transaction_id: isAdvancePay ? bkashTrxId.trim() : null,
+      shipping_method: shippingMethod,
       invoice_number: invoiceNumber,
       status: 'pending',
     });
@@ -91,12 +108,6 @@ export default function Checkout() {
         status: 'issued',
       });
     } catch (e) { console.error('Invoice creation failed:', e); }
-
-    // NOTE: Base44's email notifications (admin + customer) were removed here.
-    // Supabase doesn't send arbitrary transactional emails on its own — the order
-    // still shows up instantly in Admin > Orders via realtime, and the customer
-    // is offered a "Confirm via WhatsApp" button on the confirmation page.
-    // If you want email back, see the migration guide, section 7 (Resend + Edge Function).
 
     // Decrement stock on each product
     try {
@@ -132,10 +143,10 @@ export default function Checkout() {
           <ArrowLeft size={14} /> Back to Bag
         </Link>
 
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="mb-10">
-          <p className="text-[11px] tracking-[0.3em] uppercase text-gold mb-2">Almost There</p>
-          <h1 className="text-2xl md:text-4xl font-heading font-light tracking-wide">Checkout</h1>
-        </motion.div>
+        {/* Brand mark — replaces express checkout */}
+        <div className="text-center mb-10">
+          <p className="text-xl md:text-2xl font-bold tracking-[0.15em]">SUNDAY</p>
+        </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-10 lg:gap-16">
           {/* Form */}
@@ -207,12 +218,71 @@ export default function Checkout() {
                   className="w-full border border-charcoal/20 px-4 py-3 text-sm bg-transparent outline-none focus:border-charcoal transition-colors resize-none placeholder:text-charcoal/30"
                 />
               </div>
+
+              {/* Shipping method */}
+              <div>
+                <label className="text-[11px] tracking-[0.2em] uppercase font-medium block mb-3">Shipping Method *</label>
+                <div className="space-y-2">
+                  {SHIPPING_METHODS.map(m => (
+                    <label
+                      key={m.key}
+                      className={`flex items-center justify-between border px-4 py-3 cursor-pointer transition-colors ${
+                        shippingMethod === m.key ? 'border-charcoal' : 'border-charcoal/20'
+                      }`}
+                    >
+                      <span className="flex items-center gap-3">
+                        <input
+                          type="radio"
+                          name="shipping_method"
+                          checked={shippingMethod === m.key}
+                          onChange={() => setShippingMethod(m.key)}
+                        />
+                        <span className="text-sm">{m.label}</span>
+                      </span>
+                      <span className="text-sm font-mono">৳{m.price}.00</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              {/* bKash advance payment section — only for Outside Dhaka */}
+              {isAdvancePay && (
+                <div className="border border-charcoal/20 p-5">
+                  <p className="text-[11px] tracking-[0.2em] uppercase font-medium mb-4">bKash Payment</p>
+
+                  <div className="flex items-center justify-between border border-charcoal/15 px-4 py-3 mb-4">
+                    <span className="text-sm font-medium">bKash Number</span>
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-mono">{BKASH_NUMBER}</span>
+                      <button type="button" onClick={handleCopyNumber} className="text-charcoal/50 hover:text-charcoal transition-colors">
+                        {numberCopied ? <Check size={14} /> : <Copy size={14} />}
+                      </button>
+                    </div>
+                  </div>
+
+                  <ul className="text-xs text-charcoal/60 space-y-1.5 mb-4 list-disc list-inside">
+                    <li>Dial *247# or open your bKash app</li>
+                    <li>Select "Send Money"</li>
+                    <li>Send ৳{deliveryCharge}.00 to the number above</li>
+                    <li>Enter the Transaction ID you receive by SMS below</li>
+                  </ul>
+
+                  <label className="text-[11px] tracking-[0.2em] uppercase font-medium block mb-2">Transaction ID *</label>
+                  <input
+                    type="text" required={isAdvancePay} value={bkashTrxId}
+                    onChange={e => setBkashTrxId(e.target.value)}
+                    placeholder="TRXID (e.g., K8H7G6F5D4)"
+                    className="w-full border border-charcoal/20 px-4 py-3 text-sm bg-transparent outline-none focus:border-charcoal transition-colors placeholder:text-charcoal/30"
+                  />
+                </div>
+              )}
+
               <button
                 type="submit"
                 disabled={submitting}
                 className="w-full bg-wine text-white text-[11px] tracking-[0.2em] uppercase py-4 hover:bg-wine/90 transition-colors disabled:opacity-50"
               >
-                {submitting ? 'Placing Order...' : 'Confirm Order — Cash on Delivery'}
+                {submitting ? 'Placing Order...' : 'Confirm Order'}
               </button>
             </form>
           </div>
@@ -235,10 +305,8 @@ export default function Checkout() {
                 <span className="text-sm font-mono">৳{subtotal.toLocaleString()}</span>
               </div>
               <div className="flex justify-between mb-4">
-                <span className="text-sm">Delivery Charge</span>
-                <span className="text-sm font-mono">
-                  {deliveryCharge > 0 ? `৳${deliveryCharge}` : 'Select district'}
-                </span>
+                <span className="text-sm">Shipping</span>
+                <span className="text-sm font-mono">৳{deliveryCharge}</span>
               </div>
               <div className="h-px bg-gold/20 mb-4" />
               <div className="flex justify-between">
@@ -249,8 +317,10 @@ export default function Checkout() {
               <div className="mt-6 bg-wine/5 p-4 flex items-center gap-3">
                 <Truck size={18} strokeWidth={1} className="text-wine" />
                 <div>
-                  <p className="text-sm font-medium">Cash on Delivery</p>
-                  <p className="text-xs text-charcoal/50">Pay when you receive your order</p>
+                  <p className="text-sm font-medium">{selectedMethod?.label}</p>
+                  <p className="text-xs text-charcoal/50">
+                    {isAdvancePay ? 'Advance payment via bKash required' : 'Pay when you receive your order'}
+                  </p>
                 </div>
               </div>
 
