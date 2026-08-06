@@ -7,7 +7,6 @@ import { addToCart } from '@/lib/cartStore';
 import { addRecentlyViewed, isInWishlist, toggleWishlist } from '@/lib/cartStore';
 import ProductCard from '@/components/products/ProductCard';
 import SizeChartPopup from '@/components/products/SizeChartPopup';
-import ReviewsSection from '@/components/products/ReviewsSection';
 import { useToast } from '@/components/ui/use-toast';
 
 // Collapsible row used for Size recommends / Details / Care / Shipping policy
@@ -56,10 +55,9 @@ export default function ProductDetail() {
       const { data: rel } = await supabase
         .from('products')
         .select('*')
-        .eq('category', p.category)
         .order('created_at', { ascending: false })
-        .limit(5);
-      setRelated((rel || []).filter(r => r.id !== p.id).slice(0, 4));
+        .limit(9);
+      setRelated((rel || []).filter(r => r.id !== p.id).slice(0, 8));
       setLoading(false);
     };
     load();
@@ -319,11 +317,6 @@ export default function ProductDetail() {
             </div>
           </div>
         )}
-      </div>
-
-      {/* Reviews */}
-      <div className="max-w-[1440px] mx-auto px-5 md:px-10 pb-20 md:pb-32">
-        <ReviewsSection product={product} />
       </div>
 
       <SizeChartPopup open={sizeChartOpen} onClose={() => setSizeChartOpen(false)} category={product.category} />
