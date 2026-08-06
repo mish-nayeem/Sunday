@@ -164,7 +164,7 @@ export default function Checkout() {
                 <input
                   type="text" required value={form.full_name}
                   onChange={e => setForm({ ...form, full_name: e.target.value })}
-                  className="w-full border border-charcoal/20 rounded-lg px-4 py-2.5 text-sm bg-transparent outline-none focus:border-charcoal transition-colors"
+                  className="w-full border border-charcoal/20 rounded-[10px] px-4 py-2.5 text-sm bg-transparent outline-none focus:border-charcoal transition-colors"
                 />
               </div>
               <div>
@@ -173,7 +173,7 @@ export default function Checkout() {
                   type="tel" required value={form.mobile}
                   onChange={e => setForm({ ...form, mobile: e.target.value })}
                   placeholder="01XXXXXXXXX"
-                  className="w-full border border-charcoal/20 rounded-lg px-4 py-2.5 text-sm bg-transparent outline-none focus:border-charcoal transition-colors placeholder:text-charcoal/30"
+                  className="w-full border border-charcoal/20 rounded-[10px] px-4 py-2.5 text-sm bg-transparent outline-none focus:border-charcoal transition-colors placeholder:text-charcoal/30"
                 />
               </div>
               <div>
@@ -182,7 +182,7 @@ export default function Checkout() {
                   type="email" required value={form.email}
                   onChange={e => setForm({ ...form, email: e.target.value })}
                   placeholder="your@email.com"
-                  className="w-full border border-charcoal/20 rounded-lg px-4 py-2.5 text-sm bg-transparent outline-none focus:border-charcoal transition-colors placeholder:text-charcoal/30"
+                  className="w-full border border-charcoal/20 rounded-[10px] px-4 py-2.5 text-sm bg-transparent outline-none focus:border-charcoal transition-colors placeholder:text-charcoal/30"
                 />
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
@@ -191,7 +191,7 @@ export default function Checkout() {
                   <select
                     required value={form.district}
                     onChange={e => setForm({ ...form, district: e.target.value })}
-                    className="w-full border border-charcoal/20 rounded-lg px-4 py-2.5 text-sm bg-transparent outline-none focus:border-charcoal transition-colors"
+                    className="w-full border border-charcoal/20 rounded-[10px] px-4 py-2.5 text-sm bg-transparent outline-none focus:border-charcoal transition-colors"
                   >
                     <option value="">Select District</option>
                     {districts.map(d => <option key={d} value={d}>{d}</option>)}
@@ -202,7 +202,7 @@ export default function Checkout() {
                   <input
                     type="text" required value={form.area}
                     onChange={e => setForm({ ...form, area: e.target.value })}
-                    className="w-full border border-charcoal/20 rounded-lg px-4 py-2.5 text-sm bg-transparent outline-none focus:border-charcoal transition-colors"
+                    className="w-full border border-charcoal/20 rounded-[10px] px-4 py-2.5 text-sm bg-transparent outline-none focus:border-charcoal transition-colors"
                   />
                 </div>
               </div>
@@ -212,7 +212,7 @@ export default function Checkout() {
                   required value={form.address}
                   onChange={e => setForm({ ...form, address: e.target.value })}
                   rows={3}
-                  className="w-full border border-charcoal/20 rounded-lg px-4 py-2.5 text-sm bg-transparent outline-none focus:border-charcoal transition-colors resize-none"
+                  className="w-full border border-charcoal/20 rounded-[10px] px-4 py-2.5 text-sm bg-transparent outline-none focus:border-charcoal transition-colors resize-none"
                 />
               </div>
               <div>
@@ -222,7 +222,7 @@ export default function Checkout() {
                   onChange={e => setForm({ ...form, notes: e.target.value })}
                   rows={2}
                   placeholder="Any special instructions..."
-                  className="w-full border border-charcoal/20 rounded-lg px-4 py-2.5 text-sm bg-transparent outline-none focus:border-charcoal transition-colors resize-none placeholder:text-charcoal/30"
+                  className="w-full border border-charcoal/20 rounded-[10px] px-4 py-2.5 text-sm bg-transparent outline-none focus:border-charcoal transition-colors resize-none placeholder:text-charcoal/30"
                 />
               </div>
 
@@ -233,7 +233,7 @@ export default function Checkout() {
                   {SHIPPING_METHODS.map(m => (
                     <label
                       key={m.key}
-                      className={`flex items-center justify-between border rounded-lg px-4 py-2.5 cursor-pointer transition-colors ${
+                      className={`flex items-center justify-between border rounded-[10px] px-4 py-2.5 cursor-pointer transition-colors ${
                         shippingMethod === m.key ? 'border-charcoal' : 'border-charcoal/20'
                       }`}
                     >
@@ -254,10 +254,10 @@ export default function Checkout() {
 
               {/* bKash advance payment section — only for Outside Dhaka */}
               {isAdvancePay && (
-                <div className="border border-charcoal/20 rounded-lg p-5">
+                <div className="border border-charcoal/20 rounded-[10px] p-5">
                   <p className="text-[11px] tracking-[0.2em] uppercase font-medium mb-4">bKash Payment</p>
 
-                  <div className="flex items-center justify-between border border-charcoal/15 rounded-lg px-4 py-2.5 mb-4">
+                  <div className="flex items-center justify-between border border-charcoal/15 rounded-[10px] px-4 py-2.5 mb-4">
                     <span className="text-sm font-medium">bKash Number</span>
                     <div className="flex items-center gap-2">
                       <span className="text-sm font-mono">{BKASH_NUMBER}</span>
@@ -279,7 +279,7 @@ export default function Checkout() {
                     type="text" required={isAdvancePay} value={bkashTrxId}
                     onChange={e => setBkashTrxId(e.target.value)}
                     placeholder="TRXID (e.g., K8H7G6F5D4)"
-                    className="w-full border border-charcoal/20 rounded-lg px-4 py-2.5 text-sm bg-transparent outline-none focus:border-charcoal transition-colors placeholder:text-charcoal/30"
+                    className="w-full border border-charcoal/20 rounded-[10px] px-4 py-2.5 text-sm bg-transparent outline-none focus:border-charcoal transition-colors placeholder:text-charcoal/30"
                   />
                 </div>
               )}
@@ -296,7 +296,7 @@ export default function Checkout() {
 
           {/* Summary */}
           <div className="lg:sticky lg:top-28 lg:self-start">
-            <div className="bg-ivory rounded-lg p-6 md:p-8">
+            <div className="bg-ivory rounded-[10px] p-6 md:p-8">
               <h3 className="text-[11px] tracking-[0.2em] uppercase font-medium mb-6">Order Summary</h3>
               <div className="space-y-3 mb-6">
                 {cart.map(item => (
@@ -334,7 +334,7 @@ export default function Checkout() {
                 </div>
               )}
 
-              <div className="mt-6 bg-wine/5 rounded-lg p-4 flex items-center gap-3">
+              <div className="mt-6 bg-wine/5 rounded-[10px] p-4 flex items-center gap-3">
                 <Truck size={18} strokeWidth={1} className="text-wine" />
                 <div>
                   <p className="text-sm font-medium">{selectedMethod?.label}</p>
