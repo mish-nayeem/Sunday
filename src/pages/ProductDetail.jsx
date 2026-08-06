@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, Link, useNavigate } from 'react-router-dom';
+import { useParams, Link } from 'react-router-dom';
 import { supabase } from '@/lib/supabaseClient';
 import { motion } from 'framer-motion';
 import { Heart, Minus, Plus, Truck, Undo2, Shield, ChevronDown } from 'lucide-react';
@@ -7,6 +7,7 @@ import { addToCart } from '@/lib/cartStore';
 import { addRecentlyViewed, isInWishlist, toggleWishlist } from '@/lib/cartStore';
 import ProductCard from '@/components/products/ProductCard';
 import SizeChartPopup from '@/components/products/SizeChartPopup';
+import { useToast } from '@/components/ui/use-toast';
 
 // Collapsible row used for Size recommends / Details / Care / Shipping policy
 function AccordionRow({ title, children }) {
@@ -32,7 +33,7 @@ function AccordionRow({ title, children }) {
 
 export default function ProductDetail() {
   const { id } = useParams();
-  const navigate = useNavigate();
+  const { toast } = useToast();
   const [product, setProduct] = useState(null);
   const [related, setRelated] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -66,7 +67,7 @@ export default function ProductDetail() {
   const handleAddToCart = () => {
     if (!selectedSize) return;
     addToCart(product, selectedSize, quantity);
-    navigate('/checkout');
+    toast({ title: 'Added to bag', description: `${product.name} — Size ${selectedSize}` });
   };
 
   if (loading) {
