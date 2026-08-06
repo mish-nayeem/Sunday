@@ -15,7 +15,7 @@ const BKASH_NUMBER = '01629178834';
 
 const SHIPPING_METHODS = [
   { key: 'inside_dhaka', label: 'Inside Dhaka', price: 80 },
-  { key: 'outside_dhaka_advance', label: 'Outside Dhaka — Advance Pay', price: 200 },
+  { key: 'outside_dhaka_advance', label: 'Outside Dhaka — Advance Pay', price: 120 },
 ];
 
 // Advance amount collected via bKash for Outside Dhaka orders.
