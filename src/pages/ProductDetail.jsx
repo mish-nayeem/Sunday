@@ -184,7 +184,8 @@ export default function ProductDetail() {
                 <div className="flex flex-wrap gap-2">
                   {product.sizes?.map(size => {
                     const sizeStock = product.size_stock?.[size];
-                    const available = product.size_stock
+                    const hasSizeStockData = product.size_stock && Object.keys(product.size_stock).length > 0;
+                    const available = hasSizeStockData
                       ? (sizeStock || 0) > 0
                       : (product.quantity || 0) > 0;
                     return (
