@@ -2,13 +2,11 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Heart, Plus } from 'lucide-react';
-import { toggleWishlist, isInWishlist, addToCart } from '@/lib/cartStore';
-import { useToast } from '@/components/ui/use-toast';
+import { toggleWishlist, isInWishlist, addToCart, openCartDrawer } from '@/lib/cartStore';
 
 export default function ProductCard({ product, index = 0 }) {
   const [wishlisted, setWishlisted] = React.useState(false);
   const [imgError, setImgError] = React.useState(false);
-  const { toast } = useToast();
 
   React.useEffect(() => {
     setWishlisted(isInWishlist(product.id));
@@ -25,7 +23,7 @@ export default function ProductCard({ product, index = 0 }) {
       return;
     }
     addToCart(product, size, 1);
-    toast({ title: 'Added to bag', description: `${product.name} — Size ${size}` });
+    openCartDrawer();
   };
 
   return (
