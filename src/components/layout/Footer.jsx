@@ -39,13 +39,13 @@ export default function Footer() {
         {subscribed ? (
           <p className="text-sm text-white/60 mb-12">Thanks for subscribing!</p>
         ) : (
-          <form onSubmit={handleSubscribe} className="flex border border-white/30 mb-12 max-w-2xl">
+          <form onSubmit={handleSubscribe} className="flex flex-col sm:flex-row border border-white/30 mb-12 max-w-2xl">
             <input
               type="email" required value={email} onChange={e => setEmail(e.target.value)}
               placeholder="Email address"
-              className="flex-1 bg-transparent px-4 py-3 text-sm outline-none placeholder-white/50"
+              className="flex-1 min-w-0 w-full bg-transparent px-4 py-3 text-sm outline-none placeholder-white/50"
             />
-            <button type="submit" className="bg-white text-obsidian px-6 text-xs uppercase tracking-[0.15em] font-semibold whitespace-nowrap">
+            <button type="submit" className="bg-white text-obsidian px-6 py-3 sm:py-0 text-xs uppercase tracking-[0.15em] font-semibold whitespace-nowrap shrink-0">
               Join Sunday Fam
             </button>
           </form>
