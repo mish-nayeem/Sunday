@@ -19,6 +19,23 @@ export function subscribeCart(callback) {
   return () => listeners.delete(callback);
 }
 
+// ---------- Cart Drawer (open/close state for the slide-in mini cart) ----------
+
+const drawerListeners = new Set();
+
+export function subscribeCartDrawer(callback) {
+  drawerListeners.add(callback);
+  return () => drawerListeners.delete(callback);
+}
+
+export function openCartDrawer() {
+  drawerListeners.forEach((cb) => cb(true));
+}
+
+export function closeCartDrawer() {
+  drawerListeners.forEach((cb) => cb(false));
+}
+
 // ---------- Cart ----------
 
 export function getCart() {
