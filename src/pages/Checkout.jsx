@@ -15,12 +15,8 @@ const BKASH_NUMBER = '01629178834';
 
 const SHIPPING_METHODS = [
   { key: 'inside_dhaka', label: 'Inside Dhaka', price: 80 },
-  { key: 'outside_dhaka_advance', label: 'Outside Dhaka — Advance Pay', price: 120 },
+  { key: 'outside_dhaka_advance', label: 'Outside Dhaka — Advance Pay', price: 200 },
 ];
-
-// Advance amount collected via bKash for Outside Dhaka orders.
-// Remaining due on delivery = subtotal + delivery charge (outside Dhaka) − advance pay.
-const ADVANCE_AMOUNT = 200;
 
 export default function Checkout() {
   const navigate = useNavigate();
@@ -42,9 +38,6 @@ export default function Checkout() {
   const deliveryCharge = selectedMethod?.price || 0;
   const total = subtotal + deliveryCharge;
   const isAdvancePay = shippingMethod === 'outside_dhaka_advance';
-  const advanceAmount = isAdvancePay ? ADVANCE_AMOUNT : 0;
-  // Due on delivery = product price + delivery charge (outside Dhaka) − advance pay
-  const dueOnDelivery = total - advanceAmount;
 
   const handleCopyNumber = async () => {
     try {
@@ -139,6 +132,14 @@ export default function Checkout() {
       );
     } catch (e) { console.error('Stock update failed:', e); }
 
+    // Send confirmation email + PDF invoice via Brevo (only fires if customer gave an email).
+    // Fire-and-forget: never block checkout completion on email delivery.
+    if (form.email) {
+      supabase.functions
+        .invoke('send-order-confirmation', { body: { order_id: oid } })
+        .catch(e => console.error('Order confirmation email failed:', e));
+    }
+
     clearCart();
     window.location.href = `/order-confirmation/${oid}`;
   };
@@ -164,7 +165,7 @@ export default function Checkout() {
                 <input
                   type="text" required value={form.full_name}
                   onChange={e => setForm({ ...form, full_name: e.target.value })}
-                  className="w-full border border-charcoal/20 rounded-[10px] px-4 py-2.5 text-sm bg-transparent outline-none focus:border-charcoal transition-colors"
+                  className="w-full border border-charcoal/20 px-4 py-3 text-sm bg-transparent outline-none focus:border-charcoal transition-colors"
                 />
               </div>
               <div>
@@ -173,16 +174,16 @@ export default function Checkout() {
                   type="tel" required value={form.mobile}
                   onChange={e => setForm({ ...form, mobile: e.target.value })}
                   placeholder="01XXXXXXXXX"
-                  className="w-full border border-charcoal/20 rounded-[10px] px-4 py-2.5 text-sm bg-transparent outline-none focus:border-charcoal transition-colors placeholder:text-charcoal/30"
+                  className="w-full border border-charcoal/20 px-4 py-3 text-sm bg-transparent outline-none focus:border-charcoal transition-colors placeholder:text-charcoal/30"
                 />
               </div>
               <div>
-                <label className="text-[11px] tracking-[0.2em] uppercase font-medium block mb-2">Email *</label>
+                <label className="text-[11px] tracking-[0.2em] uppercase font-medium block mb-2">Email (Optional — for order confirmation)</label>
                 <input
-                  type="email" required value={form.email}
+                  type="email" value={form.email}
                   onChange={e => setForm({ ...form, email: e.target.value })}
                   placeholder="your@email.com"
-                  className="w-full border border-charcoal/20 rounded-[10px] px-4 py-2.5 text-sm bg-transparent outline-none focus:border-charcoal transition-colors placeholder:text-charcoal/30"
+                  className="w-full border border-charcoal/20 px-4 py-3 text-sm bg-transparent outline-none focus:border-charcoal transition-colors placeholder:text-charcoal/30"
                 />
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
@@ -191,7 +192,7 @@ export default function Checkout() {
                   <select
                     required value={form.district}
                     onChange={e => setForm({ ...form, district: e.target.value })}
-                    className="w-full border border-charcoal/20 rounded-[10px] px-4 py-2.5 text-sm bg-transparent outline-none focus:border-charcoal transition-colors"
+                    className="w-full border border-charcoal/20 px-4 py-3 text-sm bg-transparent outline-none focus:border-charcoal transition-colors"
                   >
                     <option value="">Select District</option>
                     {districts.map(d => <option key={d} value={d}>{d}</option>)}
@@ -202,7 +203,7 @@ export default function Checkout() {
                   <input
                     type="text" required value={form.area}
                     onChange={e => setForm({ ...form, area: e.target.value })}
-                    className="w-full border border-charcoal/20 rounded-[10px] px-4 py-2.5 text-sm bg-transparent outline-none focus:border-charcoal transition-colors"
+                    className="w-full border border-charcoal/20 px-4 py-3 text-sm bg-transparent outline-none focus:border-charcoal transition-colors"
                   />
                 </div>
               </div>
@@ -212,7 +213,7 @@ export default function Checkout() {
                   required value={form.address}
                   onChange={e => setForm({ ...form, address: e.target.value })}
                   rows={3}
-                  className="w-full border border-charcoal/20 rounded-[10px] px-4 py-2.5 text-sm bg-transparent outline-none focus:border-charcoal transition-colors resize-none"
+                  className="w-full border border-charcoal/20 px-4 py-3 text-sm bg-transparent outline-none focus:border-charcoal transition-colors resize-none"
                 />
               </div>
               <div>
@@ -222,7 +223,7 @@ export default function Checkout() {
                   onChange={e => setForm({ ...form, notes: e.target.value })}
                   rows={2}
                   placeholder="Any special instructions..."
-                  className="w-full border border-charcoal/20 rounded-[10px] px-4 py-2.5 text-sm bg-transparent outline-none focus:border-charcoal transition-colors resize-none placeholder:text-charcoal/30"
+                  className="w-full border border-charcoal/20 px-4 py-3 text-sm bg-transparent outline-none focus:border-charcoal transition-colors resize-none placeholder:text-charcoal/30"
                 />
               </div>
 
@@ -233,7 +234,7 @@ export default function Checkout() {
                   {SHIPPING_METHODS.map(m => (
                     <label
                       key={m.key}
-                      className={`flex items-center justify-between border rounded-[10px] px-4 py-2.5 cursor-pointer transition-colors ${
+                      className={`flex items-center justify-between border px-4 py-3 cursor-pointer transition-colors ${
                         shippingMethod === m.key ? 'border-charcoal' : 'border-charcoal/20'
                       }`}
                     >
@@ -254,10 +255,10 @@ export default function Checkout() {
 
               {/* bKash advance payment section — only for Outside Dhaka */}
               {isAdvancePay && (
-                <div className="border border-charcoal/20 rounded-[10px] p-5">
+                <div className="border border-charcoal/20 p-5">
                   <p className="text-[11px] tracking-[0.2em] uppercase font-medium mb-4">bKash Payment</p>
 
-                  <div className="flex items-center justify-between border border-charcoal/15 rounded-[10px] px-4 py-2.5 mb-4">
+                  <div className="flex items-center justify-between border border-charcoal/15 px-4 py-3 mb-4">
                     <span className="text-sm font-medium">bKash Number</span>
                     <div className="flex items-center gap-2">
                       <span className="text-sm font-mono">{BKASH_NUMBER}</span>
@@ -270,7 +271,7 @@ export default function Checkout() {
                   <ul className="text-xs text-charcoal/60 space-y-1.5 mb-4 list-disc list-inside">
                     <li>Dial *247# or open your bKash app</li>
                     <li>Select "Send Money"</li>
-                    <li>Send ৳{ADVANCE_AMOUNT}.00 (advance) to the number above</li>
+                    <li>Send ৳{deliveryCharge}.00 to the number above</li>
                     <li>Enter the Transaction ID you receive by SMS below</li>
                   </ul>
 
@@ -279,7 +280,7 @@ export default function Checkout() {
                     type="text" required={isAdvancePay} value={bkashTrxId}
                     onChange={e => setBkashTrxId(e.target.value)}
                     placeholder="TRXID (e.g., K8H7G6F5D4)"
-                    className="w-full border border-charcoal/20 rounded-[10px] px-4 py-2.5 text-sm bg-transparent outline-none focus:border-charcoal transition-colors placeholder:text-charcoal/30"
+                    className="w-full border border-charcoal/20 px-4 py-3 text-sm bg-transparent outline-none focus:border-charcoal transition-colors placeholder:text-charcoal/30"
                   />
                 </div>
               )}
@@ -296,7 +297,7 @@ export default function Checkout() {
 
           {/* Summary */}
           <div className="lg:sticky lg:top-28 lg:self-start">
-            <div className="bg-ivory rounded-[10px] p-6 md:p-8">
+            <div className="bg-ivory p-6 md:p-8">
               <h3 className="text-[11px] tracking-[0.2em] uppercase font-medium mb-6">Order Summary</h3>
               <div className="space-y-3 mb-6">
                 {cart.map(item => (
@@ -321,20 +322,7 @@ export default function Checkout() {
                 <span className="text-lg font-mono font-medium">৳{total.toLocaleString()}</span>
               </div>
 
-              {isAdvancePay && (
-                <div className="mt-4 pt-4 border-t border-dashed border-charcoal/20 space-y-2">
-                  <div className="flex justify-between text-sm">
-                    <span className="text-charcoal/60">Advance (bKash, now)</span>
-                    <span className="font-mono">৳{advanceAmount.toLocaleString()}</span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-charcoal/60">Due on Delivery (COD)</span>
-                    <span className="font-mono font-medium">৳{dueOnDelivery.toLocaleString()}</span>
-                  </div>
-                </div>
-              )}
-
-              <div className="mt-6 bg-wine/5 rounded-[10px] p-4 flex items-center gap-3">
+              <div className="mt-6 bg-wine/5 p-4 flex items-center gap-3">
                 <Truck size={18} strokeWidth={1} className="text-wine" />
                 <div>
                   <p className="text-sm font-medium">{selectedMethod?.label}</p>
