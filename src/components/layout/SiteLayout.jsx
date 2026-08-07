@@ -3,6 +3,7 @@ import { Outlet, useLocation } from 'react-router-dom';
 import Header from './Header';
 import Footer from './Footer';
 import WhatsAppButton from './WhatsAppButton';
+import CartDrawer from './CartDrawer';
 
 export default function SiteLayout() {
   // Header is now `fixed`, so it no longer reserves space in normal flow.
@@ -20,6 +21,7 @@ export default function SiteLayout() {
       </main>
       <Footer />
       <WhatsAppButton />
+      <CartDrawer />
     </div>
   );
 }
