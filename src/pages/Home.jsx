@@ -5,9 +5,7 @@ import SectionHeader from '@/components/ui/SectionHeader';
 import ProductCard from '@/components/products/ProductCard';
 import HeroSection from '@/components/home/HeroSection';
 import FeaturedBanners from '@/components/home/FeaturedBanners';
-import WhyChooseSection from '@/components/home/WhyChooseSection';
 import ReviewsSection from '@/components/home/ReviewsSection';
-import InstagramSection from '@/components/home/InstagramSection';
 
 export default function Home() {
   const [featured, setFeatured] = useState([]);
@@ -79,9 +77,7 @@ export default function Home() {
         </div>
       </section>
 
-      <WhyChooseSection />
       <ReviewsSection />
-      <InstagramSection />
     </div>
   );
 }
