@@ -22,7 +22,6 @@ export default function Checkout() {
   const navigate = useNavigate();
   const [cart, setCart] = useState(getCart());
   const [form, setForm] = useState({ full_name: '', email: '', mobile: '', address: '', district: '', area: '', notes: '' });
-  const [shippingMethod, setShippingMethod] = useState('inside_dhaka');
   const [bkashTrxId, setBkashTrxId] = useState('');
   const [numberCopied, setNumberCopied] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -34,10 +33,13 @@ export default function Checkout() {
   }, [cart.length, navigate]);
 
   const subtotal = cart.reduce((s, i) => s + i.price * i.quantity, 0);
+  // Shipping method follows the selected district directly — the customer can't
+  // pick "Inside Dhaka" pricing while shipping outside Dhaka (or the reverse).
+  const shippingMethod = form.district === 'Dhaka' ? 'inside_dhaka' : 'outside_dhaka_advance';
   const selectedMethod = SHIPPING_METHODS.find(m => m.key === shippingMethod);
-  const deliveryCharge = selectedMethod?.price || 0;
+  const deliveryCharge = form.district ? (selectedMethod?.price || 0) : 0;
   const total = subtotal + deliveryCharge;
-  const isAdvancePay = shippingMethod === 'outside_dhaka_advance';
+  const isAdvancePay = shippingMethod === 'outside_dhaka_advance' && !!form.district;
 
   const handleCopyNumber = async () => {
     try {
@@ -182,9 +184,9 @@ export default function Checkout() {
                 />
               </div>
               <div>
-                <label className="text-[11px] tracking-[0.2em] uppercase font-medium block mb-2">Email (Optional — for order confirmation)</label>
+                <label className="text-[11px] tracking-[0.2em] uppercase font-medium block mb-2">Email *</label>
                 <input
-                  type="email" value={form.email}
+                  type="email" required value={form.email}
                   onChange={e => setForm({ ...form, email: e.target.value })}
                   placeholder="your@email.com"
                   className="w-full border border-charcoal/20 px-4 py-3 text-sm bg-transparent outline-none focus:border-charcoal transition-colors placeholder:text-charcoal/30"
@@ -231,31 +233,18 @@ export default function Checkout() {
                 />
               </div>
 
-              {/* Shipping method */}
-              <div>
-                <label className="text-[11px] tracking-[0.2em] uppercase font-medium block mb-3">Shipping Method *</label>
-                <div className="space-y-2">
-                  {SHIPPING_METHODS.map(m => (
-                    <label
-                      key={m.key}
-                      className={`flex items-center justify-between border px-4 py-3 cursor-pointer transition-colors ${
-                        shippingMethod === m.key ? 'border-charcoal' : 'border-charcoal/20'
-                      }`}
-                    >
-                      <span className="flex items-center gap-3">
-                        <input
-                          type="radio"
-                          name="shipping_method"
-                          checked={shippingMethod === m.key}
-                          onChange={() => setShippingMethod(m.key)}
-                        />
-                        <span className="text-sm">{m.label}</span>
-                      </span>
-                      <span className="text-sm font-mono">৳{m.price}.00</span>
-                    </label>
-                  ))}
+              {/* Shipping method — auto-determined by district, not manually selectable */}
+              {form.district && (
+                <div className="border border-charcoal/20 px-4 py-3 flex items-center justify-between">
+                  <div>
+                    <p className="text-[11px] tracking-[0.2em] uppercase font-medium">{selectedMethod?.label}</p>
+                    <p className="text-xs text-charcoal/50 mt-0.5">
+                      {isAdvancePay ? 'bKash advance payment required' : 'Cash on delivery'}
+                    </p>
+                  </div>
+                  <span className="text-sm font-mono">৳{deliveryCharge}.00</span>
                 </div>
-              </div>
+              )}
 
               {/* bKash advance payment section — only for Outside Dhaka */}
               {isAdvancePay && (
