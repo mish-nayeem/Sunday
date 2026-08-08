@@ -20,6 +20,7 @@ import OrderTracking from '@/pages/OrderTracking';
 import FAQ from '@/pages/FAQ';
 import Privacy from '@/pages/Privacy';
 import Terms from '@/pages/Terms';
+import RefundPolicy from '@/pages/RefundPolicy';
 import Wishlist from '@/pages/Wishlist';
 import Admin from '@/pages/Admin';
 import Login from '@/pages/Login';
@@ -58,6 +59,7 @@ const AuthenticatedApp = () => {
         <Route path="/faq" element={<FAQ />} />
         <Route path="/privacy" element={<Privacy />} />
         <Route path="/terms" element={<Terms />} />
+        <Route path="/refund-policy" element={<RefundPolicy />} />
         <Route path="/wishlist" element={<Wishlist />} />
       </Route>
       <Route path="/login" element={<Login />} />
