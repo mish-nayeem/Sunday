@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useAuth } from '@/lib/AuthContext';
 import AdminStats from '@/components/admin/AdminStats';
 import AdminOrders from '@/components/admin/AdminOrders';
+import AdminManualOrder from '@/components/admin/AdminManualOrder';
 import AdminProducts from '@/components/admin/AdminProducts';
 import AdminCustomers from '@/components/admin/AdminCustomers';
 import AdminExpenses from '@/components/admin/AdminExpenses';
@@ -12,6 +13,7 @@ import AdminSettings from '@/components/admin/AdminSettings';
 const tabs = [
   { key: 'stats', label: 'Overview', component: AdminStats },
   { key: 'orders', label: 'Orders', component: AdminOrders },
+  { key: 'manual_order', label: 'Manual Order', component: AdminManualOrder },
   { key: 'products', label: 'Products', component: AdminProducts },
   { key: 'customers', label: 'Customers', component: AdminCustomers },
   { key: 'expenses', label: 'Expenses', component: AdminExpenses },
