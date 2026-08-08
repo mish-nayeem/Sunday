@@ -48,6 +48,32 @@ await supabase.from('newsletter_subscribers').insert({ email: email.trim() });
 This one calls `base44.entities.Review.list(...)` / `.create(...)`. Swap those two calls
 using the pattern shown in `SUNDAY_migration_guide.md`, section 4.
 
+## Order confirmation email + invoice PDF (Brevo)
+
+`Checkout.jsx` calls a Supabase Edge Function (`supabase/functions/send-order-confirmation`)
+right after an order is placed. It fetches the order, generates the invoice PDF server-side,
+and sends it to the customer via Brevo's transactional email API. It only fires if the
+customer entered an email at checkout — nothing blocks if they didn't.
+
+To wire it up:
+
+1. Install the Supabase CLI if you haven't: `npm install -g supabase`
+2. Log in and link your project: `supabase login` then `supabase link --project-ref <your-project-ref>`
+3. Deploy the function: `supabase functions deploy send-order-confirmation`
+4. In [Brevo](https://app.brevo.com), verify a sender email/domain and grab an API key
+   (Settings → SMTP & API → API Keys)
+5. Set the secrets Supabase will inject into the function:
+   ```
+   supabase secrets set BREVO_API_KEY=your-brevo-api-key
+   supabase secrets set BREVO_SENDER_EMAIL=orders@yourdomain.com
+   supabase secrets set BREVO_SENDER_NAME=SUNDAY
+   ```
+   (`BREVO_SENDER_EMAIL` must be a verified sender in Brevo, or sends will fail.)
+6. Place a test order with your own email at checkout and confirm the email + PDF arrive.
+
+`SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` don't need to be set manually — Supabase
+injects those into every Edge Function automatically.
+
 ## Setup steps
 
 1. `npm install`
