@@ -96,14 +96,6 @@ module.exports = {
   			marquee: {
   				'0%': { transform: 'translateX(0)' },
   				'100%': { transform: 'translateX(-50%)' }
-  			},
-  			'scroll-left': {
-  				'0%': { transform: 'translateX(0)' },
-  				'100%': { transform: 'translateX(-50%)' }
-  			},
-  			'scroll-right': {
-  				'0%': { transform: 'translateX(-50%)' },
-  				'100%': { transform: 'translateX(0)' }
   			}
   		},
   		animation: {
@@ -111,9 +103,7 @@ module.exports = {
   			'accordion-up': 'accordion-up 0.2s ease-out',
   			'fade-up': 'fade-up 0.8s ease-out forwards',
   			'fade-in': 'fade-in 0.6s ease-out forwards',
-  			marquee: 'marquee 22s linear infinite',
-  			'scroll-left': 'scroll-left 32s linear infinite',
-  			'scroll-right': 'scroll-right 38s linear infinite'
+  			marquee: 'marquee 22s linear infinite'
   		}
   	}
   },
