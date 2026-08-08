@@ -133,15 +133,19 @@ export default function Checkout() {
     } catch (e) { console.error('Stock update failed:', e); }
 
     // Send confirmation email + PDF invoice via Brevo (only fires if customer gave an email).
-    // Fire-and-forget: never block checkout completion on email delivery.
+    // Awaited (not fire-and-forget): a full page navigation right after firing this off
+    // can abort the in-flight request before it reaches Supabase, so we wait for it here.
+    // Still never blocks the order itself — a failure here is only logged, not thrown.
     if (form.email) {
-      supabase.functions
-        .invoke('send-order-confirmation', { body: { order_id: oid } })
-        .catch(e => console.error('Order confirmation email failed:', e));
+      try {
+        await supabase.functions.invoke('send-order-confirmation', { body: { order_id: oid } });
+      } catch (e) {
+        console.error('Order confirmation email failed:', e);
+      }
     }
 
     clearCart();
-    window.location.href = `/order-confirmation/${oid}`;
+    navigate(`/order-confirmation/${oid}`);
   };
 
   return (
