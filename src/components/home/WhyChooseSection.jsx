@@ -1,29 +1,45 @@
-import React from 'react';
-import { Truck, ShieldCheck, Undo2, HeartHandshake } from 'lucide-react';
-import SectionHeader from '@/components/ui/SectionHeader';
+import React from "react";
+import { Link } from "react-router-dom";
+import { motion } from "framer-motion";
+import heroImage from "../../assets/hero.jpeg";
 
-const points = [
-  { icon: Truck, title: 'Cash on Delivery', desc: 'Available all over Bangladesh' },
-  { icon: ShieldCheck, title: 'Quality Assured', desc: 'Premium fabrics, built to last' },
-  { icon: Undo2, title: 'Easy Returns', desc: 'Hassle-free exchange policy' },
-  { icon: HeartHandshake, title: 'Customer First', desc: 'We are here to help, always' },
-];
-
-export default function WhyChooseSection() {
+export default function HeroSection() {
   return (
-    <section className="py-20 md:py-32 px-5 md:px-10">
-      <div className="max-w-[1440px] mx-auto">
-        <SectionHeader label="Why Choose Us" title="The SUNDAY Promise" />
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-          {points.map((p, i) => (
-            <div key={i} className="text-center">
-              <p.icon size={28} strokeWidth={1} className="mx-auto text-sand mb-3" />
-              <p className="text-sm font-medium mb-1">{p.title}</p>
-              <p className="text-xs text-obsidian/50">{p.desc}</p>
-            </div>
-          ))}
+    <section
+      className="relative h-[45vh] min-h-[320px] md:h-[60vh] md:min-h-[560px] flex items-end overflow-hidden text-white"
+      style={{
+        backgroundImage: `url(${heroImage})`,
+        backgroundSize: "cover",
+        backgroundPosition: "center",
+        backgroundRepeat: "no-repeat",
+      }}
+    >
+      {/* Subtle bottom-left gradient for text legibility */}
+      <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-black/10 to-transparent" />
+
+      {/* Content — bottom-left aligned */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.8 }}
+        className="relative z-10 px-5 md:px-10 pb-10 md:pb-14 w-full"
+      >
+        <div className="max-w-[1440px] mx-auto">
+          <p className="text-xs md:text-sm tracking-[0.3em] uppercase mb-2 text-white/85">
+            Premium Menswear · Bangladesh
+          </p>
+          <h1 className="text-2xl md:text-4xl font-light tracking-[0.1em] mb-3">
+            New Essential Collection
+          </h1>
+          <Link
+            to="/shop"
+            className="inline-flex items-center gap-2 text-xs md:text-sm uppercase tracking-[0.2em] border-b border-white/70 pb-1 hover:border-white hover:text-sand transition-colors duration-300"
+          >
+            Shop Collection
+            <span aria-hidden="true">→</span>
+          </Link>
         </div>
-      </div>
+      </motion.div>
     </section>
   );
 }
