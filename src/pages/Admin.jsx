@@ -4,6 +4,7 @@ import AdminStats from '@/components/admin/AdminStats';
 import AdminOrders from '@/components/admin/AdminOrders';
 import AdminManualOrder from '@/components/admin/AdminManualOrder';
 import AdminProducts from '@/components/admin/AdminProducts';
+import AdminBulkUpload from '@/components/admin/AdminBulkUpload';
 import AdminCustomers from '@/components/admin/AdminCustomers';
 import AdminExpenses from '@/components/admin/AdminExpenses';
 import AdminReviews from '@/components/admin/AdminReviews';
@@ -15,6 +16,7 @@ const tabs = [
   { key: 'orders', label: 'Orders', component: AdminOrders },
   { key: 'manual_order', label: 'Manual Order', component: AdminManualOrder },
   { key: 'products', label: 'Products', component: AdminProducts },
+  { key: 'bulk_upload', label: 'Bulk Upload', component: AdminBulkUpload },
   { key: 'customers', label: 'Customers', component: AdminCustomers },
   { key: 'expenses', label: 'Expenses', component: AdminExpenses },
   { key: 'reviews', label: 'Reviews', component: AdminReviews },
