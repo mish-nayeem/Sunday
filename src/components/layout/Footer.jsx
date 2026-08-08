@@ -83,6 +83,7 @@ export default function Footer() {
               <div className="space-y-2 text-sm text-white/60">
                 <Link to="/privacy" className="block hover:text-white">Privacy Policy</Link>
                 <Link to="/terms" className="block hover:text-white">Terms</Link>
+                <Link to="/refund-policy" className="block hover:text-white">Refund Policy</Link>
               </div>
             </div>
           </div>
