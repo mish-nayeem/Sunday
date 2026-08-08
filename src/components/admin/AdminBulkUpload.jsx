@@ -53,6 +53,7 @@ export default function AdminBulkUpload() {
       description: '',
       sizes: [],
       stockPerSize: '10',
+      is_featured: false,
     }));
     setDrafts(prev => [...prev, ...newDrafts]);
     e.target.value = '';
@@ -97,6 +98,7 @@ export default function AdminBulkUpload() {
           images: [urlData.publicUrl],
           sizes: draft.sizes,
           stock_status: quantity > 0 ? 'in_stock' : 'out_of_stock',
+          is_featured: draft.is_featured,
         });
         if (insertError) throw insertError;
 
@@ -179,6 +181,14 @@ export default function AdminBulkUpload() {
                       </button>
                     ))}
                   </div>
+                  <label className="md:col-span-2 flex items-center gap-2 text-xs text-obsidian/60 mt-1">
+                    <input
+                      type="checkbox" checked={d.is_featured}
+                      onChange={e => updateDraft(d.id, { is_featured: e.target.checked })}
+                      className="accent-wine"
+                    />
+                    Show in Featured Collection
+                  </label>
                 </div>
                 <button type="button" onClick={() => removeDraft(d.id)} className="text-red-500 hover:text-red-700 shrink-0 h-fit">
                   <Trash2 size={16} />
