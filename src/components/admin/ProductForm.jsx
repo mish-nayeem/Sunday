@@ -31,18 +31,62 @@ export default function ProductForm({ onCreated, product = null, onCancel }) {
 
   const MAX_IMAGES = 2;
 
+  // Resizes to a max dimension and re-encodes as JPEG before upload, so a
+  // 8-10MB phone photo becomes a few hundred KB without a visible quality drop.
+  const compressImage = (file, maxDimension = 1600, quality = 0.8) =>
+    new Promise((resolve, reject) => {
+      const img = new Image();
+      const objectUrl = URL.createObjectURL(file);
+      img.onload = () => {
+        URL.revokeObjectURL(objectUrl);
+        let { width, height } = img;
+        if (width > maxDimension || height > maxDimension) {
+          if (width > height) {
+            height = Math.round((height * maxDimension) / width);
+            width = maxDimension;
+          } else {
+            width = Math.round((width * maxDimension) / height);
+            height = maxDimension;
+          }
+        }
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, width, height);
+        canvas.toBlob(
+          (blob) => {
+            if (!blob) return reject(new Error('Image compression failed'));
+            resolve(new File([blob], file.name.replace(/\.[^.]+$/, '.jpg'), { type: 'image/jpeg' }));
+          },
+          'image/jpeg',
+          quality
+        );
+      };
+      img.onerror = () => {
+        URL.revokeObjectURL(objectUrl);
+        reject(new Error('Could not load image'));
+      };
+      img.src = objectUrl;
+    });
+
   const handleUpload = async (e) => {
     const files = Array.from(e.target.files).slice(0, MAX_IMAGES - images.length);
     if (files.length === 0) return;
     setUploading(true);
     for (const file of files) {
-      const fileName = `${Date.now()}-${file.name}`;
-      const { error } = await supabase.storage.from('product-images').upload(fileName, file);
-      if (!error) {
-        const { data } = supabase.storage.from('product-images').getPublicUrl(fileName);
-        setImages(prev => [...prev, data.publicUrl]);
-      } else {
-        console.error('Upload failed:', error);
+      try {
+        const compressed = await compressImage(file);
+        const fileName = `${Date.now()}-${compressed.name}`;
+        const { error } = await supabase.storage.from('product-images').upload(fileName, compressed);
+        if (!error) {
+          const { data } = supabase.storage.from('product-images').getPublicUrl(fileName);
+          setImages(prev => [...prev, data.publicUrl]);
+        } else {
+          console.error('Upload failed:', error);
+        }
+      } catch (err) {
+        console.error('Compression/upload failed:', err);
       }
     }
     setUploading(false);
