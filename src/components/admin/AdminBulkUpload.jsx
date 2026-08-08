@@ -54,6 +54,8 @@ export default function AdminBulkUpload() {
       sizes: [],
       stockPerSize: '10',
       is_featured: false,
+      is_new_arrival: false,
+      is_best_seller: false,
     }));
     setDrafts(prev => [...prev, ...newDrafts]);
     e.target.value = '';
@@ -99,6 +101,8 @@ export default function AdminBulkUpload() {
           sizes: draft.sizes,
           stock_status: quantity > 0 ? 'in_stock' : 'out_of_stock',
           is_featured: draft.is_featured,
+          is_new_arrival: draft.is_new_arrival,
+          is_best_seller: draft.is_best_seller,
         });
         if (insertError) throw insertError;
 
@@ -181,13 +185,31 @@ export default function AdminBulkUpload() {
                       </button>
                     ))}
                   </div>
-                  <label className="md:col-span-2 flex items-center gap-2 text-xs text-obsidian/60 mt-1">
-                    <input
-                      type="checkbox" checked={d.is_featured}
-                      onChange={e => updateDraft(d.id, { is_featured: e.target.checked })}
-                      className="accent-wine"
-                    />
-                    Show in Featured Collection
+                  <label className="md:col-span-2 flex items-center gap-4 text-xs text-obsidian/60 mt-1 flex-wrap">
+                    <span className="flex items-center gap-2">
+                      <input
+                        type="checkbox" checked={d.is_featured}
+                        onChange={e => updateDraft(d.id, { is_featured: e.target.checked })}
+                        className="accent-wine"
+                      />
+                      Featured Collection
+                    </span>
+                    <span className="flex items-center gap-2">
+                      <input
+                        type="checkbox" checked={d.is_new_arrival}
+                        onChange={e => updateDraft(d.id, { is_new_arrival: e.target.checked })}
+                        className="accent-wine"
+                      />
+                      New Arrival
+                    </span>
+                    <span className="flex items-center gap-2">
+                      <input
+                        type="checkbox" checked={d.is_best_seller}
+                        onChange={e => updateDraft(d.id, { is_best_seller: e.target.checked })}
+                        className="accent-wine"
+                      />
+                      Best Seller
+                    </span>
                   </label>
                 </div>
                 <button type="button" onClick={() => removeDraft(d.id)} className="text-red-500 hover:text-red-700 shrink-0 h-fit">
