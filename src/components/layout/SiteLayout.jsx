@@ -4,6 +4,7 @@ import Header from './Header';
 import Footer from './Footer';
 import WhatsAppButton from './WhatsAppButton';
 import CartDrawer from './CartDrawer';
+import OrderTrackPopup from './OrderTrackPopup';
 
 export default function SiteLayout() {
   // Header is now `fixed`, so it no longer reserves space in normal flow.
@@ -22,6 +23,7 @@ export default function SiteLayout() {
       <Footer />
       <WhatsAppButton />
       <CartDrawer />
+      <OrderTrackPopup />
     </div>
   );
 }
