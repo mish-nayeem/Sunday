@@ -111,28 +111,9 @@ export default function Checkout() {
       });
     } catch (e) { console.error('Invoice creation failed:', e); }
 
-    // Decrement stock on each product
-    try {
-      const productIds = [...new Set(cart.map(i => i.productId))];
-      const { data: products } = await supabase.from('products').select('*').in('id', productIds);
-      const stockUpdates = (products || []).map(p => {
-        const cartItems = cart.filter(i => i.productId === p.id);
-        const qtySold = cartItems.reduce((s, i) => s + i.quantity, 0);
-        const newQuantity = Math.max(0, (p.quantity || 0) - qtySold);
-        const newSizeStock = { ...(p.size_stock || {}) };
-        cartItems.forEach(item => {
-          if (newSizeStock[item.size] !== undefined) {
-            newSizeStock[item.size] = Math.max(0, newSizeStock[item.size] - item.quantity);
-          }
-        });
-        return { id: p.id, quantity: newQuantity, size_stock: newSizeStock };
-      });
-      await Promise.all(
-        stockUpdates.map(u =>
-          supabase.from('products').update({ quantity: u.quantity, size_stock: u.size_stock }).eq('id', u.id)
-        )
-      );
-    } catch (e) { console.error('Stock update failed:', e); }
+    // Stock is NOT decremented here anymore — it only decrements once the order
+    // reaches "Delivered" status (handled in AdminOrders.jsx), so cancelled/returned
+    // orders never touch inventory in the first place.
 
     // Send confirmation email + PDF invoice via Brevo (only fires if customer gave an email).
     // Awaited (not fire-and-forget): a full page navigation right after firing this off
