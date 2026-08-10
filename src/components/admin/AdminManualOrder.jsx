@@ -119,25 +119,8 @@ export default function AdminManualOrder() {
       });
     } catch (e) { console.error('Invoice creation failed:', e); }
 
-    try {
-      const productIds = [...new Set(items.map(i => i.product_id))];
-      const { data: prods } = await supabase.from('products').select('*').in('id', productIds);
-      const stockUpdates = (prods || []).map(p => {
-        const itemsForProduct = items.filter(i => i.product_id === p.id);
-        const qtySold = itemsForProduct.reduce((s, i) => s + i.quantity, 0);
-        const newQuantity = Math.max(0, (p.quantity || 0) - qtySold);
-        const newSizeStock = { ...(p.size_stock || {}) };
-        itemsForProduct.forEach(item => {
-          if (newSizeStock[item.size] !== undefined) {
-            newSizeStock[item.size] = Math.max(0, newSizeStock[item.size] - item.quantity);
-          }
-        });
-        return { id: p.id, quantity: newQuantity, size_stock: newSizeStock };
-      });
-      await Promise.all(
-        stockUpdates.map(u => supabase.from('products').update({ quantity: u.quantity, size_stock: u.size_stock }).eq('id', u.id))
-      );
-    } catch (e) { console.error('Stock update failed:', e); }
+    // Stock is NOT decremented here anymore — it only decrements once the order
+    // reaches "Delivered" status (handled in AdminOrders.jsx).
 
     if (form.email) {
       try {
