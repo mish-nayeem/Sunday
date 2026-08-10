@@ -49,6 +49,34 @@ export default function AdminOrders() {
     await supabase.from('orders').update({ status: newStatus }).eq('id', order.id);
     setOrders(prev => prev.map(o => o.id === order.id ? { ...o, status: newStatus } : o));
 
+    // Stock is only decremented the moment an order first reaches "Delivered" —
+    // not at checkout. Guard against double-decrementing if the status is later
+    // toggled away from and back to delivered.
+    if (newStatus === 'delivered' && order.status !== 'delivered') {
+      try {
+        const items = order.items || [];
+        const productIds = [...new Set(items.map(i => i.productId || i.product_id))];
+        const { data: products } = await supabase.from('products').select('*').in('id', productIds);
+        const stockUpdates = (products || []).map(p => {
+          const productItems = items.filter(i => (i.productId || i.product_id) === p.id);
+          const qtySold = productItems.reduce((s, i) => s + i.quantity, 0);
+          const newQuantity = Math.max(0, (p.quantity || 0) - qtySold);
+          const newSizeStock = { ...(p.size_stock || {}) };
+          productItems.forEach(item => {
+            if (newSizeStock[item.size] !== undefined) {
+              newSizeStock[item.size] = Math.max(0, newSizeStock[item.size] - item.quantity);
+            }
+          });
+          return { id: p.id, quantity: newQuantity, size_stock: newSizeStock };
+        });
+        await Promise.all(
+          stockUpdates.map(u =>
+            supabase.from('products').update({ quantity: u.quantity, size_stock: u.size_stock }).eq('id', u.id)
+          )
+        );
+      } catch (e) { console.error('Stock decrement on delivery failed:', e); }
+    }
+
     const shouldNotify = notifyEnabled[order.id] ?? true; // default: checked
     if (!shouldNotify) return;
 
