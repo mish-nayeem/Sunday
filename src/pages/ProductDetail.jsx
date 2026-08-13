@@ -161,7 +161,7 @@ export default function ProductDetail() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6 }}
             >
-              <h1 className="text-lg md:text-xl font-bold tracking-wide uppercase mb-2">{product.name}</h1>
+              <h1 className="text-lg md:text-xl font-bold tracking-wide uppercase mb-2 font-body">{product.name}</h1>
 
               <div className="flex items-center gap-3 mb-6">
                 <span className="text-base font-mono">Tk {product.price?.toLocaleString()}.00</span>
