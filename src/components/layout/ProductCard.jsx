@@ -91,7 +91,7 @@ export default function ProductCard({ product, index = 0 }) {
         <p className="text-[10px] tracking-wider uppercase text-obsidian/40 mb-1">
           {product.category?.replace(/_/g, ' ')}
         </p>
-        <h3 className="text-sm font-medium mb-1 truncate">{product.name}</h3>
+        <h3 className="text-sm font-medium mb-1 truncate font-body">{product.name}</h3>
         <div className="flex items-center gap-2">
           <span className="text-sm font-mono">৳{product.price?.toLocaleString()}</span>
           {discount && product.original_price && (
