@@ -147,9 +147,9 @@ export default function Header() {
         {/* Center — Logo: absolutely centered, fully independent of navbar height/row */}
         <Link
           to="/"
-          className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-10 flex items-center"
+          className="absolute left-1/2 top-1/2 -translate-x-1/2 translate-y-[-42%] z-10 flex items-center"
         >
-         <img src={logo} alt="SUNDAY" className="h-12 md:h-16 w-auto object-contain shrink-0" />
+         <img src={logo} alt="SUNDAY" className="h-16 md:h-[88px] w-auto object-contain shrink-0" />
         </Link>
 
         {/* Right — Search / Wishlist / Cart / Admin */}
