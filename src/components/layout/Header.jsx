@@ -61,7 +61,7 @@ export default function Header() {
   const linkHover = 'hover:text-sand';
 
   const navLinkClass = ({ isActive }) =>
-    `uppercase tracking-[0.2em] text-xs transition-colors duration-300 ${linkHover} ${
+    `font-heading uppercase tracking-[0.2em] text-xs transition-colors duration-300 ${linkHover} ${
       isActive ? 'text-sand' : linkColor
     }`;
 
@@ -71,7 +71,7 @@ export default function Header() {
         scrolled ? 'bg-transparent shadow-none' : 'bg-white shadow-sm'
       }`}
     >
-     <div className="max-w-[1440px] mx-auto px-6 md:px-12 h-[70px] md:h-[95px] grid grid-cols-3 items-center">
+     <div className="max-w-[1440px] mx-auto px-6 md:px-12 h-[54px] md:h-[68px] grid grid-cols-3 items-center overflow-visible">
      
         {/* Left — Shop / Category / About */}
         <nav className="hidden md:flex items-center gap-12 lg:gap-16">
@@ -107,7 +107,7 @@ export default function Header() {
             onMouseLeave={() => setCategoryOpen(false)}
           >
             <button
-              className={`flex items-center gap-1 uppercase tracking-[0.2em] text-xs transition-colors duration-300 ${linkColor} ${linkHover}`}
+              className={`font-heading flex items-center gap-1 uppercase tracking-[0.2em] text-xs transition-colors duration-300 ${linkColor} ${linkHover}`}
             >
               Category
               <ChevronDown size={13} />
@@ -144,9 +144,9 @@ export default function Header() {
           {mobileOpen ? <X size={22} /> : <Menu size={22} />}
         </button>
 
-        {/* Center — Logo */}
-        <Link to="/" className="justify-self-center flex items-center">
-         <img src={logo} alt="SUNDAY" className="h-16 md:h-24 w-auto object-contain" />
+        {/* Center — Logo (fixed size, independent of navbar height) */}
+        <Link to="/" className="justify-self-center relative z-10 flex items-center">
+         <img src={logo} alt="SUNDAY" className="h-16 md:h-24 w-auto object-contain shrink-0" />
         </Link>
 
         {/* Right — Search / Wishlist / Cart / Admin */}
@@ -222,7 +222,7 @@ export default function Header() {
       {mobileOpen && (
         <div className="md:hidden border-t border-obsidian/10 bg-white px-5 py-6 flex flex-col gap-5">
           <div>
-            <NavLink to="/shop" className={({ isActive }) => `uppercase tracking-[0.2em] text-xs ${isActive ? 'text-sand' : 'text-obsidian'}`} onClick={() => setMobileOpen(false)}>
+            <NavLink to="/shop" className={({ isActive }) => `font-heading uppercase tracking-[0.2em] text-xs ${isActive ? 'text-sand' : 'text-obsidian'}`} onClick={() => setMobileOpen(false)}>
               Shop
             </NavLink>
             <div className="flex flex-col gap-3 pl-3 mt-3">
@@ -239,7 +239,7 @@ export default function Header() {
             </div>
           </div>
           <div>
-            <p className="uppercase tracking-[0.2em] text-xs text-obsidian mb-3">Category</p>
+            <p className="font-heading uppercase tracking-[0.2em] text-xs text-obsidian mb-3">Category</p>
             <div className="flex flex-col gap-3 pl-3">
               {CATEGORY_LINKS.map((c) => (
                 <Link
@@ -253,7 +253,7 @@ export default function Header() {
               ))}
             </div>
           </div>
-          <NavLink to="/about" className={({ isActive }) => `uppercase tracking-[0.2em] text-xs ${isActive ? 'text-sand' : 'text-obsidian'}`} onClick={() => setMobileOpen(false)}>
+          <NavLink to="/about" className={({ isActive }) => `font-heading uppercase tracking-[0.2em] text-xs ${isActive ? 'text-sand' : 'text-obsidian'}`} onClick={() => setMobileOpen(false)}>
             About
           </NavLink>
           <div className="h-px bg-obsidian/10" />
