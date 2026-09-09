@@ -15,9 +15,9 @@ export default function WhatsAppButton() {
     <a
       href={`https://wa.me/${number}`}
       target="_blank" rel="noopener noreferrer"
-      className="fixed bottom-6 right-6 z-30 w-14 h-14 bg-green-500 rounded-full flex items-center justify-center shadow-lg hover:bg-green-600 transition-colors"
+      className="fixed bottom-6 right-6 z-30 w-14 h-14 bg-cream rounded-full flex items-center justify-center shadow-lg hover:brightness-95 transition-all"
     >
-      <MessageCircle size={26} className="text-white" fill="white" />
+      <MessageCircle size={26} className="text-[#FF7254]" fill="#FF7254" />
     </a>
   );
 }
