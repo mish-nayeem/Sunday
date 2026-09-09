@@ -284,43 +284,50 @@ export default function Checkout() {
 
           {/* Summary */}
           <div className="lg:sticky lg:top-28 lg:self-start">
-            <div className="bg-ivory p-6 md:p-8">
-              <h3 className="text-[11px] tracking-wide uppercase font-medium mb-6">Order Summary</h3>
+            <div className="bg-white rounded-2xl shadow-lg border border-black/5 p-6 md:p-8">
+              <h3 className="text-[11px] tracking-wide uppercase font-semibold mb-6 flex items-center gap-2">
+                <span className="w-1.5 h-1.5 rounded-full bg-[#FF7254]" />
+                Order Summary
+              </h3>
               <div className="space-y-3 mb-6">
                 {cart.map(item => (
-                  <div key={`${item.productId}-${item.size}`} className="flex justify-between text-sm">
-                    <span className="text-charcoal/60">{item.name} × {item.quantity}</span>
-                    <span className="font-mono">৳{(item.price * item.quantity).toLocaleString()}</span>
+                  <div key={`${item.productId}-${item.size}`} className="flex justify-between items-center text-sm py-1">
+                    <span className="text-charcoal/70">{item.name} <span className="text-charcoal/40">× {item.quantity}</span></span>
+                    <span className="font-mono font-medium">৳{(item.price * item.quantity).toLocaleString()}</span>
                   </div>
                 ))}
               </div>
-              <div className="h-px bg-gold/20 mb-4" />
-              <div className="flex justify-between mb-2">
-                <span className="text-sm">Subtotal</span>
+              <div className="h-px bg-black/10 mb-4" />
+              <div className="flex justify-between mb-2.5">
+                <span className="text-sm text-charcoal/60">Subtotal</span>
                 <span className="text-sm font-mono">৳{subtotal.toLocaleString()}</span>
               </div>
               <div className="flex justify-between mb-4">
-                <span className="text-sm">Shipping</span>
-                <span className="text-sm font-mono">৳{deliveryCharge}</span>
-              </div>
-              <div className="h-px bg-gold/20 mb-4" />
-              <div className="flex justify-between">
-                <span className="font-medium">Total</span>
-                <span className="text-lg font-mono font-medium">৳{total.toLocaleString()}</span>
+                <span className="text-sm text-charcoal/60">Shipping</span>
+                <span className="text-sm font-mono">{deliveryCharge ? `৳${deliveryCharge}` : 'Free'}</span>
               </div>
 
-              <div className="mt-6 bg-wine/5 p-4 flex items-center gap-3">
-                <Truck size={18} strokeWidth={1} className="text-wine" />
-                <div>
-                  <p className="text-sm font-medium">{selectedMethod?.label}</p>
-                  <p className="text-xs text-charcoal/50">
-                    {isAdvancePay ? 'Advance payment via bKash required' : 'Pay when you receive your order'}
-                  </p>
+              <div className="flex justify-between items-center bg-[#FFFBEA] rounded-xl px-4 py-4 mb-6">
+                <span className="font-semibold text-black">Total</span>
+                <span className="text-xl font-mono font-bold text-black">৳{total.toLocaleString()}</span>
+              </div>
+
+              {selectedMethod && (
+                <div className="bg-[#FFF0EB] rounded-xl p-4 flex items-center gap-3 mb-4">
+                  <div className="w-9 h-9 rounded-full bg-[#FF7254]/15 flex items-center justify-center shrink-0">
+                    <Truck size={16} strokeWidth={2} className="text-[#FF7254]" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-black">{selectedMethod?.label}</p>
+                    <p className="text-xs text-charcoal/50">
+                      {isAdvancePay ? 'Advance payment via bKash required' : 'Pay when you receive your order'}
+                    </p>
+                  </div>
                 </div>
-              </div>
+              )}
 
-              <div className="mt-4 flex items-center gap-2 text-xs text-charcoal/40">
-                <ShieldCheck size={14} className="text-gold" />
+              <div className="flex items-center gap-2 text-xs text-charcoal/40 px-1">
+                <ShieldCheck size={14} className="text-[#418BE0]" />
                 <span>Your information is secure and never shared</span>
               </div>
             </div>
