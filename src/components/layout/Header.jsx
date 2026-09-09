@@ -149,7 +149,7 @@ export default function Header() {
           to="/"
           className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-10 flex items-center"
         >
-         <img src={logo} alt="SUNDAY" className="h-16 md:h-24 w-auto object-contain shrink-0" />
+         <img src={logo} alt="SUNDAY" className="h-10 md:h-14 w-auto object-contain shrink-0" />
         </Link>
 
         {/* Right — Search / Wishlist / Cart / Admin */}
