@@ -22,13 +22,11 @@ const categoryGroups = {
 const filterLabels = {
   new_arrival: 'New Arrival',
   best_seller: 'Best Seller',
-  featured: 'Featured Collection',
 };
 
 const filterColumns = {
   new_arrival: 'is_new_arrival',
   best_seller: 'is_best_seller',
-  featured: 'is_featured',
 };
 
 const sortOptions = [
