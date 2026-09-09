@@ -29,7 +29,7 @@ export default function Footer() {
   };
 
   return (
-    <footer className="bg-obsidian text-white pt-14 pb-6 px-5 md:px-10">
+    <footer className="bg-cream text-obsidian font-heading pt-14 pb-6 px-5 md:px-10">
       <div className="max-w-[1440px] mx-auto">
 
         {/* Newsletter */}
@@ -37,15 +37,15 @@ export default function Footer() {
           Join Sunday Fam
         </p>
         {subscribed ? (
-          <p className="text-sm text-white/60 mb-12">Thanks for subscribing!</p>
+          <p className="text-sm text-obsidian/60 mb-12">Thanks for subscribing!</p>
         ) : (
-          <form onSubmit={handleSubscribe} className="flex flex-col sm:flex-row border border-white/30 mb-12 max-w-2xl">
+          <form onSubmit={handleSubscribe} className="flex flex-col sm:flex-row border border-obsidian/30 mb-12 max-w-2xl">
             <input
               type="email" required value={email} onChange={e => setEmail(e.target.value)}
               placeholder="Email address"
-              className="flex-1 min-w-0 w-full bg-transparent px-4 py-3 text-sm outline-none placeholder-white/50"
+              className="flex-1 min-w-0 w-full bg-transparent px-4 py-3 text-sm outline-none placeholder-obsidian/50 text-obsidian"
             />
-            <button type="submit" className="bg-white text-obsidian px-6 py-3 sm:py-0 text-xs uppercase tracking-[0.15em] font-semibold whitespace-nowrap shrink-0">
+            <button type="submit" className="bg-obsidian text-cream px-6 py-3 sm:py-0 text-xs uppercase tracking-[0.15em] font-semibold whitespace-nowrap shrink-0">
               Join Sunday Fam
             </button>
           </form>
@@ -54,8 +54,8 @@ export default function Footer() {
         {/* Statement + Link columns */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-10 mb-16">
           <div>
-            <p className="text-[11px] tracking-[0.15em] uppercase text-white/50 mb-3">Premium Menswear</p>
-            <p className="text-sm text-white/60 leading-relaxed max-w-sm">
+            <p className="text-[11px] tracking-[0.15em] uppercase text-obsidian/60 mb-3">Premium Menswear</p>
+            <p className="text-sm text-obsidian/70 leading-relaxed max-w-sm">
               Have the courage to be exactly who you are. Every day feels like SUNDAY —
               premium men's fashion crafted for Bangladesh.
             </p>
@@ -63,27 +63,27 @@ export default function Footer() {
 
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-8">
             <div>
-              <p className="text-[11px] tracking-[0.15em] uppercase mb-4 text-white/80">Shop</p>
-              <div className="space-y-2 text-sm text-white/60">
-                <Link to="/shop" className="block hover:text-white">All Products</Link>
-                <Link to="/wishlist" className="block hover:text-white">Wishlist</Link>
-                <Link to="/order-tracking" className="block hover:text-white">Track Order</Link>
+              <p className="text-[11px] tracking-[0.15em] uppercase mb-4 text-obsidian/80">Shop</p>
+              <div className="space-y-2 text-sm text-obsidian/60">
+                <Link to="/shop" className="block hover:text-obsidian">All Products</Link>
+                <Link to="/wishlist" className="block hover:text-obsidian">Wishlist</Link>
+                <Link to="/order-tracking" className="block hover:text-obsidian">Track Order</Link>
               </div>
             </div>
             <div>
-              <p className="text-[11px] tracking-[0.15em] uppercase mb-4 text-white/80">Support</p>
-              <div className="space-y-2 text-sm text-white/60">
-                <Link to="/contact" className="block hover:text-white">Contact Us</Link>
-                <Link to="/faq" className="block hover:text-white">FAQ</Link>
-                <Link to="/size-guide" className="block hover:text-white">Size Guide</Link>
+              <p className="text-[11px] tracking-[0.15em] uppercase mb-4 text-obsidian/80">Support</p>
+              <div className="space-y-2 text-sm text-obsidian/60">
+                <Link to="/contact" className="block hover:text-obsidian">Contact Us</Link>
+                <Link to="/faq" className="block hover:text-obsidian">FAQ</Link>
+                <Link to="/size-guide" className="block hover:text-obsidian">Size Guide</Link>
               </div>
             </div>
             <div>
-              <p className="text-[11px] tracking-[0.15em] uppercase mb-4 text-white/80">Legal</p>
-              <div className="space-y-2 text-sm text-white/60">
-                <Link to="/privacy" className="block hover:text-white">Privacy Policy</Link>
-                <Link to="/terms" className="block hover:text-white">Terms</Link>
-                <Link to="/refund-policy" className="block hover:text-white">Refund Policy</Link>
+              <p className="text-[11px] tracking-[0.15em] uppercase mb-4 text-obsidian/80">Legal</p>
+              <div className="space-y-2 text-sm text-obsidian/60">
+                <Link to="/privacy" className="block hover:text-obsidian">Privacy Policy</Link>
+                <Link to="/terms" className="block hover:text-obsidian">Terms</Link>
+                <Link to="/refund-policy" className="block hover:text-obsidian">Refund Policy</Link>
               </div>
             </div>
           </div>
@@ -91,26 +91,26 @@ export default function Footer() {
 
         {/* Social icons — icons only, no labels */}
         <div className="flex items-center gap-5 mb-8">
-          <a href="https://www.instagram.com/sunday.clothin?igsh=MWhyZzNpZzNod2xsZQ==" target="_blank" rel="noopener noreferrer" aria-label="Instagram" className="text-white/70 hover:text-white transition-colors">
+          <a href="https://www.instagram.com/sunday.clothin?igsh=MWhyZzNpZzNod2xsZQ==" target="_blank" rel="noopener noreferrer" aria-label="Instagram" className="text-obsidian/70 hover:text-obsidian transition-colors">
             <Instagram size={18} />
           </a>
-          <a href="https://www.facebook.com/share/19U1FfCwMY/" target="_blank" rel="noopener noreferrer" aria-label="Facebook" className="text-white/70 hover:text-white transition-colors">
+          <a href="https://www.facebook.com/share/19U1FfCwMY/" target="_blank" rel="noopener noreferrer" aria-label="Facebook" className="text-obsidian/70 hover:text-obsidian transition-colors">
             <Facebook size={18} />
           </a>
-          <a href="https://tiktok.com" target="_blank" rel="noopener noreferrer" aria-label="TikTok" className="text-white/70 hover:text-white transition-colors">
+          <a href="https://tiktok.com" target="_blank" rel="noopener noreferrer" aria-label="TikTok" className="text-obsidian/70 hover:text-obsidian transition-colors">
             <TikTokIcon />
           </a>
-          <a href="https://pinterest.com" target="_blank" rel="noopener noreferrer" aria-label="Pinterest" className="text-white/70 hover:text-white transition-colors">
+          <a href="https://pinterest.com" target="_blank" rel="noopener noreferrer" aria-label="Pinterest" className="text-obsidian/70 hover:text-obsidian transition-colors">
             <PinterestIcon />
           </a>
         </div>
 
         {/* Big wordmark */}
-        <p className="text-[18vw] md:text-[10vw] leading-[0.85] font-black tracking-tight select-none overflow-hidden whitespace-nowrap -mx-1">
+        <p className="text-[18vw] md:text-[10vw] leading-[0.85] font-black tracking-tight select-none overflow-hidden whitespace-nowrap -mx-1 text-obsidian">
           SUNDAY
         </p>
 
-        <div className="border-t border-white/10 mt-6 pt-6 text-center text-xs text-white/40">
+        <div className="border-t border-obsidian/10 mt-6 pt-6 text-center text-xs text-obsidian/50">
           © {new Date().getFullYear()} SUNDAY. All rights reserved.
         </div>
       </div>
