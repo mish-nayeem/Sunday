@@ -106,7 +106,7 @@ export default function Footer() {
         </div>
 
         {/* Big wordmark */}
-        <p className="text-[18vw] md:text-[10vw] leading-[0.85] font-black tracking-tight select-none overflow-hidden whitespace-nowrap -mx-1 text-obsidian">
+        <p className="text-[18vw] md:text-[10vw] leading-[0.85] font-black tracking-[0.04em] select-none overflow-hidden whitespace-nowrap -mx-1 text-obsidian">
           SUNDAY
         </p>
 
