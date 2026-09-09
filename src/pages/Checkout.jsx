@@ -4,6 +4,7 @@ import { supabase } from '@/lib/supabaseClient';
 import { motion } from 'framer-motion';
 import { Truck, ShieldCheck, ArrowLeft, Copy, Check } from 'lucide-react';
 import { getCart, clearCart } from '@/lib/cartStore';
+import { useAuth } from '@/lib/AuthContext';
 
 const districts = [
   'Dhaka', 'Chittagong', 'Rajshahi', 'Khulna', 'Sylhet', 'Rangpur', 'Barisal', 'Mymensingh',
@@ -20,6 +21,7 @@ const SHIPPING_METHODS = [
 
 export default function Checkout() {
   const navigate = useNavigate();
+  const { isAuthenticated } = useAuth();
   const [cart, setCart] = useState(getCart());
   const [form, setForm] = useState({ full_name: '', email: '', mobile: '', address: '', district: '', area: '', notes: '' });
   const [bkashTrxId, setBkashTrxId] = useState('');
@@ -146,6 +148,17 @@ export default function Checkout() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-10 lg:gap-16">
           {/* Form */}
           <div className="lg:col-span-2">
+            <div className="flex items-center justify-between mb-6">
+              <p className="text-[11px] tracking-[0.2em] uppercase font-medium">Billing Information</p>
+              {!isAuthenticated && (
+                <p className="text-xs text-charcoal/60">
+                  Returning customer?{' '}
+                  <Link to="/login" className="text-obsidian underline hover:text-sand transition-colors">
+                    Login
+                  </Link>
+                </p>
+              )}
+            </div>
             <form onSubmit={handleSubmit} className="space-y-6">
               <div>
                 <label className="text-[11px] tracking-[0.2em] uppercase font-medium block mb-2">Full Name *</label>
