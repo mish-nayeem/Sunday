@@ -136,20 +136,20 @@ export default function Checkout() {
   return (
     <div className="min-h-screen">
       <div className="max-w-[1440px] mx-auto px-5 md:px-10 py-10 md:py-16">
-        <Link to="/cart" className="inline-flex items-center gap-2 text-[11px] tracking-[0.15em] uppercase text-charcoal/50 hover:text-charcoal mb-8 transition-colors">
+        <Link to="/cart" className="inline-flex items-center gap-2 text-[11px] tracking-wide uppercase text-charcoal/50 hover:text-charcoal mb-8 transition-colors">
           <ArrowLeft size={14} /> Back to Bag
         </Link>
 
         {/* Brand mark — replaces express checkout */}
         <div className="text-center mb-10">
-          <p className="text-xl md:text-2xl font-bold tracking-[0.15em]">SUNDAY</p>
+          <p className="text-xl md:text-2xl font-bold tracking-wide">SUNDAY</p>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-10 lg:gap-16">
           {/* Form */}
           <div className="lg:col-span-2">
             <div className="flex items-center justify-between mb-6">
-              <p className="text-[11px] tracking-[0.2em] uppercase font-medium">Billing Information</p>
+              <p className="text-[11px] tracking-wide uppercase font-medium">Billing Information</p>
               {!isAuthenticated && (
                 <p className="text-xs text-charcoal/60">
                   Returning customer?{' '}
@@ -161,7 +161,7 @@ export default function Checkout() {
             </div>
             <form onSubmit={handleSubmit} className="space-y-6">
               <div>
-                <label className="text-[11px] tracking-[0.2em] uppercase font-medium block mb-2">Full Name *</label>
+                <label className="text-[11px] tracking-wide uppercase font-medium block mb-2">Full Name *</label>
                 <input
                   type="text" required value={form.full_name}
                   onChange={e => setForm({ ...form, full_name: e.target.value })}
@@ -169,7 +169,7 @@ export default function Checkout() {
                 />
               </div>
               <div>
-                <label className="text-[11px] tracking-[0.2em] uppercase font-medium block mb-2">Mobile Number *</label>
+                <label className="text-[11px] tracking-wide uppercase font-medium block mb-2">Mobile Number *</label>
                 <input
                   type="tel" required value={form.mobile}
                   onChange={e => setForm({ ...form, mobile: e.target.value })}
@@ -178,7 +178,7 @@ export default function Checkout() {
                 />
               </div>
               <div>
-                <label className="text-[11px] tracking-[0.2em] uppercase font-medium block mb-2">Email *</label>
+                <label className="text-[11px] tracking-wide uppercase font-medium block mb-2">Email *</label>
                 <input
                   type="email" required value={form.email}
                   onChange={e => setForm({ ...form, email: e.target.value })}
@@ -188,7 +188,7 @@ export default function Checkout() {
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                 <div>
-                  <label className="text-[11px] tracking-[0.2em] uppercase font-medium block mb-2">District *</label>
+                  <label className="text-[11px] tracking-wide uppercase font-medium block mb-2">District *</label>
                   <select
                     required value={form.district}
                     onChange={e => setForm({ ...form, district: e.target.value })}
@@ -199,7 +199,7 @@ export default function Checkout() {
                   </select>
                 </div>
                 <div>
-                  <label className="text-[11px] tracking-[0.2em] uppercase font-medium block mb-2">Area *</label>
+                  <label className="text-[11px] tracking-wide uppercase font-medium block mb-2">Area *</label>
                   <input
                     type="text" required value={form.area}
                     onChange={e => setForm({ ...form, area: e.target.value })}
@@ -208,7 +208,7 @@ export default function Checkout() {
                 </div>
               </div>
               <div>
-                <label className="text-[11px] tracking-[0.2em] uppercase font-medium block mb-2">Full Address *</label>
+                <label className="text-[11px] tracking-wide uppercase font-medium block mb-2">Full Address *</label>
                 <textarea
                   required value={form.address}
                   onChange={e => setForm({ ...form, address: e.target.value })}
@@ -217,7 +217,7 @@ export default function Checkout() {
                 />
               </div>
               <div>
-                <label className="text-[11px] tracking-[0.2em] uppercase font-medium block mb-2">Notes (Optional)</label>
+                <label className="text-[11px] tracking-wide uppercase font-medium block mb-2">Notes (Optional)</label>
                 <textarea
                   value={form.notes}
                   onChange={e => setForm({ ...form, notes: e.target.value })}
@@ -231,7 +231,7 @@ export default function Checkout() {
               {form.district && (
                 <div className="border border-charcoal/20 px-4 py-3 flex items-center justify-between rounded-xl shadow-sm bg-white">
                   <div>
-                    <p className="text-[11px] tracking-[0.2em] uppercase font-medium">{selectedMethod?.label}</p>
+                    <p className="text-[11px] tracking-wide uppercase font-medium">{selectedMethod?.label}</p>
                     <p className="text-xs text-charcoal/50 mt-0.5">
                       {isAdvancePay ? 'bKash advance payment required' : 'Cash on delivery'}
                     </p>
@@ -243,7 +243,7 @@ export default function Checkout() {
               {/* bKash advance payment section — only for Outside Dhaka */}
               {isAdvancePay && (
                 <div className="border border-charcoal/20 p-5 rounded-xl shadow-sm bg-white">
-                  <p className="text-[11px] tracking-[0.2em] uppercase font-medium mb-4">bKash Payment</p>
+                  <p className="text-[11px] tracking-wide uppercase font-medium mb-4">bKash Payment</p>
 
                   <div className="flex items-center justify-between border border-charcoal/15 px-4 py-3 mb-4 rounded-xl bg-white">
                     <span className="text-sm font-medium">bKash Number</span>
@@ -262,7 +262,7 @@ export default function Checkout() {
                     <li>Enter the Transaction ID you receive by SMS below</li>
                   </ul>
 
-                  <label className="text-[11px] tracking-[0.2em] uppercase font-medium block mb-2">Transaction ID *</label>
+                  <label className="text-[11px] tracking-wide uppercase font-medium block mb-2">Transaction ID *</label>
                   <input
                     type="text" required={isAdvancePay} value={bkashTrxId}
                     onChange={e => setBkashTrxId(e.target.value)}
@@ -275,7 +275,7 @@ export default function Checkout() {
               <button
                 type="submit"
                 disabled={submitting}
-                className="w-full bg-[#FF7254] text-[#418BE0] font-semibold text-[11px] tracking-[0.2em] uppercase py-4 rounded-xl shadow-sm hover:bg-[#FF7254]/90 transition-colors disabled:opacity-50"
+                className="w-full bg-[#FFFBEA] text-black font-semibold text-base tracking-wide uppercase py-4 rounded-xl shadow-sm border border-black/10 hover:bg-[#FFF3D0] transition-colors disabled:opacity-50"
               >
                 {submitting ? 'Placing Order...' : 'Confirm Order'}
               </button>
@@ -285,7 +285,7 @@ export default function Checkout() {
           {/* Summary */}
           <div className="lg:sticky lg:top-28 lg:self-start">
             <div className="bg-ivory p-6 md:p-8">
-              <h3 className="text-[11px] tracking-[0.2em] uppercase font-medium mb-6">Order Summary</h3>
+              <h3 className="text-[11px] tracking-wide uppercase font-medium mb-6">Order Summary</h3>
               <div className="space-y-3 mb-6">
                 {cart.map(item => (
                   <div key={`${item.productId}-${item.size}`} className="flex justify-between text-sm">
