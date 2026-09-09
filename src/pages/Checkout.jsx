@@ -165,7 +165,7 @@ export default function Checkout() {
                 <input
                   type="text" required value={form.full_name}
                   onChange={e => setForm({ ...form, full_name: e.target.value })}
-                  className="w-full border border-charcoal/20 px-4 py-3 text-sm bg-transparent outline-none focus:border-charcoal transition-colors"
+                  className="w-full border border-charcoal/20 px-4 py-3 text-sm bg-white outline-none focus:border-[#FF7254] focus:ring-2 focus:ring-[#FF7254]/20 transition-colors rounded-xl shadow-sm"
                 />
               </div>
               <div>
@@ -174,7 +174,7 @@ export default function Checkout() {
                   type="tel" required value={form.mobile}
                   onChange={e => setForm({ ...form, mobile: e.target.value })}
                   placeholder="01XXXXXXXXX"
-                  className="w-full border border-charcoal/20 px-4 py-3 text-sm bg-transparent outline-none focus:border-charcoal transition-colors placeholder:text-charcoal/30"
+                  className="w-full border border-charcoal/20 px-4 py-3 text-sm bg-white outline-none focus:border-[#FF7254] focus:ring-2 focus:ring-[#FF7254]/20 transition-colors rounded-xl shadow-sm placeholder:text-charcoal/30"
                 />
               </div>
               <div>
@@ -183,7 +183,7 @@ export default function Checkout() {
                   type="email" required value={form.email}
                   onChange={e => setForm({ ...form, email: e.target.value })}
                   placeholder="your@email.com"
-                  className="w-full border border-charcoal/20 px-4 py-3 text-sm bg-transparent outline-none focus:border-charcoal transition-colors placeholder:text-charcoal/30"
+                  className="w-full border border-charcoal/20 px-4 py-3 text-sm bg-white outline-none focus:border-[#FF7254] focus:ring-2 focus:ring-[#FF7254]/20 transition-colors rounded-xl shadow-sm placeholder:text-charcoal/30"
                 />
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
@@ -192,7 +192,7 @@ export default function Checkout() {
                   <select
                     required value={form.district}
                     onChange={e => setForm({ ...form, district: e.target.value })}
-                    className="w-full border border-charcoal/20 px-4 py-3 text-sm bg-transparent outline-none focus:border-charcoal transition-colors"
+                    className="w-full border border-charcoal/20 px-4 py-3 text-sm bg-white outline-none focus:border-[#FF7254] focus:ring-2 focus:ring-[#FF7254]/20 transition-colors rounded-xl shadow-sm"
                   >
                     <option value="">Select District</option>
                     {districts.map(d => <option key={d} value={d}>{d}</option>)}
@@ -203,7 +203,7 @@ export default function Checkout() {
                   <input
                     type="text" required value={form.area}
                     onChange={e => setForm({ ...form, area: e.target.value })}
-                    className="w-full border border-charcoal/20 px-4 py-3 text-sm bg-transparent outline-none focus:border-charcoal transition-colors"
+                    className="w-full border border-charcoal/20 px-4 py-3 text-sm bg-white outline-none focus:border-[#FF7254] focus:ring-2 focus:ring-[#FF7254]/20 transition-colors rounded-xl shadow-sm"
                   />
                 </div>
               </div>
@@ -213,7 +213,7 @@ export default function Checkout() {
                   required value={form.address}
                   onChange={e => setForm({ ...form, address: e.target.value })}
                   rows={3}
-                  className="w-full border border-charcoal/20 px-4 py-3 text-sm bg-transparent outline-none focus:border-charcoal transition-colors resize-none"
+                  className="w-full border border-charcoal/20 px-4 py-3 text-sm bg-white outline-none focus:border-[#FF7254] focus:ring-2 focus:ring-[#FF7254]/20 transition-colors rounded-xl shadow-sm resize-none"
                 />
               </div>
               <div>
@@ -223,13 +223,13 @@ export default function Checkout() {
                   onChange={e => setForm({ ...form, notes: e.target.value })}
                   rows={2}
                   placeholder="Any special instructions..."
-                  className="w-full border border-charcoal/20 px-4 py-3 text-sm bg-transparent outline-none focus:border-charcoal transition-colors resize-none placeholder:text-charcoal/30"
+                  className="w-full border border-charcoal/20 px-4 py-3 text-sm bg-white outline-none focus:border-[#FF7254] focus:ring-2 focus:ring-[#FF7254]/20 transition-colors rounded-xl shadow-sm resize-none placeholder:text-charcoal/30"
                 />
               </div>
 
               {/* Shipping method — auto-determined by district, not manually selectable */}
               {form.district && (
-                <div className="border border-charcoal/20 px-4 py-3 flex items-center justify-between">
+                <div className="border border-charcoal/20 px-4 py-3 flex items-center justify-between rounded-xl shadow-sm bg-white">
                   <div>
                     <p className="text-[11px] tracking-[0.2em] uppercase font-medium">{selectedMethod?.label}</p>
                     <p className="text-xs text-charcoal/50 mt-0.5">
@@ -242,10 +242,10 @@ export default function Checkout() {
 
               {/* bKash advance payment section — only for Outside Dhaka */}
               {isAdvancePay && (
-                <div className="border border-charcoal/20 p-5">
+                <div className="border border-charcoal/20 p-5 rounded-xl shadow-sm bg-white">
                   <p className="text-[11px] tracking-[0.2em] uppercase font-medium mb-4">bKash Payment</p>
 
-                  <div className="flex items-center justify-between border border-charcoal/15 px-4 py-3 mb-4">
+                  <div className="flex items-center justify-between border border-charcoal/15 px-4 py-3 mb-4 rounded-xl bg-white">
                     <span className="text-sm font-medium">bKash Number</span>
                     <div className="flex items-center gap-2">
                       <span className="text-sm font-mono">{BKASH_NUMBER}</span>
@@ -267,7 +267,7 @@ export default function Checkout() {
                     type="text" required={isAdvancePay} value={bkashTrxId}
                     onChange={e => setBkashTrxId(e.target.value)}
                     placeholder="TRXID (e.g., K8H7G6F5D4)"
-                    className="w-full border border-charcoal/20 px-4 py-3 text-sm bg-transparent outline-none focus:border-charcoal transition-colors placeholder:text-charcoal/30"
+                    className="w-full border border-charcoal/20 px-4 py-3 text-sm bg-white outline-none focus:border-[#FF7254] focus:ring-2 focus:ring-[#FF7254]/20 transition-colors rounded-xl shadow-sm placeholder:text-charcoal/30"
                   />
                 </div>
               )}
@@ -275,7 +275,7 @@ export default function Checkout() {
               <button
                 type="submit"
                 disabled={submitting}
-                className="w-full bg-wine text-white text-[11px] tracking-[0.2em] uppercase py-4 hover:bg-wine/90 transition-colors disabled:opacity-50"
+                className="w-full bg-[#FF7254] text-[#418BE0] font-semibold text-[11px] tracking-[0.2em] uppercase py-4 rounded-xl shadow-sm hover:bg-[#FF7254]/90 transition-colors disabled:opacity-50"
               >
                 {submitting ? 'Placing Order...' : 'Confirm Order'}
               </button>
