@@ -4,7 +4,7 @@ const ITEMS = new Array(6).fill(0);
 
 export default function MarqueeBanner() {
   return (
-    <div className="w-full bg-cream overflow-hidden py-4 md:py-6">
+    <div className="w-full bg-cream overflow-hidden py-3 md:py-[18px]">
       <div className="flex w-max animate-marquee">
         {[...ITEMS, ...ITEMS].map((_, i) => (
           <span
