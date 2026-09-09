@@ -4,6 +4,7 @@ import { motion } from 'framer-motion';
 import SectionHeader from '@/components/ui/SectionHeader';
 import ProductCard from '@/components/products/ProductCard';
 import HeroSection from '@/components/home/HeroSection';
+import MarqueeBanner from '@/components/home/MarqueeBanner';
 import FeaturedBanners from '@/components/home/FeaturedBanners';
 import ReviewsSection from '@/components/home/ReviewsSection';
 
@@ -41,9 +42,10 @@ export default function Home() {
         }
       }) }} />
       <HeroSection />
+      <MarqueeBanner />
 
       {/* Featured Collection */}
-      <section className="pt-6 pb-20 md:pt-8 md:pb-32 px-5 md:px-10">
+      <section className="pt-10 pb-20 md:pt-14 md:pb-32 px-5 md:px-10">
         <div className="max-w-[1440px] mx-auto">
           {loading ? (
             <div className="flex justify-center py-20">
