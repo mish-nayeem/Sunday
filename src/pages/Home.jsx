@@ -43,9 +43,8 @@ export default function Home() {
       <HeroSection />
 
       {/* Featured Collection */}
-      <section className="py-20 md:py-32 px-5 md:px-10">
+      <section className="pt-6 pb-20 md:pt-8 md:pb-32 px-5 md:px-10">
         <div className="max-w-[1440px] mx-auto">
-          <SectionHeader label="Curated Selection" title="Featured Collection" align="left" size="lg" />
           {loading ? (
             <div className="flex justify-center py-20">
               <div className="w-8 h-8 border-2 border-sand border-t-transparent rounded-full animate-spin" />
