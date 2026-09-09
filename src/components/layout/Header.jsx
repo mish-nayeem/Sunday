@@ -14,7 +14,6 @@ const CATEGORY_LINKS = [
 const SHOP_LINKS = [
   { key: 'new_arrival', label: 'New Arrival' },
   { key: 'best_seller', label: 'Best Seller' },
-  { key: 'featured', label: 'Featured Collection' },
 ];
 
 export default function Header() {
