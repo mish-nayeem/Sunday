@@ -23,7 +23,7 @@ export default function FeaturedBanners() {
         >
           <Link
             to="/shop"
-            className="group absolute bottom-6 left-1/2 -translate-x-1/2 flex items-center gap-1.5 bg-white/90 px-4 py-2 text-obsidian hover:bg-white transition-colors duration-300"
+            className="group absolute bottom-6 left-1/2 -translate-x-1/2 flex items-center gap-1.5 bg-transparent px-4 py-2 text-white hover:text-sand transition-colors duration-300"
           >
             <ShoppingBag size={14} strokeWidth={1.5} />
             <span className="text-[11px] uppercase tracking-[0.2em]">Shop</span>
