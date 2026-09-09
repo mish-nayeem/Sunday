@@ -83,7 +83,7 @@ export default function OrderTrackPopup() {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.9 }}
             onClick={() => setExpanded(true)}
-            className="relative bg-charcoal text-white rounded-xl shadow-xl px-5 py-4 flex items-center gap-3 text-left hover:bg-charcoal/90 transition-colors"
+            className="relative bg-cream text-[#FF7254] rounded-xl shadow-xl px-5 py-4 flex items-center gap-3 text-left hover:brightness-95 transition-all"
           >
             <span
               onClick={(e) => { e.stopPropagation(); handleDismiss(); }}
@@ -93,10 +93,10 @@ export default function OrderTrackPopup() {
             >
               <X size={13} />
             </span>
-            <Package size={20} className="text-sand shrink-0" />
+            <Package size={20} className="text-[#FF7254] shrink-0" />
             <span>
-              <span className="block text-[10px] tracking-[0.15em] uppercase text-white/50">Have an order?</span>
-              <span className="block text-sm font-medium">Track Your Order</span>
+              <span className="block text-[10px] tracking-[0.15em] uppercase text-[#FF7254]/70">Have an order?</span>
+              <span className="block text-sm font-medium text-[#FF7254]">Track Your Order</span>
             </span>
           </motion.button>
         ) : (
