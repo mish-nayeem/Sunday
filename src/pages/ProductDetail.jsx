@@ -252,7 +252,7 @@ export default function ProductDetail() {
                 <button
                   onClick={handleAddToCart}
                   disabled={product.stock_status === 'out_of_stock'}
-                  className="flex-1 bg-black text-white text-[11px] tracking-wide uppercase py-4 rounded-xl flex items-center justify-center gap-2 hover:bg-black/85 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                  className="flex-1 bg-[#FFFBEA] text-black text-[11px] tracking-wide uppercase py-4 rounded-xl border border-black/10 shadow-sm flex items-center justify-center gap-2 hover:bg-[#FFF3D0] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                 >
                   Add to Cart · Tk {product.price?.toLocaleString()}.00
                 </button>
