@@ -59,10 +59,8 @@ export default function Header() {
   const linkColor = 'text-obsidian';
   const linkHover = 'hover:text-sand';
 
-  const navLinkClass = ({ isActive }) =>
-    `font-heading uppercase tracking-[0.2em] text-xs transition-colors duration-300 ${linkHover} ${
-      isActive ? 'text-sand' : linkColor
-    }`;
+  const navLinkClass = () =>
+    `font-heading uppercase tracking-[0.2em] text-xs transition-colors duration-300 ${linkColor} ${linkHover}`;
 
   return (
     <header
@@ -224,7 +222,7 @@ export default function Header() {
       {mobileOpen && (
         <div className="md:hidden border-t border-obsidian/10 bg-white px-5 py-6 flex flex-col gap-5">
           <div>
-            <NavLink to="/shop" className={({ isActive }) => `font-heading uppercase tracking-[0.2em] text-xs ${isActive ? 'text-sand' : 'text-obsidian'}`} onClick={() => setMobileOpen(false)}>
+            <NavLink to="/shop" className="font-heading uppercase tracking-[0.2em] text-xs text-obsidian" onClick={() => setMobileOpen(false)}>
               Shop
             </NavLink>
             <div className="flex flex-col gap-3 pl-3 mt-3">
@@ -255,7 +253,7 @@ export default function Header() {
               ))}
             </div>
           </div>
-          <NavLink to="/about" className={({ isActive }) => `font-heading uppercase tracking-[0.2em] text-xs ${isActive ? 'text-sand' : 'text-obsidian'}`} onClick={() => setMobileOpen(false)}>
+          <NavLink to="/about" className="font-heading uppercase tracking-[0.2em] text-xs text-obsidian" onClick={() => setMobileOpen(false)}>
             About
           </NavLink>
           <div className="h-px bg-obsidian/10" />
