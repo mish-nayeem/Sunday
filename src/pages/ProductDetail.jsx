@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import { supabase } from '@/lib/supabaseClient';
 import { motion } from 'framer-motion';
-import { Heart, Minus, Plus, Truck, Undo2, Shield, ChevronDown } from 'lucide-react';
+import { Heart, Truck, Share2, HelpCircle } from 'lucide-react';
 import { addToCart, openCartDrawer } from '@/lib/cartStore';
 import { addRecentlyViewed, isInWishlist, toggleWishlist } from '@/lib/cartStore';
 import ProductCard from '@/components/products/ProductCard';
@@ -32,13 +32,15 @@ function AccordionRow({ title, children }) {
 
 export default function ProductDetail() {
   const { id } = useParams();
+  const navigate = useNavigate();
   const [product, setProduct] = useState(null);
   const [related, setRelated] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedSize, setSelectedSize] = useState('');
-  const [quantity, setQuantity] = useState(1);
+  const [selectedColor, setSelectedColor] = useState('');
   const [wishlisted, setWishlisted] = useState(false);
   const [sizeChartOpen, setSizeChartOpen] = useState(false);
+  const [shareCopied, setShareCopied] = useState(false);
 
   useEffect(() => {
     const load = async () => {
@@ -48,7 +50,7 @@ export default function ProductDetail() {
       setProduct(p);
       setWishlisted(isInWishlist(p.id));
       setSelectedSize(p.sizes?.[0] || '');
-      setQuantity(1);
+      setSelectedColor(p.colors?.[0] || '');
       addRecentlyViewed(p.id);
       const { data: rel } = await supabase
         .from('products')
@@ -64,8 +66,27 @@ export default function ProductDetail() {
 
   const handleAddToCart = () => {
     if (!selectedSize) return;
-    addToCart(product, selectedSize, quantity);
+    addToCart(product, selectedSize, 1);
     openCartDrawer();
+  };
+
+  const handleBuyNow = () => {
+    if (!selectedSize) return;
+    addToCart(product, selectedSize, 1);
+    navigate('/checkout');
+  };
+
+  const handleShare = async () => {
+    const url = window.location.href;
+    try {
+      if (navigator.share) {
+        await navigator.share({ title: product.name, url });
+      } else {
+        await navigator.clipboard.writeText(url);
+        setShareCopied(true);
+        setTimeout(() => setShareCopied(false), 2000);
+      }
+    } catch (e) { /* share cancelled or clipboard unavailable */ }
   };
 
   if (loading) {
@@ -161,22 +182,60 @@ export default function ProductDetail() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6 }}
             >
-              <h1 className="text-lg md:text-xl font-bold tracking-wide uppercase mb-2 font-body">{product.name}</h1>
+              <div className="flex items-start justify-between gap-4 mb-2">
+                <h1 className="text-lg md:text-xl font-bold tracking-wide uppercase font-body">{product.name}</h1>
+                <button
+                  onClick={handleShare}
+                  className="flex items-center gap-1.5 text-xs text-black/60 hover:text-black underline shrink-0 mt-1"
+                >
+                  <Share2 size={13} /> {shareCopied ? 'Copied!' : 'Share'}
+                </button>
+              </div>
+
+              <div className="text-xs text-black/50 space-y-0.5 mb-4">
+                {product.sku && <p>SKU: <span className="text-black/70">{product.sku}</span></p>}
+                <p>Product Type: <span className="text-black/70">{categoryLabels[product.category]}</span></p>
+              </div>
 
               <div className="flex items-center gap-3 mb-6">
-                <span className="text-base font-mono">Tk {product.price?.toLocaleString()}.00</span>
+                <span className="text-base font-mono font-semibold">Tk {product.price?.toLocaleString()}.00</span>
+                <span className="text-xs text-black/40">+ VAT</span>
                 {discount && product.original_price && (
-                  <span className="text-sm font-mono text-obsidian/40 line-through">
+                  <span className="text-sm font-mono text-black/40 line-through">
                     ৳{product.original_price?.toLocaleString()}
                   </span>
                 )}
                 {product.stock_status === 'low_stock' && (
-                  <span className="text-[10px] tracking-wider uppercase text-red-500 border border-red-200 px-2 py-0.5">Low Stock</span>
+                  <span className="text-[10px] tracking-wider uppercase text-red-500 border border-red-200 px-2 py-0.5 rounded-full">Low Stock</span>
                 )}
                 {product.stock_status === 'out_of_stock' && (
-                  <span className="text-[10px] tracking-wider uppercase text-obsidian/40 border border-obsidian/20 px-2 py-0.5">Sold Out</span>
+                  <span className="text-[10px] tracking-wider uppercase text-black/40 border border-black/20 px-2 py-0.5 rounded-full">Sold Out</span>
                 )}
               </div>
+
+              {/* Color */}
+              {product.colors?.length > 0 && (
+                <div className="mb-6">
+                  <span className="text-[11px] tracking-wide uppercase font-medium block mb-3 text-black">
+                    Color{selectedColor ? ` - ${selectedColor}` : ''}
+                  </span>
+                  <div className="flex flex-wrap gap-2">
+                    {product.colors.map(color => (
+                      <button
+                        key={color}
+                        onClick={() => setSelectedColor(color)}
+                        className={`px-3 h-9 rounded-xl border text-xs transition-all ${
+                          selectedColor === color
+                            ? 'bg-black text-white border-black'
+                            : 'border-black/20 bg-[#FFFBEA] hover:border-black text-black'
+                        }`}
+                      >
+                        {color}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
 
               {/* Size */}
               <div className="mb-3">
@@ -193,12 +252,12 @@ export default function ProductDetail() {
                         key={size}
                         onClick={() => available && setSelectedSize(size)}
                         disabled={!available}
-                        className={`min-w-[44px] h-10 px-3 border rounded-xl text-xs tracking-wider transition-all duration-300 ${
+                        className={`w-11 h-11 rounded-full border text-xs tracking-wider transition-all duration-300 ${
                           !available
                             ? 'border-black/10 text-black/20 cursor-not-allowed line-through'
                             : selectedSize === size
                               ? 'bg-black text-white border-black'
-                              : 'border-black/20 bg-[#FFFBEA] hover:border-black text-black'
+                              : 'border-black/30 bg-[#FFFBEA] hover:border-black text-black'
                         }`}
                       >
                         {size}
@@ -208,47 +267,31 @@ export default function ProductDetail() {
                 </div>
               </div>
 
-              <button
-                onClick={() => setSizeChartOpen(true)}
-                className="text-[11px] tracking-wider text-black/60 hover:text-black underline transition-colors mb-6 inline-block"
-              >
-                Size Guide
-              </button>
-
-              {/* Quantity */}
-              <div className="mb-6">
-                <span className="text-[11px] tracking-wide uppercase font-medium block mb-3 text-black">Quantity</span>
-                <div className="flex items-center border border-black/20 rounded-xl w-fit bg-[#FFFBEA] overflow-hidden">
-                  <button
-                    onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                    className="w-10 h-10 flex items-center justify-center hover:bg-black/5 transition-colors text-black"
-                  >
-                    <Minus size={14} />
-                  </button>
-                  <span className="w-10 h-10 flex items-center justify-center text-sm font-mono text-black">{quantity}</span>
-                  <button
-                    onClick={() => setQuantity(quantity + 1)}
-                    className="w-10 h-10 flex items-center justify-center hover:bg-black/5 transition-colors text-black"
-                  >
-                    <Plus size={14} />
-                  </button>
-                </div>
+              {/* Accordion sections */}
+              <div className="mt-6 mb-6">
+                <button
+                  onClick={() => setSizeChartOpen(true)}
+                  className="w-full flex items-center justify-between py-4 text-left border-t border-black/10"
+                >
+                  <span className="text-[11px] tracking-wide uppercase font-medium text-black">Size Guide</span>
+                  <span className="text-lg leading-none text-black">+</span>
+                </button>
+                <AccordionRow title="Description">
+                  {[product.description, product.details, product.care_instructions].filter(Boolean).join('\n\n')}
+                </AccordionRow>
               </div>
 
-              {/* Delivery / COD bullets */}
-              <div className="space-y-2 mb-6 text-xs text-black/70">
-                <div className="flex items-center gap-2">
-                  <span className="w-1.5 h-1.5 rounded-full bg-green-600" />
-                  <span>Cash on Delivery available</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Truck size={14} className="text-black/50" />
-                  <span>Free shipping on orders over ৳3,500</span>
-                </div>
+              {/* Free shipping note */}
+              <div className="flex items-center gap-2 mb-6 text-xs text-black/70">
+                <Truck size={16} className="text-black/60" />
+                <span>Free shipping on orders over ৳3,500</span>
+                <span title="Cash on Delivery available across Bangladesh. Advance bKash payment required outside Dhaka.">
+                  <HelpCircle size={13} className="text-black/40 cursor-help" />
+                </span>
               </div>
 
               {/* Actions */}
-              <div className="flex gap-2 mb-8">
+              <div className="flex gap-2 mb-3">
                 <button
                   onClick={handleAddToCart}
                   disabled={product.stock_status === 'out_of_stock'}
@@ -267,42 +310,13 @@ export default function ProductDetail() {
                 </button>
               </div>
 
-              {product.description && (
-                <p className="text-sm text-black/60 leading-relaxed mb-2">{product.description}</p>
-              )}
-
-              {/* Accordion sections */}
-              <div className="mt-4">
-                <AccordionRow title="Size recommends">
-                  Not sure about your fit? Check the size guide above, or compare with your usual size — this piece runs true to size.
-                </AccordionRow>
-                <AccordionRow title="Details">
-                  {product.details}
-                </AccordionRow>
-                <AccordionRow title="Care">
-                  {product.care_instructions}
-                </AccordionRow>
-                <AccordionRow title="Shipping policy">
-                  {"Cash on Delivery is available across Bangladesh. Orders are typically delivered within 3–5 business days inside Dhaka and 5–7 business days outside Dhaka."}
-                </AccordionRow>
-              </div>
-
-              {/* Trust badges */}
-              <div className="bg-[#FFFBEA] rounded-xl mt-6 p-6 grid grid-cols-3 gap-4">
-                <div className="text-center">
-                  <Truck size={18} strokeWidth={1} className="mx-auto text-black mb-2" />
-                  <p className="text-[10px] tracking-wider uppercase text-black/60">Free Shipping</p>
-                </div>
-                <div className="text-center">
-                  <Undo2 size={18} strokeWidth={1} className="mx-auto text-black mb-2" />
-                  <p className="text-[10px] tracking-wider uppercase text-black/60">Easy Returns</p>
-                </div>
-                <div className="text-center">
-                  <Shield size={18} strokeWidth={1} className="mx-auto text-black mb-2" />
-                  <p className="text-[10px] tracking-wider uppercase text-black/60">Quality Assured</p>
-                </div>
-              </div>
-
+              <button
+                onClick={handleBuyNow}
+                disabled={product.stock_status === 'out_of_stock'}
+                className="w-full bg-[#FF7254] text-white text-[11px] tracking-wide uppercase py-4 rounded-xl hover:bg-[#FF7254]/90 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                Buy It Now
+              </button>
             </motion.div>
           </div>
         </div>
