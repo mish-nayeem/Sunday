@@ -73,7 +73,7 @@ export default function Cart() {
 
         <Link
           to="/checkout"
-          className="block text-center bg-wine text-white text-[11px] tracking-[0.2em] uppercase py-4 hover:bg-wine/90 transition-colors"
+          className="block text-center bg-[#FFFBEA] text-black text-[11px] tracking-wide uppercase py-4 rounded-xl shadow-sm border border-black/10 hover:bg-[#FFF3D0] transition-colors"
         >
           Proceed to Checkout
         </Link>
