@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, NavLink, useNavigate } from 'react-router-dom';
-import { Menu, X, Heart, ShoppingBag, Search, UserCog, ChevronDown } from 'lucide-react';
+import { Menu, X, Heart, ShoppingBag, Search, UserCog, User, ChevronDown } from 'lucide-react';
 import { getCartCount, subscribeCart } from '@/lib/cartStore';
+import { useAuth } from '@/lib/AuthContext';
 import logo from '@/assets/logonayemsend.png';
 
 const CATEGORY_LINKS = [
@@ -25,6 +26,7 @@ export default function Header() {
   const [searchValue, setSearchValue] = useState('');
   const [scrolled, setScrolled] = useState(false);
   const searchInputRef = useRef(null);
+  const { isAuthenticated, isAdmin, logout } = useAuth();
 
   const navigate = useNavigate();
 
@@ -180,13 +182,35 @@ export default function Header() {
             )}
           </Link>
 
-          <Link
-            to="/admin"
-            aria-label="Admin"
-            className={`hidden sm:inline-flex transition-colors duration-300 ${linkColor} ${linkHover}`}
-          >
-            <UserCog size={19} strokeWidth={1.5} />
-          </Link>
+          {isAuthenticated ? (
+            <button
+              onClick={logout}
+              aria-label="Log out"
+              title="Log out"
+              className={`hidden sm:inline-flex transition-colors duration-300 ${linkColor} ${linkHover}`}
+            >
+              <User size={19} strokeWidth={1.5} fill="currentColor" />
+            </button>
+          ) : (
+            <Link
+              to="/login"
+              aria-label="Account — Log in or Sign up"
+              title="Log in / Sign up"
+              className={`hidden sm:inline-flex transition-colors duration-300 ${linkColor} ${linkHover}`}
+            >
+              <User size={19} strokeWidth={1.5} />
+            </Link>
+          )}
+
+          {isAdmin && (
+            <Link
+              to="/admin"
+              aria-label="Admin"
+              className={`hidden sm:inline-flex transition-colors duration-300 ${linkColor} ${linkHover}`}
+            >
+              <UserCog size={19} strokeWidth={1.5} />
+            </Link>
+          )}
         </div>
       </div>
 
@@ -260,9 +284,23 @@ export default function Header() {
           <Link to="/wishlist" className="uppercase tracking-[0.2em] text-xs text-obsidian" onClick={() => setMobileOpen(false)}>
             Wishlist
           </Link>
-          <Link to="/admin" className="uppercase tracking-[0.2em] text-xs text-obsidian" onClick={() => setMobileOpen(false)}>
-            Admin
-          </Link>
+          {isAuthenticated ? (
+            <button
+              onClick={() => { setMobileOpen(false); logout(); }}
+              className="text-left uppercase tracking-[0.2em] text-xs text-obsidian"
+            >
+              Log Out
+            </button>
+          ) : (
+            <Link to="/login" className="uppercase tracking-[0.2em] text-xs text-obsidian" onClick={() => setMobileOpen(false)}>
+              Log In / Sign Up
+            </Link>
+          )}
+          {isAdmin && (
+            <Link to="/admin" className="uppercase tracking-[0.2em] text-xs text-obsidian" onClick={() => setMobileOpen(false)}>
+              Admin
+            </Link>
+          )}
         </div>
       )}
     </header>
