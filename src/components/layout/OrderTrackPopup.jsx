@@ -106,14 +106,14 @@ export default function OrderTrackPopup() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 20 }}
-            className="bg-white rounded-xl shadow-2xl border border-gold/20 p-5 w-[300px]"
+            className="bg-[#FFFBEA] rounded-xl shadow-2xl border border-gold/20 p-5 w-[300px]"
           >
             <div className="flex items-center justify-between mb-3">
-              <p className="text-[11px] tracking-[0.2em] uppercase text-charcoal/50">Track Your Order</p>
+              <p className="text-[11px] tracking-[0.2em] uppercase text-black/70">Track Your Order</p>
               <button
                 onClick={() => { setExpanded(false); reset(); }}
                 aria-label="Close"
-                className="text-charcoal/40 hover:text-charcoal"
+                className="text-black/60 hover:text-black"
               >
                 <X size={16} />
               </button>
@@ -127,7 +127,7 @@ export default function OrderTrackPopup() {
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
                   placeholder="Order ID or Mobile Number"
-                  className="border border-charcoal/20 px-3 py-2.5 text-sm outline-none focus:border-charcoal transition-colors rounded-md"
+                  className="border border-black/20 px-3 py-2.5 text-sm text-black outline-none focus:border-black transition-colors rounded-md bg-white"
                 />
                 <button
                   type="submit"
@@ -137,7 +137,7 @@ export default function OrderTrackPopup() {
                   <Search size={13} /> {searching ? 'Searching...' : 'Track'}
                 </button>
                 {notFound && (
-                  <p className="text-xs text-charcoal/50 text-center pt-1">
+                  <p className="text-xs text-black/60 text-center pt-1">
                     No order found. Check the ID or number and try again.
                   </p>
                 )}
@@ -148,12 +148,12 @@ export default function OrderTrackPopup() {
               <div>
                 <div className="flex justify-between items-start mb-4">
                   <div>
-                    <p className="text-[10px] text-charcoal/40 mb-0.5">Order ID</p>
-                    <p className="font-mono text-sm font-medium">{order.order_id}</p>
+                    <p className="text-[10px] text-black/50 mb-0.5">Order ID</p>
+                    <p className="font-mono text-sm font-medium text-black">{order.order_id}</p>
                   </div>
                   <div className="text-right">
-                    <p className="text-[10px] text-charcoal/40 mb-0.5">Total</p>
-                    <p className="font-mono text-sm font-medium">৳{order.total?.toLocaleString()}</p>
+                    <p className="text-[10px] text-black/50 mb-0.5">Total</p>
+                    <p className="font-mono text-sm font-medium text-black">৳{order.total?.toLocaleString()}</p>
                   </div>
                 </div>
 
@@ -165,12 +165,12 @@ export default function OrderTrackPopup() {
                       return (
                         <div key={step} className="flex-1 flex flex-col items-center relative">
                           {i > 0 && (
-                            <div className={`absolute top-3 right-1/2 w-full h-0.5 -z-10 ${i <= currentStepIndex ? 'bg-wine' : 'bg-charcoal/10'}`} />
+                            <div className={`absolute top-3 right-1/2 w-full h-0.5 -z-10 ${i <= currentStepIndex ? 'bg-wine' : 'bg-black/10'}`} />
                           )}
-                          <div className={`w-6 h-6 rounded-full flex items-center justify-center mb-1 ${isDone ? 'bg-wine text-white' : 'bg-charcoal/10 text-charcoal/30'}`}>
+                          <div className={`w-6 h-6 rounded-full flex items-center justify-center mb-1 ${isDone ? 'bg-wine text-white' : 'bg-black/10 text-black/40'}`}>
                             <Icon size={12} />
                           </div>
-                          <p className={`text-[8px] tracking-wide uppercase text-center ${isDone ? 'text-charcoal' : 'text-charcoal/30'}`}>{step}</p>
+                          <p className={`text-[8px] tracking-wide uppercase text-center ${isDone ? 'text-black' : 'text-black/40'}`}>{step}</p>
                         </div>
                       );
                     })}
@@ -183,14 +183,14 @@ export default function OrderTrackPopup() {
                 )}
 
                 {order.tracking_note && (
-                  <div className="bg-mist p-3 text-xs text-charcoal/70 rounded-md mb-3">
+                  <div className="bg-white p-3 text-xs text-black/80 rounded-md mb-3">
                     {order.tracking_note}
                   </div>
                 )}
 
                 <button
                   onClick={reset}
-                  className="w-full text-center text-[11px] tracking-[0.15em] uppercase text-charcoal/50 hover:text-charcoal py-1"
+                  className="w-full text-center text-[11px] tracking-[0.15em] uppercase text-black/60 hover:text-black py-1"
                 >
                   Track another order
                 </button>
