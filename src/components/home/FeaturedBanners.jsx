@@ -13,7 +13,7 @@ export default function FeaturedBanners() {
       {banners.map((image, i) => (
         <div
           key={i}
-          className="relative h-[70vh] min-h-[500px] md:h-[88vh] md:min-h-[760px] overflow-hidden"
+          className="relative w-full aspect-[4/5] sm:aspect-[3/4] md:aspect-auto md:h-[88vh] md:min-h-[760px] overflow-hidden"
           style={{
             backgroundImage: `url(${image})`,
             backgroundSize: 'cover',
