@@ -71,7 +71,7 @@ export default function Header() {
         scrolled ? 'bg-transparent shadow-none' : 'bg-white shadow-sm'
       }`}
     >
-     <div className="max-w-[1440px] mx-auto px-6 md:px-12 h-[54px] md:h-[68px] grid grid-cols-3 items-center overflow-visible">
+     <div className="relative max-w-[1440px] mx-auto px-6 md:px-12 h-[54px] md:h-[68px] flex items-center justify-between overflow-visible">
      
         {/* Left — Shop / Category / About */}
         <nav className="hidden md:flex items-center gap-12 lg:gap-16">
@@ -137,20 +137,23 @@ export default function Header() {
 
         {/* Mobile menu toggle (left slot on mobile) */}
         <button
-          className={`md:hidden justify-self-start ${linkColor}`}
+          className={`md:hidden ${linkColor}`}
           onClick={() => setMobileOpen((v) => !v)}
           aria-label="Toggle menu"
         >
           {mobileOpen ? <X size={22} /> : <Menu size={22} />}
         </button>
 
-        {/* Center — Logo (fixed size, independent of navbar height) */}
-        <Link to="/" className="justify-self-center relative z-10 flex items-center">
+        {/* Center — Logo: absolutely centered, fully independent of navbar height/row */}
+        <Link
+          to="/"
+          className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-10 flex items-center"
+        >
          <img src={logo} alt="SUNDAY" className="h-16 md:h-24 w-auto object-contain shrink-0" />
         </Link>
 
         {/* Right — Search / Wishlist / Cart / Admin */}
-        <div className="flex items-center justify-self-end gap-5 md:gap-7">
+        <div className="flex items-center gap-5 md:gap-7">
           <button
             aria-label="Search"
             onClick={() => setSearchOpen((v) => !v)}
