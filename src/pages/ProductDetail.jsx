@@ -13,16 +13,16 @@ function AccordionRow({ title, children }) {
   const [open, setOpen] = useState(false);
   if (!children) return null;
   return (
-    <div className="border-t border-sand/30">
+    <div className="bg-[#FFFBEA] rounded-xl px-4 mb-2">
       <button
         onClick={() => setOpen(!open)}
         className="w-full flex items-center justify-between py-4 text-left"
       >
-        <span className="text-[11px] tracking-[0.15em] uppercase font-medium">{title}</span>
-        <span className="text-lg leading-none">{open ? '−' : '+'}</span>
+        <span className="text-[11px] tracking-wide uppercase font-medium text-black">{title}</span>
+        <span className="text-lg leading-none text-black">{open ? '−' : '+'}</span>
       </button>
       {open && (
-        <div className="pb-4 text-sm text-obsidian/60 leading-relaxed whitespace-pre-line">
+        <div className="pb-4 text-sm text-black/60 leading-relaxed whitespace-pre-line">
           {children}
         </div>
       )}
@@ -180,7 +180,7 @@ export default function ProductDetail() {
 
               {/* Size */}
               <div className="mb-3">
-                <span className="text-[11px] tracking-[0.15em] uppercase font-medium block mb-3">Size</span>
+                <span className="text-[11px] tracking-wide uppercase font-medium block mb-3 text-black">Size</span>
                 <div className="flex flex-wrap gap-2">
                   {product.sizes?.map(size => {
                     const sizeStock = product.size_stock?.[size];
@@ -193,12 +193,12 @@ export default function ProductDetail() {
                         key={size}
                         onClick={() => available && setSelectedSize(size)}
                         disabled={!available}
-                        className={`min-w-[44px] h-10 px-3 border text-xs tracking-wider transition-all duration-300 ${
+                        className={`min-w-[44px] h-10 px-3 border rounded-xl text-xs tracking-wider transition-all duration-300 ${
                           !available
-                            ? 'border-charcoal/10 text-charcoal/20 cursor-not-allowed line-through'
+                            ? 'border-black/10 text-black/20 cursor-not-allowed line-through'
                             : selectedSize === size
-                              ? 'bg-obsidian text-white border-obsidian'
-                              : 'border-charcoal/30 hover:border-charcoal'
+                              ? 'bg-black text-white border-black'
+                              : 'border-black/20 bg-[#FFFBEA] hover:border-black text-black'
                         }`}
                       >
                         {size}
@@ -210,25 +210,25 @@ export default function ProductDetail() {
 
               <button
                 onClick={() => setSizeChartOpen(true)}
-                className="text-[11px] tracking-wider text-obsidian/60 hover:text-obsidian underline transition-colors mb-6 inline-block"
+                className="text-[11px] tracking-wider text-black/60 hover:text-black underline transition-colors mb-6 inline-block"
               >
                 Size Guide
               </button>
 
               {/* Quantity */}
               <div className="mb-6">
-                <span className="text-[11px] tracking-[0.15em] uppercase font-medium block mb-3">Quantity</span>
-                <div className="flex items-center border border-obsidian/20 w-fit">
+                <span className="text-[11px] tracking-wide uppercase font-medium block mb-3 text-black">Quantity</span>
+                <div className="flex items-center border border-black/20 rounded-xl w-fit bg-[#FFFBEA] overflow-hidden">
                   <button
                     onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                    className="w-10 h-10 flex items-center justify-center hover:bg-mist transition-colors"
+                    className="w-10 h-10 flex items-center justify-center hover:bg-black/5 transition-colors text-black"
                   >
                     <Minus size={14} />
                   </button>
-                  <span className="w-10 h-10 flex items-center justify-center text-sm font-mono">{quantity}</span>
+                  <span className="w-10 h-10 flex items-center justify-center text-sm font-mono text-black">{quantity}</span>
                   <button
                     onClick={() => setQuantity(quantity + 1)}
-                    className="w-10 h-10 flex items-center justify-center hover:bg-mist transition-colors"
+                    className="w-10 h-10 flex items-center justify-center hover:bg-black/5 transition-colors text-black"
                   >
                     <Plus size={14} />
                   </button>
@@ -236,13 +236,13 @@ export default function ProductDetail() {
               </div>
 
               {/* Delivery / COD bullets */}
-              <div className="space-y-2 mb-6 text-xs text-obsidian/70">
+              <div className="space-y-2 mb-6 text-xs text-black/70">
                 <div className="flex items-center gap-2">
                   <span className="w-1.5 h-1.5 rounded-full bg-green-600" />
                   <span>Cash on Delivery available</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <Truck size={14} className="text-obsidian/50" />
+                  <Truck size={14} className="text-black/50" />
                   <span>Free shipping on orders over ৳3,500</span>
                 </div>
               </div>
@@ -252,7 +252,7 @@ export default function ProductDetail() {
                 <button
                   onClick={handleAddToCart}
                   disabled={product.stock_status === 'out_of_stock'}
-                  className="flex-1 bg-obsidian text-white text-[11px] tracking-[0.2em] uppercase py-4 flex items-center justify-center gap-2 hover:bg-obsidian/90 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                  className="flex-1 bg-black text-white text-[11px] tracking-wide uppercase py-4 rounded-xl flex items-center justify-center gap-2 hover:bg-black/85 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                 >
                   Add to Cart · Tk {product.price?.toLocaleString()}.00
                 </button>
@@ -261,14 +261,14 @@ export default function ProductDetail() {
                     toggleWishlist(product.id);
                     setWishlisted(!wishlisted);
                   }}
-                  className="w-12 h-12 flex-shrink-0 border border-obsidian/20 flex items-center justify-center hover:border-obsidian transition-colors"
+                  className="w-12 h-12 flex-shrink-0 border border-black/20 rounded-xl bg-[#FFFBEA] flex items-center justify-center hover:border-black transition-colors"
                 >
-                  <Heart size={18} strokeWidth={1.5} fill={wishlisted ? '#111' : 'none'} />
+                  <Heart size={18} strokeWidth={1.5} className="text-black" fill={wishlisted ? '#111' : 'none'} />
                 </button>
               </div>
 
               {product.description && (
-                <p className="text-sm text-obsidian/60 leading-relaxed mb-2">{product.description}</p>
+                <p className="text-sm text-black/60 leading-relaxed mb-2">{product.description}</p>
               )}
 
               {/* Accordion sections */}
@@ -288,18 +288,18 @@ export default function ProductDetail() {
               </div>
 
               {/* Trust badges */}
-              <div className="border-t border-sand/30 pt-6 mt-6 grid grid-cols-3 gap-4">
+              <div className="bg-[#FFFBEA] rounded-xl mt-6 p-6 grid grid-cols-3 gap-4">
                 <div className="text-center">
-                  <Truck size={18} strokeWidth={1} className="mx-auto text-sand mb-2" />
-                  <p className="text-[10px] tracking-wider uppercase text-obsidian/50">Free Shipping</p>
+                  <Truck size={18} strokeWidth={1} className="mx-auto text-black mb-2" />
+                  <p className="text-[10px] tracking-wider uppercase text-black/60">Free Shipping</p>
                 </div>
                 <div className="text-center">
-                  <Undo2 size={18} strokeWidth={1} className="mx-auto text-sand mb-2" />
-                  <p className="text-[10px] tracking-wider uppercase text-obsidian/50">Easy Returns</p>
+                  <Undo2 size={18} strokeWidth={1} className="mx-auto text-black mb-2" />
+                  <p className="text-[10px] tracking-wider uppercase text-black/60">Easy Returns</p>
                 </div>
                 <div className="text-center">
-                  <Shield size={18} strokeWidth={1} className="mx-auto text-sand mb-2" />
-                  <p className="text-[10px] tracking-wider uppercase text-obsidian/50">Quality Assured</p>
+                  <Shield size={18} strokeWidth={1} className="mx-auto text-black mb-2" />
+                  <p className="text-[10px] tracking-wider uppercase text-black/60">Quality Assured</p>
                 </div>
               </div>
 
