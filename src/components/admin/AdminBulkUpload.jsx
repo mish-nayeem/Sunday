@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { supabase } from '@/lib/supabaseClient';
+import { uploadToCloudinary } from '@/lib/cloudinaryUpload';
 import { Trash2, Loader2, CheckCircle2, ImagePlus } from 'lucide-react';
 
 const categoryLabels = { full_sleeve_shirts: 'Full Sleeve Shirts', half_sleeve_shirts: 'Half Sleeve Shirts', formal_shirts: 'Formal Shirts', polo: 'Polo', t_shirts: 'T-Shirts', cargo: 'Cargo', formal_pants: 'Formal Pants' };
@@ -79,10 +80,7 @@ export default function AdminBulkUpload() {
     for (const draft of valid) {
       try {
         const compressed = await compressImage(draft.file);
-        const fileName = `${Date.now()}-${compressed.name}`;
-        const { error: uploadError } = await supabase.storage.from('product-images').upload(fileName, compressed);
-        if (uploadError) throw uploadError;
-        const { data: urlData } = supabase.storage.from('product-images').getPublicUrl(fileName);
+        const imageUrl = await uploadToCloudinary(compressed);
 
         const stockPerSize = Number(draft.stockPerSize) || 0;
         const size_stock = {};
@@ -97,7 +95,7 @@ export default function AdminBulkUpload() {
           quantity,
           size_stock,
           description: draft.description.trim(),
-          images: [urlData.publicUrl],
+          images: [imageUrl],
           sizes: draft.sizes,
           stock_status: quantity > 0 ? 'in_stock' : 'out_of_stock',
           is_featured: draft.is_featured,
