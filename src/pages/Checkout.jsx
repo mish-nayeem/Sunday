@@ -56,62 +56,35 @@ export default function Checkout() {
     if (isAdvancePay && !bkashTrxId.trim()) return;
     setSubmitting(true);
 
-    const oid = 'SND-' + Date.now().toString(36).toUpperCase();
-    const invoiceNumber = `SND-${new Date().getFullYear()}-${Date.now().toString().slice(-6)}`;
-
-    const orderItems = cart.map(i => ({
+    // Prices are re-verified server-side inside create_order — only product_id,
+    // size and quantity are sent. The price/subtotal/total shown on this page
+    // are for display only and are never trusted for the actual order.
+    const cartItems = cart.map(i => ({
       product_id: i.productId,
-      name: i.name,
       size: i.size,
       quantity: i.quantity,
-      price: i.price,
-      image: i.image,
-      sku: i.sku,
     }));
 
-    const { error: orderError } = await supabase.from('orders').insert({
-      order_id: oid,
-      full_name: form.full_name,
-      email: form.email,
-      mobile: form.mobile,
-      address: form.address,
-      district: form.district,
-      area: form.area,
-      notes: form.notes,
-      items: orderItems,
-      subtotal,
-      delivery_charge: deliveryCharge,
-      total,
-      payment_method: isAdvancePay ? 'bkash_advance' : 'cod',
-      payment_status: isAdvancePay ? 'advance_paid' : 'unpaid',
-      bkash_transaction_id: isAdvancePay ? bkashTrxId.trim() : null,
-      shipping_method: shippingMethod,
-      invoice_number: invoiceNumber,
-      status: 'pending',
+    const { data: result, error: orderError } = await supabase.rpc('create_order', {
+      p_full_name: form.full_name,
+      p_email: form.email,
+      p_mobile: form.mobile,
+      p_address: form.address,
+      p_district: form.district,
+      p_area: form.area,
+      p_notes: form.notes,
+      p_items: cartItems,
+      p_payment_method: isAdvancePay ? 'bkash_advance' : 'cod',
+      p_bkash_transaction_id: isAdvancePay ? bkashTrxId.trim() : null,
     });
 
-    if (orderError) {
+    if (orderError || !result?.[0]) {
       console.error('Order creation failed:', orderError);
       setSubmitting(false);
       return;
     }
 
-    // Auto-generate invoice
-    try {
-      await supabase.from('invoices').insert({
-        invoice_number: invoiceNumber,
-        order_id: oid,
-        customer_name: form.full_name,
-        customer_mobile: form.mobile,
-        customer_address: `${form.address}, ${form.area}, ${form.district}`,
-        items: cart.map(i => ({ name: i.name, size: i.size, quantity: i.quantity, price: i.price })),
-        subtotal,
-        delivery_charge: deliveryCharge,
-        total,
-        issue_date: new Date().toISOString().split('T')[0],
-        status: 'issued',
-      });
-    } catch (e) { console.error('Invoice creation failed:', e); }
+    const oid = result[0].order_id;
 
     // Stock is NOT decremented here anymore — it only decrements once the order
     // reaches "Delivered" status (handled in AdminOrders.jsx), so cancelled/returned
