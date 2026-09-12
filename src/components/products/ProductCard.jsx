@@ -2,6 +2,7 @@ import React, { useState, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Plus } from 'lucide-react';
+import { cloudinaryOptimized } from '@/lib/cloudinaryOptimized';
 
 export default function ProductCard({ product, index = 0 }) {
   const navigate = useNavigate();
@@ -54,8 +55,10 @@ export default function ProductCard({ product, index = 0 }) {
           onTouchStart={handleTouchMove}
         >
           <img
-            src={currentImg}
+            src={cloudinaryOptimized(currentImg, 600)}
             alt={product.name}
+            loading="lazy"
+            decoding="async"
             className="absolute inset-0 w-full h-full object-contain transition-opacity duration-300"
           />
 
