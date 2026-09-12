@@ -90,6 +90,28 @@ export default function Checkout() {
     // reaches "Delivered" status (handled in AdminOrders.jsx), so cancelled/returned
     // orders never touch inventory in the first place.
 
+    // Notify the shop owner on Telegram instantly — doesn't block the order,
+    // failure here is only logged.
+    try {
+      await supabase.functions.invoke('notify-telegram-order', {
+        body: {
+          order_id: oid,
+          full_name: form.full_name,
+          mobile: form.mobile,
+          area: form.area,
+          district: form.district,
+          items: cart.map(i => ({ name: i.name, size: i.size, quantity: i.quantity, price: i.price })),
+          subtotal: result[0].subtotal,
+          delivery_charge: result[0].delivery_charge,
+          total: result[0].total,
+          payment_method: isAdvancePay ? 'bkash_advance' : 'cod',
+          bkash_transaction_id: isAdvancePay ? bkashTrxId.trim() : null,
+        },
+      });
+    } catch (e) {
+      console.error('Telegram notification failed:', e);
+    }
+
     // Send confirmation email + PDF invoice via Brevo (only fires if customer gave an email).
     // Awaited (not fire-and-forget): a full page navigation right after firing this off
     // can abort the in-flight request before it reaches Supabase, so we wait for it here.
