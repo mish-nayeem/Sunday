@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { supabase } from '@/lib/supabaseClient';
-import { cloudinaryOptimized } from '@/lib/cloudinaryOptimized';
+import { imgUrl } from '@/lib/storage';
 import { motion } from 'framer-motion';
 import { Heart, Truck, Share2, HelpCircle } from 'lucide-react';
 import { addToCart, openCartDrawer } from '@/lib/cartStore';
@@ -151,7 +151,7 @@ export default function ProductDetail() {
               {images.map((img, i) => (
                 <div key={i} className="relative aspect-[3/4] overflow-hidden bg-mist">
                   <img
-                    src={cloudinaryOptimized(img, 900)}
+                    src={imgUrl(img, 900)}
                     alt={`${product.name} ${i + 1}`}
                     loading={i === 0 ? 'eager' : 'lazy'}
                     decoding="async"
@@ -171,7 +171,7 @@ export default function ProductDetail() {
               <div className="flex gap-2 mt-2">
                 {images.map((img, i) => (
                   <div key={i} className="w-12 h-14 overflow-hidden bg-mist border border-obsidian/10">
-                    <img src={cloudinaryOptimized(img, 100)} alt="" loading="lazy" decoding="async" className="w-full h-full object-cover" />
+                    <img src={imgUrl(img, 100)} alt="" loading="lazy" decoding="async" className="w-full h-full object-cover" />
                   </div>
                 ))}
               </div>

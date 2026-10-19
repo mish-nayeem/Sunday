@@ -1,7 +1,8 @@
 # SUNDAY — Supabase Edition
 
 This is your SUNDAY storefront, rebuilt to run on Supabase instead of Base44, so it
-can be hosted for free on Vercel/Netlify.
+can be hosted for free on Cloudflare. Everything — database, auth, and product
+photos (Storage) — runs on Supabase; there is no Cloudinary dependency.
 
 ## What's included in this package (fully converted, ready to use)
 
@@ -79,9 +80,30 @@ injects those into every Edge Function automatically.
 1. `npm install`
 2. Copy `.env.local.example` to `.env.local` and fill in your Supabase project URL + anon key
 3. Run `sunday_supabase_schema.sql` in your Supabase project's SQL Editor (if you haven't already)
-4. In Supabase → Storage, create a public bucket named `product-images`
+4. Run `supabase/migrations/storage_images_bucket.sql` in the SQL Editor — creates the
+   public `images` bucket where admin-uploaded product photos are stored
 5. In Supabase → Authentication → Providers, enable Google if you want Google login
 6. `npm run dev` to test locally
-7. Push to GitHub, import into Vercel, add the two env vars there, deploy
+7. Deploy to Cloudflare (below)
+
+## Deploying to Cloudflare
+
+The site is a static build served by Cloudflare Workers (static assets, see `wrangler.jsonc`).
+
+**Option A — connect GitHub (auto-deploy on every push):**
+1. Cloudflare Dashboard → Workers & Pages → Create → Import a repository → pick this repo
+2. Build command: `npm run build` · Deploy command: `npx wrangler deploy`
+3. Settings → Build → **Variables and secrets**: add `VITE_SUPABASE_URL` and
+   `VITE_SUPABASE_ANON_KEY` (they're baked in at build time, so they must be *build* variables)
+4. Add your custom domain under the Worker's Settings → Domains & Routes
+5. In Supabase → Authentication → URL Configuration, set the Site URL and add the
+   Cloudflare domain to Redirect URLs (needed for Google login and password reset)
+
+**Option B — deploy from your computer:** with `.env.local` filled in, run
+`npx wrangler login` once, then `npm run deploy`.
+
+Old product photos already stored on Cloudinary keep showing (their URLs are just plain
+links); new uploads go to Supabase Storage. Re-upload old photos from the admin panel
+whenever you want to drop the Cloudinary account completely.
 
 See `SUNDAY_migration_guide.md` for full explanations of every change.
