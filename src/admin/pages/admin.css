@@ -1,0 +1,1579 @@
+.admin-boot {
+  padding: 40px;
+  font-size: 13px;
+  color: var(--steel);
+}
+
+.admin {
+  /* Darker than the site-wide --steel (defined in global.css, shared with the
+     storefront) — labels and secondary numbers here get read all day at a
+     glance, on a phone screen in daylight as often as a desktop, so they need
+     more contrast against --paper than the storefront's lighter copy does.
+     Scoped to .admin so the customer-facing pages are untouched. */
+  --steel: #5C5B54;
+
+  display: grid;
+  grid-template-columns: 216px 1fr;
+  min-height: 100vh;
+  background: var(--paper-dim);
+}
+
+/* ---------- Sidebar ---------- */
+
+.side {
+  background: var(--ink);
+  color: var(--paper);
+  padding: 26px 0 24px;
+  display: flex;
+  flex-direction: column;
+  position: sticky;
+  top: 0;
+  height: 100vh;
+}
+
+.side-brand {
+  flex: none;
+  padding: 0 22px 30px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.side-brand .display { font-size: 22px; }
+
+.side-sub {
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  color: var(--steel);
+}
+
+.side-nav {
+  display: flex;
+  flex-direction: column;
+  /* A short window can't fit every section: the list scrolls on its own,
+     so the brand stays on top and Sign out stays on the bottom. */
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  overscroll-behavior: contain;
+  /* No scrollbar line: the wheel or a finger scrolls it with the pointer
+     over it, the way the menu reads best. */
+  scrollbar-width: none;
+}
+
+.side-nav::-webkit-scrollbar { display: none; }
+
+.side-nav button {
+  background: none;
+  border: none;
+  color: rgba(237, 234, 225, 0.62);
+  text-align: left;
+  padding: 12px 22px;
+  font-size: 13px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-left: 2px solid transparent;
+}
+
+.side-nav button:hover { color: var(--paper); }
+
+.side-nav button.on {
+  color: var(--paper);
+  border-left-color: var(--item-color, var(--cobalt));
+  background: rgba(237, 234, 225, 0.05);
+}
+
+.nav-left {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+}
+
+.nav-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--item-color, var(--steel));
+  flex-shrink: 0;
+}
+
+.side-nav .badge {
+  background: var(--signal);
+  color: var(--paper);
+  font-size: 11px;
+  padding: 2px 6px;
+  border-radius: 2px;
+}
+
+.side-foot {
+  margin-top: auto;
+  flex: none;
+  padding: 0 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  font-size: 12.5px;
+}
+
+.side-foot a {
+  color: rgba(237, 234, 225, 0.6);
+  text-decoration: none;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.side-foot a:hover { color: var(--paper); }
+
+.signout {
+  background: none;
+  border: none;
+  color: var(--steel);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12.5px;
+  text-align: left;
+  padding: 0;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.signout:hover { color: var(--signal); }
+
+/* ---------- Main ---------- */
+
+.main { padding: 28px 32px 60px; }
+
+.top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 26px;
+}
+
+.top h1 { font-size: 27px; }
+
+.admin-crumb {
+  font-size: 11.5px;
+  letter-spacing: 0.08em;
+  color: var(--steel);
+  margin-bottom: 6px;
+}
+
+/* ---------- Mobile topbar / drawer ---------- */
+
+.admin-topbar { display: none; }
+.admin-overlay { display: none; }
+
+.top-sub {
+  font-size: 12.5px;
+  color: var(--steel);
+  margin-top: 5px;
+}
+
+.top-date {
+  font-size: 12.5px;
+  color: var(--steel);
+}
+
+.err-banner {
+  background: rgba(255, 68, 38, 0.1);
+  border-left: 2px solid var(--signal);
+  padding: 12px 14px;
+  font-size: 13px;
+  margin-bottom: 22px;
+  line-height: 1.5;
+}
+
+.loading, .empty {
+  font-size: 13.5px;
+  color: var(--steel);
+  padding: 14px 0;
+}
+
+/* ---------- Stat cards ---------- */
+
+.stat-row {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 2px;
+  margin-bottom: 22px;
+}
+
+.stat {
+  background: var(--paper);
+  padding: 20px 20px 22px;
+}
+
+.stat-top {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.stat-ico {
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(22, 22, 15, 0.05);
+  color: var(--ink);
+  flex-shrink: 0;
+}
+
+.stat-ico.warn { background: rgba(42, 77, 255, 0.1); color: var(--cobalt); }
+.stat-ico.good { background: rgba(22, 22, 15, 0.86); color: var(--paper); }
+.stat-ico.bad { background: rgba(255, 68, 38, 0.1); color: var(--signal); }
+
+.stat-label {
+  font-size: 11.5px;
+  letter-spacing: 0.07em;
+  color: var(--steel);
+  margin-bottom: 0;
+}
+
+.stat-value { font-size: 32px; line-height: 1; }
+
+.stat-note {
+  font-size: 11.5px;
+  color: var(--steel);
+  margin-top: 8px;
+}
+
+/* ---------- Panels ---------- */
+
+.panel {
+  background: var(--paper);
+  padding: 24px;
+  margin-bottom: 22px;
+}
+
+.panel-label {
+  font-size: 11.5px;
+  letter-spacing: 0.07em;
+  color: var(--steel);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.panel-label svg { flex-shrink: 0; }
+
+.panel-tag {
+  font-size: 11.5px;
+  letter-spacing: 0.06em;
+  color: var(--steel);
+  border: 1px solid var(--steel-line);
+  padding: 5px 9px;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  white-space: nowrap;
+}
+
+.big {
+  font-size: 38px;
+  line-height: 1.05;
+  margin: 8px 0 6px;
+}
+
+.panel-note {
+  font-size: 12px;
+  color: var(--steel);
+  line-height: 1.6;
+}
+
+.panel-head {
+  margin-bottom: 18px;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.spark {
+  width: 100%;
+  height: 150px;
+  display: block;
+}
+
+.spark-axis {
+  display: flex;
+  justify-content: space-between;
+  font-size: 11.5px;
+  color: var(--steel);
+  margin-top: 6px;
+}
+
+.two-col {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2px;
+}
+
+.two-col .panel { margin-bottom: 0; }
+
+/* ---------- Mini rows ---------- */
+
+.mini-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--steel-line);
+}
+
+.mini-row:last-child { border-bottom: none; }
+
+.mini-id {
+  font-size: 11.5px;
+  color: var(--steel);
+  margin-bottom: 3px;
+}
+
+.mini-name { font-size: 13.5px; }
+
+.mini-right {
+  text-align: right;
+  font-size: 13.5px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 5px;
+}
+
+.dim { color: var(--steel); }
+
+/* ---------- Status pills ---------- */
+
+.pill {
+  font-size: 11px;
+  padding: 3px 7px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  border: 1px solid var(--steel-line);
+}
+
+.pill.pending { border-color: var(--steel); color: var(--steel); }
+.pill.shipped { border-color: var(--cobalt); color: var(--cobalt); }
+.pill.delivered { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+.pill.cancelled { border-color: var(--signal); color: var(--signal); }
+
+/* ---------- Orders table ---------- */
+
+.orders-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 18px;
+}
+
+.search-wrap {
+  flex: 1;
+  max-width: 340px;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  border: 1px solid var(--steel-line);
+  padding: 0 12px;
+  color: var(--steel);
+}
+
+.search-wrap:focus-within {
+  border-color: var(--cobalt);
+  color: var(--cobalt);
+}
+
+.search-wrap svg { flex-shrink: 0; }
+
+.search {
+  flex: 1;
+  border: none;
+  background: transparent;
+  padding: 10px 0;
+  font-size: 13.5px;
+  color: var(--ink);
+  border-radius: 0;
+}
+
+.search:focus { outline: none; }
+
+.orders-head .dim { font-size: 12.5px; }
+
+.orders-head-right {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.table { border-top: 1px solid var(--steel-line); }
+
+.trow {
+  display: grid;
+  grid-template-columns: 92px 1.3fr 1fr 70px 100px 116px 22px;
+  gap: 12px;
+  align-items: center;
+  padding: 13px 0;
+  border-bottom: 1px solid var(--steel-line);
+  cursor: pointer;
+}
+
+.trow:hover { background: rgba(22, 22, 15, 0.02); }
+
+.tc.chev {
+  color: var(--steel);
+  display: flex;
+  justify-content: flex-end;
+  transition: transform 0.2s ease;
+}
+
+.tc.chev.open {
+  transform: rotate(180deg);
+  color: var(--cobalt);
+}
+
+.tc {
+  font-size: 13px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tc.id { font-size: 12.5px; color: var(--steel); }
+.tc.name { font-weight: 500; }
+.tc.price { text-align: right; }
+
+.status-select {
+  width: 100%;
+  border: 1px solid var(--steel-line);
+  background: transparent;
+  padding: 6px 8px;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--ink);
+  cursor: pointer;
+  border-radius: 0;
+}
+
+.status-select:focus { outline: none; border-color: var(--cobalt); }
+.status-select.shipped { border-color: var(--cobalt); color: var(--cobalt); }
+.status-select.delivered { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+.status-select.cancelled { border-color: var(--signal); color: var(--signal); }
+
+/* ---------- Expanded detail ---------- */
+
+.tdetail {
+  display: grid;
+  grid-template-columns: 1.4fr 1fr;
+  gap: 32px;
+  padding: 18px 0 22px;
+  border-bottom: 1px solid var(--steel-line);
+  background: rgba(22, 22, 15, 0.015);
+}
+
+.dlabel {
+  font-size: 11px;
+  letter-spacing: 0.07em;
+  color: var(--steel);
+  margin-bottom: 9px;
+}
+
+.ditem {
+  display: flex;
+  justify-content: space-between;
+  font-size: 13px;
+  padding: 5px 0;
+}
+
+.daddr {
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+/* ---------- Products table ---------- */
+
+.trow.prow {
+  grid-template-columns: 52px 1.4fr 1fr 100px 1.1fr 110px;
+  cursor: default;
+}
+
+.pthumb {
+  width: 44px;
+  height: 52px;
+  overflow: hidden;
+  background: var(--paper-dim);
+  position: relative;
+}
+
+/* A size down to its last piece: a small red dot in the photo's corner — on
+   the catalog, Stock levels and Stock & sales. */
+.restock-star {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: #E5262B;
+  box-shadow: 0 0 0 1.5px #fff;
+  font-size: 0;
+  pointer-events: auto;
+}
+
+.pthumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.out-tag {
+  font-size: 11px;
+  color: var(--signal);
+  border: 1px solid var(--signal);
+  padding: 2px 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+/* Scheduled: hidden from the shop until its launch time. */
+.sched-tag {
+  display: inline-block;
+  font-size: 11px;
+  color: var(--cobalt);
+  border: 1px solid var(--cobalt);
+  padding: 2px 6px;
+  margin-right: 6px;
+  letter-spacing: 0.02em;
+}
+
+/* ---------- Responsive ---------- */
+
+@media (max-width: 1000px) {
+  .stat-row { grid-template-columns: repeat(2, 1fr); }
+  .two-col { grid-template-columns: 1fr; }
+  .tdetail { grid-template-columns: 1fr; gap: 20px; }
+}
+
+@media (max-width: 760px) {
+  .admin { grid-template-columns: minmax(0, 1fr); }
+
+  /* The sidebar becomes an off-canvas drawer under the burger button rather
+     than a horizontal-scrolling strip — with 8+ sections (and more coming),
+     a row of tabs would need scrolling to even see them all, where a drawer
+     shows the whole list at once. */
+  .admin-topbar {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 14px 16px;
+    background: var(--ink);
+    color: var(--paper);
+    position: sticky;
+    top: 0;
+    z-index: 30;
+  }
+
+  .admin-topbar-brand { font-size: 16px; }
+
+  .admin-burger {
+    width: 26px;
+    height: 26px;
+    background: none;
+    border: none;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 5px;
+    padding: 0;
+    cursor: pointer;
+  }
+
+  .admin-burger span {
+    height: 2px;
+    background: var(--paper);
+    border-radius: 2px;
+  }
+
+  .admin-overlay {
+    display: block;
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 35;
+  }
+
+  .side {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 250px;
+    height: 100%;
+    z-index: 40;
+    transform: translateX(-100%);
+    transition: transform 0.25s ease;
+  }
+
+  .side.open { transform: translateX(0); }
+
+  .main { padding: 20px 16px 50px; }
+  .trow, .trow.prow {
+    grid-template-columns: 1fr 1fr;
+    gap: 6px 12px;
+  }
+  .tc.price { text-align: left; }
+  .tc.chev { display: none; }
+  .pthumb { display: none; }
+
+  /* 24px of padding either side eats a third of a phone's width — tightened
+     here rather than in the base rule, so desktop keeps its room to breathe. */
+  .panel { padding: 16px; }
+  .stat { padding: 16px 16px 18px; }
+}
+
+/* ---------- Product management ---------- */
+
+.add-product {
+  background: var(--ink);
+  color: var(--paper);
+  border: none;
+  padding: 10px 18px;
+  font-size: 13px;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.add-product:hover { background: var(--cobalt); }
+
+.trow.prow.clickable { cursor: pointer; }
+
+/* ---------- Overview: clickable counters ---------- */
+
+.stat-row.three { grid-template-columns: repeat(3, 1fr); }
+.stat-row.four { grid-template-columns: repeat(4, 1fr); }
+
+/* A counter that opens the list behind it is a real button, so it keeps
+   keyboard focus and the pointer cursor — it just wears the card's styling. */
+.stat-click {
+  border: none;
+  width: 100%;
+  text-align: left;
+  color: var(--ink);
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.stat-click:hover { box-shadow: inset 0 0 0 1px var(--cobalt); }
+.stat-click:hover .stat-cta { color: var(--cobalt); }
+
+.stat-click:focus-visible {
+  outline: 2px solid var(--cobalt);
+  outline-offset: -2px;
+}
+
+.stat-cta {
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  color: var(--steel);
+  margin-top: 10px;
+}
+
+/* ---------- Measure toggle ---------- */
+
+.toggle {
+  display: flex;
+  border: 1px solid var(--steel-line);
+  flex-shrink: 0;
+}
+
+.toggle button {
+  background: none;
+  border: none;
+  padding: 7px 12px;
+  font-size: 11.5px;
+  letter-spacing: 0.06em;
+  color: var(--steel);
+  cursor: pointer;
+}
+
+.toggle button + button { border-left: 1px solid var(--steel-line); }
+.toggle button:hover { color: var(--ink); }
+
+.toggle button.on {
+  background: var(--ink);
+  color: var(--paper);
+}
+
+/* ---------- Monthly bar chart ---------- */
+
+.bars-max {
+  font-size: 11.5px;
+  color: var(--steel);
+  text-align: right;
+  padding-bottom: 5px;
+  border-bottom: 1px dashed var(--steel-line);
+}
+
+.bars-plot {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: 1fr;
+  gap: 10px;
+  height: 200px;
+  align-items: end;
+}
+
+.bar-col {
+  position: relative;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.bar-track {
+  flex: 1;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  min-height: 0;
+}
+
+/* Capped so six months of data doesn't turn into six slabs — the height is
+   the reading, the width carries no meaning. */
+.bar-fill {
+  position: relative;
+  width: 100%;
+  max-width: 52px;
+  background: var(--cobalt);
+  border-radius: 4px 4px 0 0;
+  transition: height 0.25s ease, background 0.15s ease;
+}
+
+.bar-col:hover .bar-fill { background: var(--ink); }
+
+.bar-x {
+  font-size: 11.5px;
+  color: var(--steel);
+  text-align: center;
+  padding-top: 9px;
+}
+
+/* Hover read-out — the exact figure on demand keeps a number off every bar. */
+.bar-tip {
+  position: absolute;
+  left: 50%;
+  bottom: calc(100% + 8px);
+  transform: translateX(-50%);
+  background: var(--ink);
+  color: var(--paper);
+  font-size: 11.5px;
+  padding: 6px 9px;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.15s ease;
+  z-index: 2;
+}
+
+.bar-tip .dim { color: rgba(237, 234, 225, 0.55); }
+
+.bar-col:hover .bar-tip { opacity: 1; }
+
+/* ---------- Drop / category bars ---------- */
+
+.hbars {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.hbar-top {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 7px;
+}
+
+.hbar-name { font-size: 13.5px; }
+.hbar-val { font-size: 12.5px; white-space: nowrap; }
+
+.hbar-track {
+  height: 8px;
+  background: rgba(22, 22, 15, 0.06);
+}
+
+.hbar-fill {
+  height: 100%;
+  background: var(--ink);
+  border-radius: 0 4px 4px 0;
+  transition: width 0.25s ease;
+}
+
+.hbars.cobalt .hbar-fill { background: var(--cobalt); }
+
+/* ---------- Order status filter chips ---------- */
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 16px;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  background: none;
+  border: 1px solid var(--steel-line);
+  color: var(--steel);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11.5px;
+  letter-spacing: 0.05em;
+  padding: 7px 11px;
+  cursor: pointer;
+}
+
+.chip:hover { border-color: var(--ink); color: var(--ink); }
+
+.chip-count { opacity: 0.65; }
+
+.chip.on {
+  background: var(--ink);
+  border-color: var(--ink);
+  color: var(--paper);
+}
+
+.chip.on.cancelled {
+  background: var(--signal);
+  border-color: var(--signal);
+}
+
+@media (max-width: 1000px) {
+  .stat-row.four { grid-template-columns: repeat(2, 1fr); }
+  .bars-plot { height: 165px; }
+}
+
+/* A row of 3 skips the 2-column tablet width entirely — 3 cards split 2-and-1
+   reads as a mistake, where 4 cards split 2-and-2 doesn't. */
+@media (max-width: 900px) {
+  .stat-row.three { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 560px) {
+  .stat-row.four { grid-template-columns: 1fr; }
+  .hbar-top { flex-direction: column; gap: 2px; align-items: flex-start; }
+}
+
+/* ---------- Order payment breakdown ---------- */
+
+/* Flags an order whose bKash advance is already paid, so the row reads
+   differently from a plain COD one at a glance. */
+.adv-tag {
+  margin-left: 7px;
+  font-size: 10.5px;
+  letter-spacing: 0.05em;
+  border: 1px solid var(--cobalt);
+  color: var(--cobalt);
+  padding: 1px 4px;
+}
+
+.ditem .trx {
+  font-size: 12.5px;
+  color: var(--steel);
+}
+
+.ditem.collect {
+  border-top: 1px solid var(--steel-line);
+  margin-top: 6px;
+  padding-top: 9px;
+  font-weight: 500;
+}
+
+/* ---------- Low stock ---------- */
+
+.low-rows {
+  display: flex;
+  flex-direction: column;
+}
+
+.low-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--steel-line);
+}
+
+.low-row:last-child { border-bottom: none; }
+
+.low-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 12.5px;
+  white-space: nowrap;
+}
+
+.low-size {
+  border: 1px solid var(--steel-line);
+  padding: 3px 8px;
+  font-size: 11.5px;
+  letter-spacing: 0.04em;
+}
+
+.low-left { color: var(--cobalt); }
+
+/* Nothing left is a different problem from nearly nothing left. */
+.low-row.out .low-left { color: var(--signal); }
+.low-row.out .low-size { border-color: var(--signal); color: var(--signal); }
+
+/* ---------- Stock per size, in the products table ---------- */
+
+/* Products → Stock levels: a small photo beside each product's name. */
+.sl-who { display: flex; align-items: center; gap: 12px; min-width: 0; }
+
+.sl-thumb {
+  position: relative;
+  flex: none;
+  width: 40px;
+  height: 50px;
+  border-radius: 6px;
+  overflow: hidden;
+  background: var(--paper-dim);
+}
+
+.sl-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+.stock-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.chip-stock {
+  border: 1px solid var(--steel-line);
+  padding: 2px 6px;
+  font-size: 11px;
+  letter-spacing: 0.03em;
+  color: var(--ink);
+}
+
+.chip-stock.low { border-color: var(--cobalt); color: var(--cobalt); }
+.chip-stock.out { border-color: var(--signal); color: var(--signal); }
+
+/* Products → Stock levels: the chip borders say how much is left — green
+   plenty, amber low, red sold out — with a total per product. Text stays the
+   theme's own. Scoped here so the catalog rows keep their plain chips. */
+.sl-legend { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 14px; font-size: 10.5px; }
+
+.sl-key { color: var(--ink); }
+
+.sl-key::before {
+  content: '';
+  display: inline-block;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  margin-right: 5px;
+  border: 1.5px solid color-mix(in srgb, var(--lv) 55%, transparent);
+  vertical-align: -1px;
+}
+
+.sl-key.ok, .sl-panel .chip-stock.ok, .sl-total.ok { --lv: #1FB57A; }
+.sl-key.low, .sl-panel .chip-stock.low, .sl-total.low { --lv: #F2A516; }
+.sl-key.out, .sl-panel .chip-stock.out, .sl-total.out { --lv: #F0457A; }
+
+.sl-panel .chip-stock {
+  color: var(--ink);
+  border: 1px solid color-mix(in srgb, var(--lv) 45%, transparent);
+}
+
+.sl-total {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 2px 9px;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--lv) 45%, transparent);
+  color: var(--ink);
+  white-space: nowrap;
+}
+
+/* An order's details: pieces sent back, money refunded and exchanges done
+   from Support → Returns & exchanges. */
+.ditem-back { color: var(--signal); font-size: 11.5px; }
+.ditem-refund { color: var(--signal); }
+.ditem-history { font-size: 11.5px; color: var(--steel); margin-top: 6px; line-height: 1.5; }
+
+/* ---------- Wishlist ---------- */
+
+.wish-group {
+  border-bottom: 1px solid var(--steel-line);
+  padding-bottom: 12px;
+}
+
+.wish-group:last-child { border-bottom: none; }
+
+.wish-group .low-row { border-bottom: none; padding-bottom: 4px; }
+
+/* The addresses are here to be mailed by hand if the automatic send ever
+   misses — recessive, not the point of the row. */
+.wish-emails {
+  font-size: 11.5px;
+  color: var(--steel);
+  line-height: 1.7;
+  word-break: break-all;
+}
+
+.wish-send {
+  background: var(--ink);
+  color: var(--paper);
+  border: none;
+  padding: 6px 11px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11.5px;
+  letter-spacing: 0.05em;
+  cursor: pointer;
+}
+
+.wish-send:hover { background: var(--cobalt); }
+.wish-send:disabled { background: var(--steel-line); cursor: not-allowed; }
+
+/* ---------- Customer history ---------- */
+
+/* Rides next to the name in the list. Only ever shown for a number that has
+   refused parcels more than once — a warning on every row would be noise. */
+.risk-tag {
+  margin-left: 8px;
+  font-size: 10.5px;
+  letter-spacing: 0.05em;
+  border: 1px solid var(--signal);
+  color: var(--signal);
+  padding: 1px 5px;
+  white-space: nowrap;
+}
+
+.hist {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13.5px;
+  color: var(--ink);
+  padding: 4px 0;
+}
+
+.hist-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--steel);
+  flex-shrink: 0;
+}
+
+.hist.good .hist-dot { background: var(--ink); }
+.hist.watch .hist-dot { background: var(--cobalt); }
+.hist.risk .hist-dot { background: var(--signal); }
+.hist.risk { color: var(--signal); }
+
+.hist-note {
+  font-size: 12px;
+  color: var(--steel);
+  margin-top: 4px;
+  line-height: 1.5;
+}
+
+/* ---------- Courier hand-off ---------- */
+
+.courier-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 0;
+}
+
+.courier-row .dim { font-size: 12.5px; }
+
+.courier-select {
+  border: 1px solid var(--steel-line);
+  background: transparent;
+  padding: 7px 9px;
+  font-size: 12.5px;
+  color: var(--ink);
+  border-radius: 0;
+  cursor: pointer;
+}
+
+.courier-select:focus { outline: none; border-color: var(--cobalt); }
+
+.courier-btn {
+  background: var(--ink);
+  color: var(--paper);
+  border: none;
+  padding: 8px 12px;
+  font-size: 12px;
+  letter-spacing: 0.05em;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.courier-btn:hover { background: var(--cobalt); }
+.courier-btn:disabled { background: var(--steel-line); cursor: not-allowed; }
+
+.courier-btn.ghost {
+  background: none;
+  color: var(--steel);
+  border: 1px solid var(--steel-line);
+  margin-left: auto;
+}
+
+.courier-btn.ghost:hover { border-color: var(--ink); color: var(--ink); background: none; }
+
+.slip-btn {
+  margin: 14px 0 0;
+  width: 100%;
+}
+
+/* ---------- Packing slip ---------- */
+
+/* Off-screen entirely — this exists for the printer, and a preview of it on
+   the page would just be another thing to keep in step. */
+.slip-root { display: none; }
+
+@media print {
+  /* Hide the app rather than unmounting it, so the panel is untouched when
+     the dialog closes. */
+  body * { visibility: hidden; }
+  .slip-root, .slip-root * { visibility: visible; }
+
+  .slip-root {
+    display: block;
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    background: #fff;
+  }
+
+  .slip {
+    padding: 18mm 16mm;
+    color: #000;
+    font-family: 'Inter', sans-serif;
+  }
+
+  .slip-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    border-bottom: 2px solid #000;
+    padding-bottom: 10px;
+  }
+
+  .slip-brand { font-size: 26px; }
+  .slip-sub { font-size: 9px; letter-spacing: 1.5px; margin-top: 3px; }
+
+  .slip-id { text-align: right; font-size: 10px; }
+  .slip-id-big { font-size: 15px; margin-bottom: 3px; }
+
+  .slip-to { margin-top: 16px; }
+  .slip-label { font-size: 9px; letter-spacing: 1.5px; margin-bottom: 6px; }
+  .slip-name { font-size: 17px; font-weight: 600; }
+  .slip-phone { font-size: 14px; margin: 3px 0 6px; }
+  .slip-addr { font-size: 13px; line-height: 1.5; }
+  .slip-note { font-size: 12px; margin-top: 6px; font-style: italic; }
+
+  .slip-items {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 18px;
+    border-top: 1px solid #000;
+  }
+
+  .slip-items td {
+    padding: 7px 0;
+    font-size: 12.5px;
+    border-bottom: 1px solid #ccc;
+  }
+
+  .slip-money {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 10px;
+  }
+
+  .slip-money td { padding: 3px 0; font-size: 11.5px; }
+
+  .right { text-align: right; }
+
+  .slip-due {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    border: 2px solid #000;
+    padding: 12px 14px;
+    margin-top: 14px;
+  }
+
+  .slip-due .mono { font-size: 11px; letter-spacing: 1.5px; }
+  .slip-due-amount { font-size: 26px; }
+
+  .slip-foot {
+    margin-top: 16px;
+    font-size: 9.5px;
+    text-align: center;
+  }
+
+  @page { margin: 0; }
+}
+
+/* ---------- Sub-tab pills ---------- */
+
+.subtabs {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 22px;
+}
+
+.subtab {
+  font-family: 'Inter', sans-serif;
+  font-size: 13.5px;
+  font-weight: 600;
+  padding: 8px 16px;
+  border-radius: 10px;
+  background: var(--paper);
+  color: var(--steel);
+  border: 1px solid var(--steel-line);
+  cursor: pointer;
+}
+
+.subtab:hover { color: var(--ink); }
+
+.subtab.active {
+  background: var(--cobalt);
+  color: #151318;
+  border-color: transparent;
+}
+
+/* ---------- Product catalog: drag to set the ALL page order ---------- */
+
+.trow.prow.queue { grid-template-columns: 52px 1.4fr 1fr 100px 1.1fr 110px 30px; }
+
+.drag-handle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 40px;
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--steel);
+  cursor: grab;
+  touch-action: none;
+  justify-self: end;
+}
+
+.drag-handle svg { fill: currentColor; }
+.drag-handle:hover { color: var(--ink); }
+
+.trow.prow.queue.dragging {
+  position: relative;
+  z-index: 2;
+  background: var(--paper);
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.18);
+  cursor: grabbing;
+}
+
+.trow.prow.queue.dragging .drag-handle { cursor: grabbing; color: var(--cobalt); }
+
+body:has(.trow.dragging) { user-select: none; cursor: grabbing; }
+
+.queue-note {
+  font-size: 12.5px;
+  line-height: 1.6;
+  color: var(--steel);
+  margin: 4px 0 14px;
+  max-width: 70ch;
+}
+
+.queue-note strong { color: var(--ink); }
+.queue-grip-inline { color: var(--ink); font-size: 14px; }
+
+/* ---------- Orders → Order list: one card per order ---------- */
+/* Each order is its own bordered card in the theme's colour — blue on the
+   blue theme, green on the green one, white on the dark one — so they read
+   apart at a glance. Tapping one opens its details over the list. */
+
+.admin {
+  /* Soft by default, the full colour on hover and on the open order. */
+  --order-edge: color-mix(in srgb, var(--cobalt) 38%, transparent);
+  --order-edge-strong: var(--cobalt);
+  /* Frosted glass inside every bordered box: a faint wash of the theme's
+     colour over a blur — shaded blue, green, or grey on the dark theme. */
+  --glass: linear-gradient(135deg, color-mix(in srgb, var(--cobalt) 9%, rgba(255, 255, 255, 0.55)), color-mix(in srgb, var(--cobalt) 4%, rgba(255, 255, 255, 0.35)));
+  --glass-hover: color-mix(in srgb, var(--cobalt) 12%, rgba(255, 255, 255, 0.5));
+  --glass-shine: inset 0 1px 0 rgba(255, 255, 255, 0.6);
+}
+.admin[data-theme='dark'] {
+  --order-edge: rgba(255, 255, 255, 0.22);
+  --order-edge-strong: rgba(255, 255, 255, 0.7);
+  --glass: linear-gradient(135deg, rgba(255, 255, 255, 0.07), rgba(255, 255, 255, 0.025));
+  --glass-hover: rgba(255, 255, 255, 0.09);
+  --glass-shine: inset 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+
+.olist {
+  display: grid;
+  /* min(…, 100%) and minmax(0, …): a card never grows wider than the screen,
+     however long the name or however big the phone's text size. */
+  /* 240px: four to a row on a laptop, slimmer cards that run a little
+     taller instead of leaving the row half empty. */
+  grid-template-columns: repeat(auto-fill, minmax(min(240px, 100%), 1fr));
+  gap: 10px;
+}
+
+/* The panel the cards sit in keeps a thinner edge, so the cards get the room. */
+.admin .panel:has(> .olist) { padding: 16px; }
+
+.ocard {
+  border: 1px solid var(--order-edge);
+  border-radius: var(--r-card, 14px);
+  padding: 11px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  cursor: pointer;
+  background: var(--glass);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+  box-shadow: var(--glass-shine);
+  transition: box-shadow 0.15s ease, transform 0.15s ease, background 0.15s ease;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.ocard:hover { border-color: var(--order-edge-strong); background: var(--glass-hover); box-shadow: var(--glass-shine), 0 6px 18px rgba(0, 0, 0, 0.1); transform: translateY(-1px); }
+.ocard:focus-visible { outline: 2px solid var(--order-edge); outline-offset: 2px; }
+.ocard.on { border-color: var(--order-edge-strong); border-width: 2px; padding: 10px 11px; }
+.ocard.cancelled { opacity: 0.7; }
+
+/* The name gets its own line, in full; a risk tag beside it. */
+.ocard-name { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; font-size: 14px; font-weight: 700; min-width: 0; }
+.ocard-name-text { overflow-wrap: anywhere; line-height: 1.3; }
+.ocard-name-text.long { font-size: 13.5px; }
+.ocard-name-text.xlong { font-size: 12.5px; }
+.admin .ocard-name .risk-tag { margin-left: 0; }
+.admin .osheet-head .status-select { flex: none; width: auto; min-width: 0; padding: 5px 28px 5px 10px; font-size: 11px; }
+
+/* On a card the status is a small pill beside the order number. */
+.admin .ocard-meta .status-select {
+  flex: none;
+  width: auto;
+  min-width: 0;
+  min-height: 0;
+  height: auto;
+  padding: 3px 18px 3px 9px;
+  font-size: 9.5px;
+  line-height: 1.4;
+  letter-spacing: 0.05em;
+  /* The browser's own select box keeps room for its arrow; a drawn arrow
+     lets the pill be only as wide as its word. */
+  appearance: none;
+  -webkit-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='5' viewBox='0 0 8 5'%3E%3Cpath d='M1 1l3 3 3-3' fill='none' stroke='%23888' stroke-width='1.4'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 7px center;
+  background-size: 8px 5px;
+}
+
+.ocard-meta { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-width: 0; }
+/* The order number over its time, so the status pill keeps its place on
+   the right even on a slim card. */
+.ocard-meta .ocard-when { flex-direction: column; gap: 1px; }
+.ocard-when { display: flex; flex-wrap: wrap; gap: 2px 10px; font-size: 11.5px; color: var(--steel); min-width: 0; }
+
+.ocard-items { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.ocard-thumbs { display: flex; flex: none; }
+
+.ocard-thumb {
+  width: 30px;
+  height: 38px;
+  border-radius: 5px;
+  overflow: hidden;
+  background: var(--paper-dim);
+  box-shadow: 0 0 0 2px var(--paper);
+}
+
+.ocard-thumb + .ocard-thumb { margin-left: -8px; }
+.ocard-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.ocard-what { font-size: 13px; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.ocard-bottom {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  border-top: 1px solid var(--steel-line);
+  padding-top: 8px;
+  flex-wrap: nowrap;
+}
+
+.ocard-phone { font-size: 12px; display: inline-flex; align-items: center; gap: 5px; min-width: 0; white-space: nowrap; }
+.ocard-total { font-size: 15px; font-weight: 800; display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; flex: none; }
+
+/* ---------- An order's details, over the list ---------- */
+
+.osheet-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  background: rgba(0, 0, 0, 0.45);
+  display: flex;
+  justify-content: flex-end;
+  animation: osheet-fade 0.18s ease-out;
+}
+
+.osheet {
+  width: min(480px, 100%);
+  height: 100%;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  background: var(--paper-dim);
+  color: var(--ink);
+  border-left: 2px solid var(--order-edge-strong);
+  padding: 0 0 24px;
+  animation: osheet-in 0.25s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@keyframes osheet-fade { from { opacity: 0; } }
+@keyframes osheet-in { from { transform: translateX(40px); opacity: 0; } }
+
+.osheet-head {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 16px 18px 14px;
+  background: var(--paper);
+  border-bottom: 1px solid var(--order-edge);
+}
+
+.osheet-id { font-size: 11.5px; color: var(--steel); }
+.osheet-name { font-size: 19px; font-weight: 800; margin: 2px 0; }
+.osheet-when { font-size: 11.5px; color: var(--steel); }
+.osheet-head-right { display: flex; align-items: center; gap: 8px; flex: none; }
+
+.osheet-close {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  border: 1px solid var(--steel-line);
+  background: none;
+  color: var(--ink);
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.osec {
+  margin: 12px 14px 0;
+  background: var(--glass);
+  box-shadow: var(--glass-shine);
+  border: 1px solid var(--order-edge);
+  border-radius: var(--r-card, 14px);
+  padding: 12px 14px;
+}
+
+.osec-label { font-size: 10.5px; letter-spacing: 0.08em; color: var(--steel); font-weight: 700; margin-bottom: 8px; }
+
+.oitem {
+  display: grid;
+  grid-template-columns: 36px minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: center;
+  padding: 6px 0;
+  font-size: 13.5px;
+}
+
+.oitem + .oitem { border-top: 1px solid var(--steel-line); }
+.oitem-thumb { width: 36px; height: 44px; border-radius: 6px; overflow: hidden; background: var(--paper-dim); }
+.oitem-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.oitem-name .mono { font-size: 12px; }
+
+.orow {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 4px 0;
+  font-size: 13.5px;
+}
+
+.orow > :last-child { text-align: right; }
+.orow a { color: var(--cobalt); }
+.oemail { word-break: break-all; }
+
+.ototal {
+  border-top: 1px solid var(--steel-line);
+  margin-top: 6px;
+  padding-top: 8px;
+  font-weight: 800;
+  font-size: 15px;
+}
+
+.oaddr { display: flex; flex-direction: column; gap: 2px; padding: 6px 0 2px; font-size: 13.5px; line-height: 1.5; }
+.oaddr > .dim:first-child { font-size: 12px; }
+
+.osheet-actions { display: flex; flex-wrap: wrap; gap: 8px; margin: 14px 14px 0; }
+.osheet-actions .wa-btn { margin: 0; flex: 1; justify-content: center; }
+.osheet-actions .courier-btn.ghost { margin-left: 0; flex: 1; }
+
+/* A phone: the details come up from the bottom instead. */
+@media (max-width: 860px) {
+  .olist { grid-template-columns: minmax(0, 1fr); gap: 10px; }
+  .osheet-overlay { align-items: flex-end; }
+  .osheet {
+    width: 100%;
+    height: 92vh;
+    height: 92dvh;
+    border-left: none;
+    border-top: 2px solid var(--order-edge-strong);
+    border-radius: 20px 20px 0 0;
+    animation-name: osheet-up;
+  }
+  .osheet-head { border-radius: 20px 20px 0 0; }
+  @keyframes osheet-up { from { transform: translateY(40px); opacity: 0; } }
+}
+
+/* ---------- Customers → Repeat vs new ---------- */
+
+.rv-split { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.rv-split > div { display: flex; flex-direction: column; gap: 2px; }
+.rv-split > div:last-child { text-align: right; align-items: flex-end; }
+.rv-split strong { font-size: 20px; }
+
+.rv-bar { display: flex; height: 8px; border-radius: 999px; overflow: hidden; background: var(--steel-line); margin-top: 10px; }
+.rv-bar i { background: color-mix(in srgb, var(--cobalt) 35%, transparent); }
+.rv-bar b { background: var(--cobalt); }
+
+.rv-row { align-items: flex-start; }
+.rv-who .mini-id { display: flex; align-items: center; gap: 6px; }
+.rv-who a { color: inherit; }
+.rv-orders { font-weight: 800; font-size: 14px; }
+
+/* Wishlist rows: the photo and name get the line; the count and the
+   Email-them button drop under it when there isn't room. */
+.wish-group .low-row { flex-wrap: wrap; gap: 10px; }
+.wish-group .low-row .sl-who { flex: 1 1 200px; }
+.wish-group .low-right { margin-left: auto; }

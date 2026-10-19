@@ -29,7 +29,10 @@ const Privacy = lazy(() => import('@/pages/Privacy'));
 const Terms = lazy(() => import('@/pages/Terms'));
 const RefundPolicy = lazy(() => import('@/pages/RefundPolicy'));
 const Wishlist = lazy(() => import('@/pages/Wishlist'));
-const Admin = lazy(() => import('@/pages/Admin'));
+const Admin = lazy(() => import('@/admin/pages/Admin'));
+// The previous panel, kept for Expenses, Invoices, Bulk upload and Store
+// settings until those move into the new one.
+const AdminClassic = lazy(() => import('@/pages/Admin'));
 const Login = lazy(() => import('@/pages/Login'));
 const Register = lazy(() => import('@/pages/Register'));
 const ForgotPassword = lazy(() => import('@/pages/ForgotPassword'));
@@ -81,6 +84,7 @@ const AuthenticatedApp = () => {
         <Route path="/reset-password" element={<ResetPassword />} />
         <Route element={<ProtectedRoute unauthenticatedElement={<Navigate to="/login" replace />} />}>
           <Route path="/admin" element={<Admin />} />
+          <Route path="/admin-classic" element={<AdminClassic />} />
         </Route>
         <Route path="*" element={<PageNotFound />} />
       </Routes>

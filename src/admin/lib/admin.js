@@ -1,0 +1,814 @@
+import { supabase } from './supabaseClient.js'
+import { fromLocalInput } from './schedule.js'
+import { lowSizes, LOW_STOCK_AT } from './stock.js'
+
+// ---------- Admin allowlist ----------
+
+// Only this email can open the admin panel. Set it in .env locally and in the
+// Vercel project's Environment Variables for the deployed site.
+// This check is convenience, not security — the real enforcement lives in the
+// Supabase RLS policies, which reject queries from any other logged-in account
+// even if someone bypasses this file. Both must name the same address.
+// What the items actually sold for: the subtotal less any coupon. Revenue
+// figures use this, so a discount isn't counted as money taken.
+function itemsNet(o) {
+  return Number(o.subtotal) - (Number(o.discount_amount) || 0)
+}
+
+// SUNDAY keeps the admin flag on the profiles table (role = 'admin'), the
+// same check the storefront's AuthContext and the RLS policies use.
+export async function isAdminUser(userId) {
+  if (!userId) return false
+  const { data } = await supabase.from('profiles').select('role').eq('id', userId).maybeSingle()
+  return data?.role === 'admin'
+}
+
+// ---------- Auth ----------
+
+export async function signOut() {
+  await supabase.auth.signOut()
+}
+
+export async function getSession() {
+  const { data } = await supabase.auth.getSession()
+  const session = data.session
+
+  // A signed-in customer isn't an admin — but they're still a customer, so
+  // this reports "no admin session" without ending their login.
+  if (session && !(await isAdminUser(session.user?.id))) return null
+
+  return session
+}
+
+// ---------- Orders ----------
+
+// Pieces refunded from Support → Returns & exchanges no longer count as sold,
+// and the taka given back no longer counts as revenue. Every figure in the
+// panel reads an item's `qty` and an order's `subtotal` / `total`, so they're
+// netted here once; what was originally ordered and paid is kept alongside
+// (ordered_qty, paid_subtotal, paid_total) for the order's own details.
+function netOfRefunds(o) {
+  const refunded = Number(o.refunded_amount) || 0
+  let changed = refunded > 0
+  const items = (o.order_items || []).map((it) => {
+    const back = Number(it.returned_qty) || 0
+    if (!back) return it
+    changed = true
+    return { ...it, ordered_qty: it.qty, qty: Math.max(0, Number(it.qty) - back) }
+  })
+  if (!changed) return o
+  return {
+    ...o,
+    order_items: items,
+    refunded,
+    paid_subtotal: o.subtotal,
+    paid_total: o.total,
+    subtotal: Number(o.subtotal) - refunded,
+    total: o.total == null ? o.total : Number(o.total) - refunded,
+  }
+}
+
+// SUNDAY's orders keep their lines in an `items` json column and name the
+// customer fields differently; the panel was written against separate
+// order_items rows. This puts each order into the panel's shape once, on
+// the way in, so nothing past this point needs to know the difference.
+// `id` is the human order number (SND-…), `uuid` the row's key.
+const OPEN_STATUSES = ['pending', 'confirmed', 'processing']
+
+export function toPanelOrder(o) {
+  const items = Array.isArray(o.items) ? o.items : []
+  const advance = o.payment_method === 'bkash_advance' ? Number(o.delivery_charge) || 0 : 0
+  return {
+    ...o,
+    uuid: o.id,
+    id: o.order_id || o.id,
+    // SUNDAY's in-between steps read as "pending" on the panel's four-step board.
+    status: OPEN_STATUSES.includes(o.status) ? 'pending' : o.status === 'returned' ? 'cancelled' : o.status,
+    sunday_status: o.status,
+    customer_name: o.full_name,
+    customer_phone: o.mobile,
+    customer_email: o.email,
+    customer_address: [o.address, o.area].filter(Boolean).join(', '),
+    customer_area: o.district,
+    customer_note: o.notes,
+    delivery_zone: o.district ? (o.district === 'Dhaka' ? 'inside' : 'outside') : null,
+    delivery_fee: o.delivery_charge,
+    advance_amount: o.advance_amount ?? advance,
+    advance_trx_id: o.advance_trx_id ?? o.bkash_transaction_id,
+    order_items: items.map((it, i) => ({
+      // The line's position in orders.items — what admin_process_return takes as item_id.
+      id: i,
+      product_id: it.product_id ?? it.productId,
+      product_name: it.product_name ?? it.name,
+      size: it.size,
+      qty: Number(it.qty ?? it.quantity) || 0,
+      price: Number(it.price) || 0,
+      returned_qty: Number(it.returned_qty) || 0,
+    })),
+  }
+}
+
+export async function fetchOrders() {
+  const { data, error } = await supabase
+    .from('orders')
+    .select('*')
+    .order('created_at', { ascending: false })
+
+  if (error) {
+    console.error('[Supabase] fetchOrders failed:', error.message)
+    return { orders: [], error }
+  }
+  return { orders: data.map(toPanelOrder).map(netOfRefunds), error: null }
+}
+
+// SUNDAY takes stock off the shelf when an order is delivered (not when it
+// is placed), and puts it back if a delivered order is moved off delivered.
+// update_order_status does both in one transaction — see
+// supabase/migrations/*_admin_panel.sql. `orderId` is the order number.
+export async function updateOrderStatus(orderId, status) {
+  const { error } = await supabase.rpc('update_order_status', {
+    p_order_id: orderId,
+    p_new_status: status,
+  })
+
+  if (error) {
+    console.error('[Supabase] updateOrderStatus failed:', error.message)
+    return { error }
+  }
+  return { error: null }
+}
+
+// ---------- Blocked attempts (rate limiter) ----------
+
+// Fake or scripted place_order calls the rate limiter turned away — who they
+// claimed to be (phone/email/name) and which IP made the attempt. See
+// supabase-migration-rate-limiting.sql and -blocked-attempts.sql.
+export async function fetchBlockedAttempts() {
+  const { data, error } = await supabase
+    .from('blocked_attempts')
+    .select('*')
+    .order('created_at', { ascending: false })
+    .limit(200)
+
+  if (error) {
+    console.error('[Supabase] fetchBlockedAttempts failed:', error.message)
+    return { attempts: [], error }
+  }
+  return { attempts: data, error: null }
+}
+
+// ---------- Refunds & returns ----------
+
+export async function fetchReturns() {
+  const { data, error } = await supabase
+    .from('order_returns')
+    .select('*, orders(full_name, mobile)')
+    .order('created_at', { ascending: false })
+
+  if (error) {
+    console.error('[Supabase] fetchReturns failed:', error.message)
+    return { returns: [], error }
+  }
+  // The panel reads the customer off orders.customer_name / customer_phone.
+  const rows = data.map((r) => ({
+    ...r,
+    orders: r.orders ? { customer_name: r.orders.full_name, customer_phone: r.orders.mobile } : null,
+  }))
+  return { returns: rows, error: null }
+}
+
+// A request logged by hand, for one raised over a DM or a call — completed
+// from Support → Returns & exchanges the same way as one from the portal.
+export async function createReturn({ orderId, reason, kind = 'exchange' }) {
+  const { error } = await supabase.from('order_returns').insert({
+    order_id: orderId,
+    reason,
+    kind,
+    source: 'admin',
+    seen_at: new Date().toISOString(),
+  })
+
+  if (error) {
+    console.error('[Supabase] createReturn failed:', error.message)
+    return { error }
+  }
+  return { error: null }
+}
+
+// Completes a request: an exchange swaps the sizes in stock, a refund puts
+// the pieces back and takes the money off the order's revenue, a reject
+// just closes it. See supabase-migration-returns-processing.sql.
+export async function processReturn({ id, action, items = [], refund = 0, note = '' }) {
+  const { data, error } = await supabase.rpc('admin_process_return', {
+    p_return_id: id,
+    p_action: action,
+    p_items: items,
+    p_refund: refund,
+    p_note: note,
+  })
+  if (error) {
+    console.error('[Supabase] processReturn failed:', error.message)
+    return { result: null, error }
+  }
+  return { result: data, error: null }
+}
+
+// ---------- Abandoned carts ----------
+
+// Unconverted only — the moment a session's order goes through,
+// markCartConverted (src/lib/abandonedCart.js) takes it off this list.
+export async function fetchAbandonedCarts() {
+  const { data, error } = await supabase
+    .from('abandoned_carts')
+    .select('*')
+    .is('converted_order_id', null)
+    .order('last_active', { ascending: false })
+
+  if (error) {
+    console.error('[Supabase] fetchAbandonedCarts failed:', error.message)
+    return { carts: [], error }
+  }
+  return { carts: data, error: null }
+}
+
+// A sale agreed over DM never touches the checkout page, so nothing takes the
+// pieces off the shelf or counts the revenue unless it goes through here too.
+// Routed through the same place_order the website uses — the stock lock,
+// the sold-out check and the order/order_items write are exactly the ones a
+// checkout order gets, so a DM sale can't oversell a size the website has
+// already sold out, and it shows up in every count exactly like any other.
+export async function createManualOrder({ order, items }) {
+  const { data, error } = await supabase.rpc('place_order', { payload: { order, items } })
+
+  if (error) {
+    console.error('[Supabase] createManualOrder failed:', error.message)
+    return { id: null, error }
+  }
+  return { id: data, error: null }
+}
+
+// Reads a screenshot or pasted text of a DM order and asks Gemini to guess
+// the customer's details and what they're buying, matched against the real
+// catalog. Never writes anything itself — the form still goes through
+// createManualOrder above once a person has checked the guess over.
+export async function extractOrderFromMessage({ text, image, mimeType }) {
+  const { data, error } = await supabase.functions.invoke('parse-order-message', {
+    body: { text, image, mimeType },
+  })
+
+  if (error) {
+    // The client only gives a generic "non-2xx status" message here — the
+    // function's own {error: "..."} body, which says what actually went
+    // wrong, is on the raw response it stashes on context.
+    let detail = error.message
+    try {
+      const body = await error.context?.json()
+      if (body?.error) detail = body.error
+    } catch {
+      // Not JSON, or no context — the generic message is all there is.
+    }
+
+    console.error('[Supabase] extractOrderFromMessage failed:', detail)
+    return { extracted: null, error: { message: detail } }
+  }
+  if (data?.error) return { extracted: null, error: { message: data.error } }
+
+  return { extracted: data.extracted, error: null }
+}
+
+// place_order raises a tagged message for the cases worth explaining
+// specifically — the same convention Checkout.jsx parses on the customer
+// side, reused here for the admin's own order form.
+export function orderErrorMessage(error) {
+  const raw = error?.message || ''
+
+  const soldOut = raw.match(/SOLD_OUT:(.*):(.*)/)
+  if (soldOut) return `${soldOut[1]} in size ${soldOut[2]} is sold out.`
+
+  const gone = raw.match(/UNAVAILABLE:(.*)/)
+  if (gone) return `${gone[1]} is no longer available.`
+
+  if (error?.code === '23505' || raw.includes('orders_advance_trx_id_idx')) {
+    return 'That transaction ID has already been used on another order.'
+  }
+
+  if (raw.includes('EMPTY_CART')) return 'Add at least one item.'
+
+  const priceChanged = raw.match(/PRICE_CHANGED:(.*)/)
+  if (priceChanged) return `${priceChanged[1]}'s price changed — remove it and add it again.`
+
+  if (raw.includes('PRICE_MISMATCH') || raw.includes('INVALID_QTY')) {
+    return 'The totals are out of date — reload the page and try again.'
+  }
+
+  if (raw.includes('RATE_LIMITED')) {
+    return 'Too many orders placed in a short time — wait a few minutes and try again.'
+  }
+
+  return 'Could not place the order — check the details and try again.'
+}
+
+// ---------- Products ----------
+
+export async function fetchAdminProducts() {
+  const { data, error } = await supabase
+    .from('products')
+    .select('*')
+    .order('created_at', { ascending: true })
+
+  if (error) {
+    console.error('[Supabase] fetchAdminProducts failed:', error.message)
+    return { products: [], error }
+  }
+  return { products: data.map(toPanelProduct), error: null }
+}
+
+// ---------- Derived stats ----------
+
+// Everything here is computed from the orders already fetched, so the
+// dashboard never needs a second round trip for its summary numbers.
+export function computeStats(orders) {
+  const delivered = orders.filter((o) => o.status === 'delivered')
+  const cancelled = orders.filter((o) => o.status === 'cancelled')
+  const pending = orders.filter((o) => o.status === 'pending')
+  const shipped = orders.filter((o) => o.status === 'shipped')
+
+  // Anything still owed to us: placed but not yet delivered or cancelled.
+  const open = [...pending, ...shipped]
+
+  // Revenue counts delivered orders only — COD money isn't real until it lands.
+  const revenue = delivered.reduce((sum, o) => sum + itemsNet(o), 0)
+  const openValue = open.reduce((sum, o) => sum + itemsNet(o), 0)
+
+  // Pieces, not orders — one order can carry several units of several products.
+  // Cancelled orders never counted as a sale, so they're left out.
+  const unitsSold = orders
+    .filter((o) => o.status !== 'cancelled')
+    .reduce(
+      (sum, o) => sum + (o.order_items || []).reduce((s, it) => s + Number(it.qty), 0),
+      0
+    )
+
+  return {
+    totalOrders: orders.length,
+    unitsSold,
+    delivered: delivered.length,
+    cancelled: cancelled.length,
+    pending: pending.length,
+    shipped: shipped.length,
+    open: open.length,
+    revenue,
+    openValue,
+  }
+}
+
+// Groups orders into daily buckets for the last `days` days, for the chart.
+export function dailySeries(orders, days = 14) {
+  const buckets = []
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+
+  for (let i = days - 1; i >= 0; i--) {
+    const d = new Date(today)
+    d.setDate(d.getDate() - i)
+    buckets.push({ date: d, orders: 0, value: 0 })
+  }
+
+  orders.forEach((o) => {
+    const placed = new Date(o.created_at)
+    placed.setHours(0, 0, 0, 0)
+    const bucket = buckets.find((b) => b.date.getTime() === placed.getTime())
+    if (bucket) {
+      bucket.orders += 1
+      bucket.value += itemsNet(o)
+    }
+  })
+
+  return buckets
+}
+
+// Counts units sold per product across all non-cancelled orders.
+export function topProducts(orders, limit = 5) {
+  const tally = new Map()
+
+  orders
+    .filter((o) => o.status !== 'cancelled')
+    .forEach((o) => {
+      ;(o.order_items || []).forEach((item) => {
+        // Grouped by id rather than name — two products sharing a name (a
+        // colour variant, say) would otherwise merge into one bestseller.
+        const key = item.product_id || item.product_name
+        const prev = tally.get(key) || { id: item.product_id, name: item.product_name, units: 0, value: 0 }
+        prev.units += item.qty
+        prev.value += item.qty * Number(item.price)
+        tally.set(key, prev)
+      })
+    })
+
+  return [...tally.values()].sort((a, b) => b.units - a.units).slice(0, limit)
+}
+
+// Counts units sold per month for the last `months` months, for the bar chart.
+// Cancelled orders are excluded so the bars only ever show real sales.
+export function monthlySeries(orders, months = 6) {
+  const now = new Date()
+  const buckets = []
+
+  for (let i = months - 1; i >= 0; i--) {
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1)
+    buckets.push({
+      key: `${d.getFullYear()}-${d.getMonth()}`,
+      label: d.toLocaleDateString('en-GB', { month: 'short' }),
+      year: d.getFullYear(),
+      orders: 0,
+      units: 0,
+      value: 0,
+    })
+  }
+
+  const byKey = new Map(buckets.map((b) => [b.key, b]))
+
+  orders
+    .filter((o) => o.status !== 'cancelled')
+    .forEach((o) => {
+      const d = new Date(o.created_at)
+      const bucket = byKey.get(`${d.getFullYear()}-${d.getMonth()}`)
+      if (!bucket) return
+
+      bucket.orders += 1
+      bucket.value += itemsNet(o)
+      ;(o.order_items || []).forEach((it) => {
+        bucket.units += Number(it.qty)
+      })
+    })
+
+  return buckets
+}
+
+// Order lines only record the product's name and price, not which drop or
+// category it belonged to — those live on the product row, so the sold units
+// are matched back to the catalog by id. A product deleted since the sale has
+// nothing to match, so its units land in the fallback bucket rather than
+// disappearing from the totals.
+function groupSales(orders, products, column, fallback) {
+  const catalog = new Map(products.map((p) => [String(p.id), p]))
+  const tally = new Map()
+
+  orders
+    .filter((o) => o.status !== 'cancelled')
+    .forEach((o) => {
+      ;(o.order_items || []).forEach((it) => {
+        const product = catalog.get(String(it.product_id))
+        const label = (product && product[column]) || fallback
+        const prev = tally.get(label) || { name: label, units: 0, value: 0, orders: 0 }
+
+        prev.units += Number(it.qty)
+        prev.value += Number(it.qty) * Number(it.price)
+        prev.orders += 1
+        tally.set(label, prev)
+      })
+    })
+
+  return [...tally.values()].sort((a, b) => b.units - a.units)
+}
+
+// Units sold per drop — "how much did DROP 01 move".
+export function salesByDrop(orders, products) {
+  return groupSales(orders, products, 'drop_name', 'No drop')
+}
+
+// Units sold per category — "how many hoodies, how many jackets".
+export function salesByCategory(orders, products) {
+  return groupSales(orders, products, 'category', 'Uncategorised')
+}
+
+// Orders grouped by where the customer clicked in from — the utm_source
+// captured off the link they landed on, so "reel A got 12 orders, story got
+// 3" is read straight off the data instead of guessed. Orders with no
+// tracked link (typed the URL, opened a bookmark) land in the fallback.
+export function salesByAttribution(orders, fallback = 'Direct / no link') {
+  const tally = new Map()
+
+  orders
+    .filter((o) => o.status !== 'cancelled')
+    .forEach((o) => {
+      const label = o.utm_source || fallback
+      const prev = tally.get(label) || { name: label, orders: 0, value: 0 }
+
+      prev.orders += 1
+      prev.value += Number(o.total ?? o.subtotal)
+      tally.set(label, prev)
+    })
+
+  return [...tally.values()].sort((a, b) => b.orders - a.orders)
+}
+
+// Every size that has run out or is about to, across the catalog — the
+// reorder list, shortest first.
+export function lowStockSizes(products, threshold = LOW_STOCK_AT) {
+  const rows = []
+
+  products.forEach((p) => {
+    lowSizes(p, threshold).forEach(({ size, left }) => {
+      rows.push({ id: p.id, name: p.name, variant: p.variant, size, left })
+    })
+  })
+
+  return rows.sort((a, b) => a.left - b.left || a.name.localeCompare(b.name))
+}
+
+// ---------- Customer history ----------
+
+// COD only works on trust, and the phone number is the only thing that ties a
+// stranger's orders together. Someone who has refused two parcels already is
+// worth a confirmation call before the third goes out — that judgement needs
+// the history in front of you at the moment you're looking at the order.
+
+// Numbers get typed with and without the country code, so they are compared by
+// their last 11 digits — the part that actually identifies a BD mobile.
+export function phoneKey(phone) {
+  return String(phone || '').replace(/\D/g, '').slice(-11)
+}
+
+function riskLevel(entry) {
+  // A first order has no history to judge; saying nothing is the honest answer.
+  if (entry.total <= 1) return 'new'
+
+  // Refusing twice, or refusing more often than accepting, is the pattern that
+  // costs money in return fare.
+  if (entry.cancelled >= 2 || (entry.cancelled >= 1 && entry.cancelled > entry.delivered)) {
+    return 'risk'
+  }
+
+  if (entry.cancelled === 1) return 'watch'
+  if (entry.delivered >= 1) return 'good'
+
+  return 'neutral'
+}
+
+// One pass over the orders already in memory: phone number → what that number
+// has done so far. No extra round trip, and every row can look itself up.
+export function customerIndex(orders) {
+  const index = new Map()
+
+  orders.forEach((o) => {
+    const key = phoneKey(o.customer_phone)
+    if (!key) return
+
+    const entry = index.get(key) || {
+      total: 0,
+      delivered: 0,
+      cancelled: 0,
+      open: 0,
+      collected: 0,
+    }
+
+    entry.total += 1
+
+    if (o.status === 'delivered') {
+      entry.delivered += 1
+      entry.collected += Number(o.total ?? o.subtotal)
+    } else if (o.status === 'cancelled') {
+      entry.cancelled += 1
+    } else {
+      entry.open += 1
+    }
+
+    index.set(key, entry)
+  })
+
+  index.forEach((entry) => {
+    entry.level = riskLevel(entry)
+  })
+
+  return index
+}
+
+export function lookupCustomer(index, phone) {
+  return (
+    index.get(phoneKey(phone)) || {
+      total: 0,
+      delivered: 0,
+      cancelled: 0,
+      open: 0,
+      collected: 0,
+      level: 'new',
+    }
+  )
+}
+
+// One row per phone number, for the Customers tab's own list — customerIndex
+// above is keyed the same way but built for a single lookup, not a table, so
+// it never bothered keeping a name.
+export function customerList(orders) {
+  const byPhone = new Map()
+
+  orders.forEach((o) => {
+    const key = phoneKey(o.customer_phone)
+    if (!key) return
+
+    const entry = byPhone.get(key) || {
+      name: o.customer_name,
+      phone: o.customer_phone,
+      orders: 0,
+      delivered: 0,
+      cancelled: 0,
+      totalSpent: 0,
+      firstAt: o.created_at,
+      lastAt: o.created_at,
+    }
+    entry.orders += 1
+    if (o.status === 'delivered') {
+      entry.delivered += 1
+      entry.totalSpent += Number(o.total ?? o.subtotal)
+    }
+    if (o.status === 'cancelled') entry.cancelled += 1
+    if (o.created_at < entry.firstAt) entry.firstAt = o.created_at
+    if (o.created_at > entry.lastAt) {
+      entry.lastAt = o.created_at
+      // The name they used most recently.
+      entry.name = o.customer_name
+    }
+    byPhone.set(key, entry)
+  })
+
+  return [...byPhone.values()].sort((a, b) => b.orders - a.orders)
+}
+
+// New (one order) vs repeat (more than one) — the split the Customers tab
+// shows as a headline, built off the same per-phone counts as customerList.
+// Also: what each side has spent (delivered orders only), the share of
+// customers who came back, and the repeat customers themselves, most orders
+// first — the regulars.
+export function repeatVsNew(orders) {
+  const list = customerList(orders)
+  const once = list.filter((c) => c.orders === 1)
+  const back = list.filter((c) => c.orders > 1)
+  const spent = (rows) => rows.reduce((sum, c) => sum + c.totalSpent, 0)
+  return {
+    new: once.length,
+    repeat: back.length,
+    rate: list.length ? Math.round((back.length / list.length) * 100) : 0,
+    newSpent: spent(once),
+    repeatSpent: spent(back),
+    regulars: back.sort((a, b) => b.orders - a.orders || b.totalSpent - a.totalSpent),
+  }
+}
+
+// ---------- Cost & margin ----------
+
+// Only products with a cost actually entered — a null cost would otherwise
+// read as "free to make" and show a false 100% margin.
+export function costAndMargin(products) {
+  return products
+    .filter((p) => p.cost != null && p.cost !== '')
+    .map((p) => {
+      const cost = Number(p.cost)
+      const price = Number(p.price)
+      const margin = price > 0 ? ((price - cost) / price) * 100 : 0
+      return { id: p.id, name: p.name, variant: p.variant, cost, price, margin }
+    })
+    .sort((a, b) => b.margin - a.margin)
+}
+
+// ---------- Reviews ----------
+
+export async function fetchAllReviews() {
+  const { data, error } = await supabase
+    .from('reviews')
+    .select('*')
+    .order('created_at', { ascending: false })
+
+  if (error) {
+    console.error('[Supabase] fetchAllReviews failed:', error.message)
+    return { reviews: [], error }
+  }
+  // SUNDAY's reviews table names the reviewer author_name.
+  return { reviews: data.map((r) => ({ ...r, customer_name: r.author_name })), error: null }
+}
+
+// ---------- Marketing (manual entry) ----------
+
+// Four tables, one identical shape each — fetch/add/remove, admin-only, no
+// live API behind any of them yet. A factory rather than four copies of the
+// same three functions.
+function metricApi(table) {
+  return {
+    fetch: async () => {
+      const { data, error } = await supabase
+        .from(table)
+        .select('*')
+        .order('created_at', { ascending: false })
+
+      if (error) {
+        console.error(`[Supabase] fetch ${table} failed:`, error.message)
+        return { rows: [], error }
+      }
+      return { rows: data, error: null }
+    },
+    add: async (row) => {
+      const { error } = await supabase.from(table).insert(row)
+      if (error) console.error(`[Supabase] insert into ${table} failed:`, error.message)
+      return { error }
+    },
+    remove: async (id) => {
+      const { error } = await supabase.from(table).delete().eq('id', id)
+      if (error) console.error(`[Supabase] delete from ${table} failed:`, error.message)
+      return { error }
+    },
+  }
+}
+
+export const adSpendApi = metricApi('ad_spend')
+export const emailCampaignsApi = metricApi('email_campaigns')
+export const socialStatsApi = metricApi('social_stats')
+
+// Analytics is added up in the database now — admin_analytics(), read by
+// src/components/AnalyticsManager.jsx.
+
+// ---------- Product write operations ----------
+
+// SUNDAY's product columns that mean the same thing under another name. The
+// panel reads the names on the left; the storefront reads the ones on the
+// right, so both are kept on every row the panel touches.
+export function toPanelProduct(p) {
+  return {
+    ...p,
+    stock: p.size_stock && Object.keys(p.size_stock).length ? p.size_stock : null,
+    cost: p.cost_price,
+    is_new: p.is_new_arrival,
+    featured: p.is_featured,
+  }
+}
+
+function slugify(text) {
+  const base = String(text || 'product').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')
+  return `${base || 'product'}-${Date.now().toString(36)}`
+}
+
+// The UI keeps products in the camelCase shape the storefront uses; the table
+// is snake_case. Converting here keeps the form components unaware of the
+// column names.
+function toRow(p, isNewRecord) {
+  const stock = p.stock && Object.keys(p.stock).length ? p.stock : null
+  const quantity = stock ? Object.values(stock).reduce((n, v) => n + (Number(v) || 0), 0) : null
+  const row = {
+    id: p.id,
+    sku: p.sku,
+    name: (p.name || '').trim(),
+    variant: p.variant,
+    price: Number(p.price),
+    cost_price: p.cost === '' || p.cost == null ? null : Number(p.cost),
+    drop_name: p.drop?.trim() || null,
+    category: p.category || null,
+    is_new_arrival: Boolean(p.isNew),
+    is_featured: Boolean(p.featured),
+    images: p.images ?? [],
+    description: p.description ?? '',
+    sizes: p.sizes ?? [],
+    sizes_out: p.sizesOut ?? [],
+    size_stock: stock ?? {},
+    details: p.details ?? '',
+    size_chart: p.sizeChart ?? null,
+    colour_group: p.colourGroup?.trim() || null,
+    publish_at: fromLocalInput(p.publishAt),
+  }
+  // Untracked products keep whatever count and status they already had.
+  if (quantity != null) {
+    row.quantity = quantity
+    row.stock_status = quantity === 0 ? 'out_of_stock' : quantity <= LOW_STOCK_AT ? 'low_stock' : 'in_stock'
+  }
+  if (isNewRecord) {
+    delete row.id
+    row.slug = slugify(row.name)
+  }
+  return row
+}
+
+export async function saveProduct(product, isNewRecord) {
+  const row = toRow(product, isNewRecord)
+
+  const query = isNewRecord
+    ? supabase.from('products').insert(row)
+    : supabase.from('products').update(row).eq('id', product.id)
+
+  const { error } = await query
+
+  if (error) {
+    console.error('[Supabase] saveProduct failed:', error.message)
+    return { error }
+  }
+
+  return { error: null }
+}
+
+export async function deleteProduct(id) {
+  const { error } = await supabase.from('products').delete().eq('id', id)
+
+  if (error) {
+    console.error('[Supabase] deleteProduct failed:', error.message)
+    return { error }
+  }
+
+  return { error: null }
+}

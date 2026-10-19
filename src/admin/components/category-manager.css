@@ -1,0 +1,96 @@
+/* Admin → Nav menus. One box per dropdown (SHOP, DROPS); the box itself is
+   admin-box.css. */
+
+/* The word in the nav and its dropdown, as a shopper sees it. */
+.cm-preview {
+  background: #15171a;
+  color: #fff;
+  border-radius: 12px;
+  padding: 10px 14px 12px;
+  margin-bottom: 14px;
+}
+
+.cm-preview-word { font-size: 12px; letter-spacing: 0.12em; font-weight: 700; }
+
+.cm-preview-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 14px;
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid rgba(255, 255, 255, 0.15);
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.cm-preview-list em { font-style: normal; color: rgba(255, 255, 255, 0.5); }
+
+.cm-add { display: flex; gap: 8px; margin-bottom: 12px; }
+.cm-add .ab-input { flex: 1; letter-spacing: 0.04em; }
+
+.cm-suggest { margin-bottom: 14px; }
+.cm-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+
+.admin .main .cm-chips button {
+  border: 1px dashed var(--order-edge-strong, var(--steel-line));
+  background: none;
+  color: var(--cobalt);
+  border-radius: 999px;
+  padding: 5px 11px;
+  font-size: 11.5px;
+  cursor: pointer;
+}
+
+.cm-chips b { font-weight: 700; color: var(--steel); margin-left: 3px; }
+
+.cm-list { display: flex; flex-direction: column; gap: 6px; }
+
+.cm-row {
+  display: grid;
+  grid-template-columns: 22px minmax(0, 1fr) auto auto;
+  gap: 8px;
+  align-items: center;
+  border: 1px solid var(--order-edge, var(--steel-line));
+  border-radius: 12px;
+  padding: 6px 8px;
+  background: var(--glass, transparent);
+}
+
+.cm-row.off .cm-name,
+.cm-row.off .cm-count { opacity: 0.45; }
+
+.cm-pos { font-size: 11px; color: var(--steel); text-align: center; }
+
+.cm-name {
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--ink);
+  border-radius: 8px;
+  padding: 6px 8px;
+  font-size: 12.5px;
+  letter-spacing: 0.04em;
+  min-width: 0;
+  width: 100%;
+}
+
+.cm-name:hover { border-color: var(--steel-line); }
+.cm-name:focus { outline: none; border-color: var(--cobalt); }
+
+.cm-count {
+  font-size: 11px;
+  color: var(--steel);
+  border: 1px solid var(--steel-line);
+  border-radius: 999px;
+  padding: 2px 8px;
+  white-space: nowrap;
+}
+
+.cm-count.zero { color: var(--signal); border-color: var(--signal); }
+
+.cm-tools { display: inline-flex; align-items: center; gap: 4px; }
+
+@media (max-width: 860px) {
+  .cm-row { grid-template-columns: 22px minmax(0, 1fr) auto; }
+  .cm-tools { grid-column: 2 / -1; justify-content: flex-end; }
+}

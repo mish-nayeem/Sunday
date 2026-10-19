@@ -1,0 +1,34 @@
+/* What the admin panel took from the PAUSE storefront's global stylesheet:
+   its fonts and the two type classes every panel uses. Scoped to .admin so
+   the SUNDAY storefront's own styles are left alone. The fonts themselves
+   are linked from Admin.jsx (useAdminFonts): an @import here would make the
+   whole panel fail to load whenever Google Fonts can't be reached. */
+
+.admin,
+.admin-boot {
+  --paper: #FFFFFF;
+  --paper-dim: #F5F5F5;
+  --ink: #16160F;
+  --cobalt: #2A4DFF;
+  --steel: #8B8A82;
+  --steel-line: #E5E5E5;
+  --signal: #FF4426;
+  -webkit-font-smoothing: antialiased;
+}
+
+.admin .mono,
+.admin-boot.mono,
+.slip .mono {
+  font-family: 'JetBrains Mono', monospace;
+}
+
+.admin .display,
+.slip .display {
+  font-family: 'Anton', sans-serif;
+  text-transform: uppercase;
+  letter-spacing: 0.045em;
+}
+
+.admin button {
+  font-family: inherit;
+}

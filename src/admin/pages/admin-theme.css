@@ -1,0 +1,665 @@
+/* Admin dashboard themes.
+   Loaded after admin.css. Everything in admin.css reads its colours off the
+   tokens --paper (cards), --paper-dim (page), --ink (text), --steel (muted
+   text), --steel-line (hairlines) and --cobalt (accent), so a theme is just a
+   set of values for those, plus the sidebar's own colours. Three themes,
+   picked from the header and remembered in the browser:
+
+     green — green sidebar, white cards
+     blue  — blue sidebar, white cards
+     dark  — black / grey (the panel's original dark look)
+     orange — black cards, an orange sidebar and one orange accent (set as
+              the dark theme plus data-accent='orange')
+     burgundy — SUNDAY's own: burgundy sidebar, white cards (the default)                      */
+
+/* ---------- Theme tokens ---------- */
+
+.admin {
+  --admin-font: 'Plus Jakarta Sans', 'Inter', system-ui, sans-serif;
+  --r-card: 18px;
+  --r-ctl: 10px;
+  --gap: 14px;
+
+  font-family: var(--admin-font);
+  color: var(--ink);
+  background: var(--paper-dim);
+  grid-template-columns: 212px 1fr;
+}
+
+.admin[data-theme='burgundy'] {
+  --paper: #ffffff;
+  --paper-dim: #f8f1f2;
+  --ink: #2a1216;
+  --steel: #5e3a40;
+  --steel-line: rgba(86, 28, 36, 0.12);
+  --cobalt: #7a1f2b;
+  --side-bg: linear-gradient(180deg, #7a1f2b 0%, #4a141c 100%);
+  --side-text: #ffffff;
+  --side-muted: rgba(255, 255, 255, 0.8);
+  --side-hover: rgba(255, 255, 255, 0.14);
+  --card-shadow: 0 1px 2px rgba(86, 28, 36, 0.05), 0 10px 28px rgba(86, 28, 36, 0.07);
+  --glass-bg: linear-gradient(140deg, rgba(122, 31, 43, 0.14) 0%, rgba(255, 255, 255, 0.72) 55%, rgba(122, 31, 43, 0.06) 100%);
+  --glass-border: rgba(122, 31, 43, 0.2);
+  --detail-bg: linear-gradient(140deg, rgba(122, 31, 43, 0.11) 0%, rgba(255, 255, 255, 0.6) 55%, rgba(122, 31, 43, 0.07) 100%);
+  --detail-border: rgba(122, 31, 43, 0.18);
+  --pill-pending: #a8690b;
+  --pill-shipped: #1a63b0;
+  --pill-delivered: #0b7a3b;
+  --pill-cancelled: #9b1c2e;
+}
+
+.admin[data-theme='green'] {
+  --paper: #ffffff;
+  --paper-dim: #eef5f0;
+  --ink: #15271d;
+  --steel: #35493e;
+  --steel-line: rgba(21, 39, 29, 0.1);
+  --cobalt: #0b8a43;
+  --side-bg: linear-gradient(180deg, #14a656 0%, #0a7d3e 100%);
+  --side-text: #ffffff;
+  --side-muted: rgba(255, 255, 255, 0.8);
+  --side-hover: rgba(255, 255, 255, 0.14);
+  --card-shadow: 0 1px 2px rgba(21, 60, 35, 0.05), 0 10px 28px rgba(21, 60, 35, 0.06);
+  --glass-bg: linear-gradient(140deg, rgba(20, 166, 86, 0.16) 0%, rgba(255, 255, 255, 0.72) 55%, rgba(20, 166, 86, 0.07) 100%);
+  --glass-border: rgba(20, 166, 86, 0.22);
+  --detail-bg: linear-gradient(140deg, rgba(20, 166, 86, 0.13) 0%, rgba(255, 255, 255, 0.6) 55%, rgba(20, 166, 86, 0.08) 100%);
+  --detail-border: rgba(20, 166, 86, 0.2);
+  --pill-pending: #a8690b;
+  --pill-shipped: #1a63b0;
+  --pill-delivered: #0b7a3b;
+  --pill-cancelled: #c1304a;
+}
+
+.admin[data-theme='blue'] {
+  --paper: #ffffff;
+  --paper-dim: #edf2f9;
+  --ink: #14233a;
+  --steel: #33496a;
+  --steel-line: rgba(20, 35, 58, 0.1);
+  --cobalt: #1d5fb4;
+  --side-bg: linear-gradient(180deg, #1c63b8 0%, #0f3f80 100%);
+  --side-text: #ffffff;
+  --side-muted: rgba(255, 255, 255, 0.8);
+  --side-hover: rgba(255, 255, 255, 0.14);
+  --card-shadow: 0 1px 2px rgba(20, 45, 90, 0.05), 0 10px 28px rgba(20, 45, 90, 0.07);
+  --glass-bg: linear-gradient(140deg, rgba(28, 99, 184, 0.15) 0%, rgba(255, 255, 255, 0.72) 55%, rgba(28, 99, 184, 0.07) 100%);
+  --glass-border: rgba(28, 99, 184, 0.22);
+  --detail-bg: linear-gradient(140deg, rgba(28, 99, 184, 0.13) 0%, rgba(255, 255, 255, 0.6) 55%, rgba(28, 99, 184, 0.08) 100%);
+  --detail-border: rgba(28, 99, 184, 0.2);
+  --pill-pending: #a8690b;
+  --pill-shipped: #1a63b0;
+  --pill-delivered: #0b7a3b;
+  --pill-cancelled: #c1304a;
+}
+
+.admin[data-theme='dark'] {
+  --paper: #25282d;
+  --paper-dim: #17191c;
+  --ink: #f1f2f4;
+  --steel: #cdd1d8;
+  --steel-line: rgba(255, 255, 255, 0.09);
+  --cobalt: #3fc1ff;
+  --side-bg: #212429;
+  --side-text: #f1f2f4;
+  --side-muted: rgba(241, 242, 244, 0.64);
+  --side-hover: rgba(255, 255, 255, 0.07);
+  --card-shadow: none;
+  --glass-bg: var(--paper);
+  --glass-border: transparent;
+  --detail-bg: linear-gradient(140deg, rgba(255, 255, 255, 0.07) 0%, rgba(0, 0, 0, 0.32) 60%, rgba(255, 255, 255, 0.04) 100%);
+  --detail-border: rgba(255, 255, 255, 0.09);
+  --pill-pending: #ffc14d;
+  --pill-shipped: #3fc1ff;
+  --pill-delivered: #3ddc97;
+  --pill-cancelled: #ff5e7e;
+}
+
+/* The dark theme keeps one accent per section, as before. */
+.admin[data-theme='dark'][data-tab='overview'],
+.admin[data-theme='dark'][data-tab='analytics'] { --cobalt: #3fc1ff; }
+.admin[data-theme='dark'][data-tab='orders'],
+.admin[data-theme='dark'][data-tab='about'] { --cobalt: #ff5e7e; }
+.admin[data-theme='dark'][data-tab='products'],
+.admin[data-theme='dark'][data-tab='hero'] { --cobalt: #3ddc97; }
+.admin[data-theme='dark'][data-tab='customers'],
+.admin[data-theme='dark'][data-tab='menu'] { --cobalt: #ffc14d; }
+.admin[data-theme='dark'][data-tab='marketing'] { --cobalt: #7c6cff; }
+
+/* Black & orange. [data-theme] in the selector lifts it over the dark
+   theme's per-section accents, so orange is the one accent everywhere. */
+.admin[data-accent='orange'][data-theme] {
+  --paper: #18181b;
+  --paper-dim: #0c0c0d;
+  --ink: #f6f3ef;
+  --steel: #cbc5bd;
+  --steel-line: rgba(255, 255, 255, 0.09);
+  --cobalt: #ff7a1a;
+  --side-bg: linear-gradient(180deg, #ff7a1a 0%, #e04a00 100%);
+  --side-text: #111111;
+  --side-muted: rgba(17, 17, 17, 0.74);
+  --side-hover: rgba(0, 0, 0, 0.1);
+  --card-shadow: none;
+  --detail-bg: linear-gradient(140deg, rgba(255, 122, 26, 0.12) 0%, rgba(0, 0, 0, 0.35) 60%, rgba(255, 122, 26, 0.05) 100%);
+  --detail-border: rgba(255, 122, 26, 0.25);
+  --pill-pending: #ffb547;
+  --pill-shipped: #7cc4ff;
+  --pill-delivered: #3ddc97;
+  --pill-cancelled: #ff5e7e;
+  /* Box edges and the glass inside them, in orange (admin.css). */
+  --order-edge: rgba(255, 122, 26, 0.4);
+  --order-edge-strong: #ff7a1a;
+  --glass: linear-gradient(135deg, rgba(255, 122, 26, 0.08), rgba(255, 255, 255, 0.02));
+  --glass-hover: rgba(255, 122, 26, 0.13);
+  --glass-shine: inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+/* On the orange sidebar: dark dots, the picked one orange. */
+.admin[data-accent='orange'] .nav-dot { background: rgba(17, 17, 17, 0.5); }
+.admin[data-accent='orange'] .side-nav button.on .nav-dot { background: var(--cobalt); }
+
+/* ---------- Type ---------- */
+
+/* One friendly sans everywhere in the panel. The monospace and condensed
+   display faces the storefront uses are hard to read in dense tables. */
+.admin :is(h1, h2, h3, h4, p, span, div, a, label, li, td, th, button, input, select, textarea, em) {
+  font-family: var(--admin-font);
+}
+
+.admin .mono {
+  letter-spacing: 0.01em;
+  font-variant-numeric: tabular-nums;
+}
+
+.admin .display {
+  font-weight: 800;
+  text-transform: none;
+  letter-spacing: -0.015em;
+}
+
+.admin .main { font-size: 14px; line-height: 1.5; font-weight: 500; }
+
+/* Labels, hints and placeholders were reading too pale. Labels and headings
+   in forms go bold, hints go medium, and what's typed into a field is full
+   strength. */
+.admin :is(.pf-label, .pf-field > span, .fl, .dlabel, .stat-label, .panel-label, .field-label) {
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.admin :is(.pf-hint, .pf-note, .panel-note, .stat-note, .top-sub, .admin-crumb, .dim, .empty, .loading) {
+  color: var(--steel);
+  font-weight: 500;
+}
+
+.admin :is(input, select, textarea) { color: var(--ink); font-weight: 500; }
+
+.admin ::placeholder {
+  color: color-mix(in srgb, var(--ink) 68%, transparent);
+  opacity: 1;
+}
+
+/* A locked field (an existing product's ID) stays readable rather than
+   fading to grey. */
+.admin :is(input, select, textarea):disabled,
+.admin :is(input, textarea)[readonly] {
+  color: color-mix(in srgb, var(--ink) 78%, transparent);
+  -webkit-text-fill-color: color-mix(in srgb, var(--ink) 78%, transparent);
+  opacity: 1;
+}
+.admin .top h1 { font-size: 30px; }
+.admin .admin-crumb { letter-spacing: 0.06em; font-weight: 600; }
+.admin .stat-value { font-weight: 800; letter-spacing: -0.02em; }
+.admin .big { font-weight: 800; letter-spacing: -0.02em; }
+
+/* ---------- Sidebar ---------- */
+
+.admin .side {
+  background: var(--side-bg);
+  color: var(--side-text);
+  border-radius: 0 30px 30px 0;
+  padding: 28px 0 24px;
+  box-shadow: 0 0 40px rgba(0, 0, 0, 0.12);
+}
+
+.admin .side-brand { padding: 0 26px 26px; }
+.admin .side-brand .display { font-size: 26px; color: var(--side-text); }
+.admin .side-sub { color: var(--side-muted); letter-spacing: 0.16em; font-weight: 600; }
+
+.admin .side-nav {
+  gap: 2px;
+  /* Room inside the scroll area for the picked item's curves (26px above and
+     below it), taken back with the margin so the spacing doesn't change. */
+  padding: 26px 0;
+  /* Taken back at the top only: at the bottom the room keeps the last item
+     (and its curve) clear of View storefront below. */
+  margin: -26px 0 0;
+}
+
+/* The picked item is cut out of the sidebar in the page's own colour and runs
+   into the content, with a concave curve above and below where it joins. */
+.admin .side-nav button {
+  position: relative;
+  margin-left: 14px;
+  padding: 9px 12px 9px 14px;
+  border: none;
+  border-radius: 26px 0 0 26px;
+  color: var(--side-muted);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0;
+  transition: background 0.2s ease, color 0.2s ease, padding 0.2s ease;
+}
+
+.admin .side-nav button:hover {
+  background: var(--side-hover);
+  color: var(--side-text);
+  padding-left: 18px;
+}
+
+.admin .side-nav button.on,
+.admin .side-nav button.on:hover {
+  background: var(--paper-dim);
+  color: var(--ink);
+  padding-left: 14px;
+  border-left: none;
+}
+
+.admin .side-nav button.on::before,
+.admin .side-nav button.on::after {
+  content: '';
+  position: absolute;
+  right: 0;
+  width: 26px;
+  height: 26px;
+  pointer-events: none;
+}
+
+.admin .side-nav button.on::before {
+  top: -26px;
+  background: radial-gradient(circle at 0 0, transparent 26px, var(--paper-dim) 26.5px);
+}
+
+.admin .side-nav button.on::after {
+  bottom: -26px;
+  background: radial-gradient(circle at 0 100%, transparent 26px, var(--paper-dim) 26.5px);
+}
+
+/* Light themes: quiet white dots that turn to the accent on the picked item.
+   Dark keeps each section's own colour. */
+.admin:not([data-theme='dark']) .nav-dot { background: rgba(255, 255, 255, 0.55); }
+.admin:not([data-theme='dark']) .side-nav button.on .nav-dot { background: var(--cobalt); }
+
+.admin .side-nav .badge {
+  border-radius: 999px;
+  padding: 2px 8px;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.admin .side-foot { padding: 4px 24px 0; font-size: 12.5px; gap: 10px; }
+.admin .side-foot a,
+.admin .signout { color: var(--side-muted); font-weight: 600; }
+.admin .side-foot a:hover,
+.admin .signout:hover { color: var(--side-text); }
+
+/* ---------- Header + theme picker ---------- */
+
+.admin .top { margin-bottom: 24px; align-items: center; }
+
+.top-right {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 10px;
+}
+
+.theme-picker {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  background: var(--paper);
+  border-radius: 999px;
+  box-shadow: var(--card-shadow);
+  border: 1px solid var(--steel-line);
+}
+
+.theme-picker-label {
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--steel);
+  margin-right: 2px;
+}
+
+.theme-swatch {
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  cursor: pointer;
+  transition: transform 0.15s ease, border-color 0.15s ease;
+}
+
+.theme-swatch:hover { transform: scale(1.12); }
+.theme-swatch.on { border-color: var(--ink); }
+
+.theme-swatch[data-swatch='green'] { background: linear-gradient(135deg, #12a252 50%, #ffffff 50%); box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.15); }
+.theme-swatch[data-swatch='blue'] { background: linear-gradient(135deg, #1c63b8 50%, #ffffff 50%); box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.15); }
+.theme-swatch[data-swatch='dark'] { background: linear-gradient(135deg, #212429 50%, #6b7079 50%); }
+.theme-swatch[data-swatch='orange'] { background: linear-gradient(135deg, #ff7a1a 50%, #111111 50%); }
+
+/* ---------- Cards: rounded, with room between them ---------- */
+
+.admin .main { padding: 28px 22px 60px; }
+
+.admin .stat,
+.admin .panel,
+.admin .table {
+  background: var(--paper);
+  border-radius: var(--r-card);
+  box-shadow: var(--card-shadow);
+}
+
+.admin .stat-row { gap: var(--gap); margin-bottom: var(--gap); }
+.admin .two-col { gap: var(--gap); }
+.admin .panel { margin-bottom: var(--gap); }
+.admin .two-col .panel { margin-bottom: 0; }
+
+/* Panels that hold a chart get a frosted-glass wash of the theme's colour:
+   a light tint, blurred, with a hairline edge in the same hue. */
+.admin .panel:has(.bars-plot, .spark, .hbars) {
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  -webkit-backdrop-filter: blur(16px) saturate(1.2);
+  backdrop-filter: blur(16px) saturate(1.2);
+}
+
+/* A list inside a panel doesn't get a second card around it. */
+.admin .panel .table { background: transparent; box-shadow: none; padding: 0; border-radius: 0; }
+
+/* The order and product lists become one card; the rows keep their hairlines. */
+.admin .table { border-top: none; padding: 6px 22px; }
+.admin .trow { padding-left: 0; padding-right: 0; }
+.admin .trow:last-child,
+.admin .tdetail:last-child { border-bottom: none; }
+/* Each order sits in its own .trow-wrap (row + optional details), so the
+   :last-child rule above caught every one of them and the list lost its
+   lines. Wrapped rows keep a hairline; only the last order drops it. */
+.admin .trow-wrap > .trow { border-bottom: 1px solid var(--steel-line); }
+.admin .trow-wrap:last-child > .trow:last-child { border-bottom: none; }
+.admin .trow:hover { background: color-mix(in srgb, var(--ink) 4%, transparent); }
+/* An opened order: a frosted wash of the theme's own colour — light blue,
+   light green, or smoked glass on the dark theme. */
+.admin .tdetail {
+  background: var(--detail-bg);
+  border: 1px solid var(--detail-border);
+  -webkit-backdrop-filter: blur(14px) saturate(1.15);
+  backdrop-filter: blur(14px) saturate(1.15);
+  border-radius: 12px;
+  padding-left: 16px;
+  padding-right: 16px;
+  margin: 6px 0 10px;
+}
+
+.admin .stat-click { border-radius: var(--r-card); }
+.admin .stat-click:hover { transform: translateY(-2px); }
+
+.admin .stat-ico {
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--ink) 7%, transparent);
+}
+.admin .stat-ico.warn { background: color-mix(in srgb, var(--cobalt) 14%, transparent); color: var(--cobalt); }
+.admin .stat-ico.good { background: var(--cobalt); color: #fff; }
+.admin .stat-ico.bad { background: rgba(255, 68, 38, 0.12); color: var(--signal); }
+
+.admin .hbar-track { background: color-mix(in srgb, var(--ink) 9%, transparent); border-radius: 999px; }
+.admin .hbar-fill { border-radius: 999px; }
+.admin .bar-fill { border-radius: 6px 6px 0 0; }
+.admin .pthumb { border-radius: 10px; }
+.admin .panel-tag { border-radius: 999px; }
+.admin .search-wrap { border-radius: 12px; background: var(--paper); }
+.admin .err-banner { border-radius: 12px; }
+
+/* Status badges: soft tinted pills. */
+.admin .pill,
+.admin .out-tag,
+.admin .risk-tag,
+.admin .adv-tag {
+  border-radius: 999px;
+  border: none;
+  font-weight: 700;
+  padding: 4px 10px;
+}
+.admin .pill.pending { background: color-mix(in srgb, var(--pill-pending) 16%, transparent); color: var(--pill-pending); }
+.admin .pill.shipped { background: color-mix(in srgb, var(--pill-shipped) 16%, transparent); color: var(--pill-shipped); }
+.admin .pill.delivered { background: color-mix(in srgb, var(--pill-delivered) 16%, transparent); color: var(--pill-delivered); }
+.admin .pill.cancelled { background: color-mix(in srgb, var(--pill-cancelled) 16%, transparent); color: var(--pill-cancelled); }
+
+.admin .status-select { border-radius: 999px; padding-left: 12px; font-weight: 700; }
+.admin .status-select.delivered { background: color-mix(in srgb, var(--pill-delivered) 16%, transparent); color: var(--pill-delivered); border-color: transparent; }
+
+/* ---------- Controls ---------- */
+
+.admin :is(
+  input:not([type='checkbox']):not([type='radio']):not([type='range']):not([type='file']),
+  select,
+  textarea
+) {
+  border-radius: var(--r-ctl);
+}
+
+.admin .main button { border-radius: var(--r-ctl); }
+.admin .main .toggle { border-radius: var(--r-ctl); overflow: hidden; }
+.admin .main .toggle button { border-radius: 0; }
+.admin .main .subtab { border-radius: 999px; }
+.admin .main .chip,
+.admin .main .chip-stock { border-radius: 999px; }
+.admin .main .pf-chart-x { border-radius: 50%; }
+
+.admin .subtab { background: var(--paper); font-weight: 600; box-shadow: var(--card-shadow); }
+.admin .subtab.active { background: var(--cobalt); color: #fff; border-color: transparent; }
+.admin[data-theme='dark'] .subtab.active { color: #15171a; }
+
+.admin[data-theme='dark'] select option { background-color: var(--paper); color: var(--ink); }
+.admin[data-theme='dark'] .bar-tip .dim { color: rgba(21, 23, 26, 0.6); }
+
+/* Boxes inside the forms and managers (upload areas, cards, bills). */
+.admin :is(
+  .pf-upload, .pf-box, .pf-stock-cell, .pf-cat, .pf-newcat,
+  .hm-upload, .am-upload, .mof-extract, .mof-upload, .mof-bill,
+  .linkgen-output, .linkgen-template, .cm-suggest-label
+) {
+  border-radius: var(--r-ctl);
+}
+
+.admin .pf-chart-grid, .admin .pf-chart { border-radius: var(--r-ctl); }
+
+/* Buttons that filled with --ink on a light page read fine as they are; on the
+   coloured themes the hover picks up the accent. */
+.admin .add-product:hover,
+.admin .courier-btn:hover,
+.admin .wish-send:hover { background: var(--cobalt); color: #fff; }
+
+/* ---------- Phone ---------- */
+
+@media (max-width: 760px) {
+  .admin { grid-template-columns: minmax(0, 1fr); overflow-x: clip; }
+  .admin .main { min-width: 0; }
+
+  .admin .admin-topbar { background: var(--side-bg); color: var(--side-text); }
+  .admin .side { border-radius: 0 26px 26px 0; }
+  .admin .main { padding: 20px 16px 50px; }
+  .admin .top { flex-direction: column; align-items: flex-start; gap: 14px; }
+  .top-right { align-items: flex-start; }
+  .admin .top h1 { font-size: 26px; }
+  .admin .table { padding: 4px 14px; }
+
+  /* Search + "New order" stack instead of squeezing side by side; the search
+     box takes the full row so its placeholder isn't cut off. */
+  .admin .orders-head { flex-wrap: wrap; gap: 10px; }
+  .admin .search-wrap { flex: 1 1 100%; max-width: none; }
+  .admin .orders-head-right { width: 100%; justify-content: space-between; }
+
+  /* Anything that can be wider than a phone scrolls inside its own box
+     rather than stretching the whole page. */
+  .admin .panel { min-width: 0; max-width: 100%; }
+  .admin .main img, .admin .main video { max-width: 100%; }
+  .admin .main :is(table, pre) { max-width: 100%; }
+}
+
+/* ---------- Motion + scrolling ---------- */
+
+/* A tab's content eases in when you switch to it. */
+.tab-wrap { animation: tab-in 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
+
+@keyframes tab-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Cards and controls glide between states instead of snapping. */
+.admin .stat,
+.admin .panel,
+.admin .stat-click,
+.admin .subtab,
+.admin .main button,
+.admin .trow,
+.admin :is(input, select, textarea) {
+  transition:
+    background 0.2s ease,
+    color 0.2s ease,
+    border-color 0.2s ease,
+    box-shadow 0.2s ease,
+    transform 0.2s cubic-bezier(0.2, 0.8, 0.2, 1),
+    opacity 0.2s ease;
+}
+
+.admin .main button:active { transform: scale(0.98); }
+
+/* A slim scrollbar that stays out of the way instead of the fat grey default. */
+html:has(.admin) {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(120, 130, 125, 0.55) transparent;
+}
+
+html:has(.admin)::-webkit-scrollbar { width: 10px; }
+html:has(.admin)::-webkit-scrollbar-track { background: transparent; }
+html:has(.admin)::-webkit-scrollbar-thumb {
+  background: rgba(120, 130, 125, 0.5);
+  border-radius: 999px;
+  border: 2px solid transparent;
+  background-clip: content-box;
+}
+html:has(.admin)::-webkit-scrollbar-thumb:hover { background: rgba(120, 130, 125, 0.75); background-clip: content-box; }
+
+/* Lists that scroll sideways or on their own (wide tables, chart grids) keep
+   their scroll to themselves rather than dragging the page with them. */
+.admin :is(.pf-chart-grid, .table, .sheet-table-wrap) { overscroll-behavior: contain; }
+
+@media (prefers-reduced-motion: reduce) {
+  .tab-wrap { animation: none; }
+  .admin * { transition: none !important; }
+}
+
+/* ---------- WhatsApp links ---------- */
+
+.admin .wa-mini {
+  display: inline-flex;
+  vertical-align: middle;
+  margin-left: 8px;
+  color: #1fa855;
+  border-radius: 50%;
+  padding: 3px;
+  transition: background 0.15s ease, transform 0.15s ease;
+}
+
+.admin .wa-mini:hover { background: rgba(31, 168, 85, 0.16); transform: scale(1.1); }
+
+.admin .wa-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 12px;
+  margin-right: 8px;
+  padding: 9px 15px;
+  border-radius: var(--r-ctl);
+  border: 1px solid #1fa855;
+  color: #1fa855;
+  font-size: 13px;
+  font-weight: 700;
+  text-decoration: none;
+  transition: background 0.2s ease, color 0.2s ease;
+}
+
+.admin .wa-btn:hover { background: #1fa855; color: #fff; }
+
+/* ---------- Lists: every row its own bordered box ----------
+   Plain rows with a hairline between them ran together. Each row in the
+   panel's lists is now a small card with a border in the theme's colour —
+   blue on the blue theme, green on the green one, white on the dark one
+   (--order-edge, the order cards' border, admin.css). */
+.admin .main :is(
+  .mini-row,
+  .trow.prow,
+  .cp-row:not(.cp-th),
+  .bk-row:not(.bk-th),
+  .cm-row,
+  .am-row,
+  .hm-row,
+  .lk-item,
+  .au-row:not(.au-head),
+  .wish-group,
+  .low-row
+) {
+  border: 1px solid var(--order-edge);
+  border-radius: 12px;
+  padding-left: 12px;
+  background: var(--glass);
+  box-shadow: var(--glass-shine);
+  transition: border-color 0.15s ease, background 0.15s ease;
+  padding-right: 12px;
+  margin-bottom: 8px;
+}
+
+.admin .main :is(.mini-row, .trow.prow, .cp-row:not(.cp-th), .bk-row:not(.bk-th), .cm-row, .am-row, .hm-row, .au-row:not(.au-head), .low-row):last-child {
+  border-bottom: 1px solid var(--order-edge);
+}
+
+.admin .main :is(.mini-row, .trow.prow, .cp-row:not(.cp-th), .cm-row, .am-row, .hm-row, .lk-item, .au-row:not(.au-head)):hover {
+  border-color: var(--order-edge-strong);
+  background: var(--glass-hover);
+}
+
+.admin .main .bk-th,
+.admin .main .cp-th,
+.admin .main .au-head { border: none; padding-left: 12px; padding-right: 12px; }
+
+.admin .main .wish-group .low-row { border: none; margin-bottom: 0; padding-left: 0; padding-right: 0; background: none; box-shadow: none; }
+
+
+/* ---------- Pills: a whisper of a border ----------
+   Size chips, status pills, filters and tags all keep their colour, but at a
+   fraction of the strength, so a row of them reads light. */
+.admin .main :is(.chip, .chip-stock, .status-select, .risk-tag, .adv-tag, .rm-filter button, .sm-filter button, .sm-pages button, .nc-bell, .nc-tools button, .sl-total) {
+  border-width: 1px;
+}
+
+.admin .main .chip-stock:not(.sl-panel .chip-stock) {
+  border-color: color-mix(in srgb, currentColor 30%, transparent);
+}
+
+.admin .main .status-select:not(.delivered) {
+  border-color: color-mix(in srgb, currentColor 35%, transparent);
+}
+
+.admin .main .risk-tag { border-color: color-mix(in srgb, var(--signal) 45%, transparent); border-radius: 999px; padding: 1px 7px; }
+.admin .main .chip { border-color: color-mix(in srgb, var(--ink) 14%, transparent); }
+
+/* The other bordered boxes get the same frosted glass: Stock & sales totals
+   and drop cards, return requests and their parts, notifications, the
+   order details' sections. */
+.admin .main :is(.dr-total, .dr-card, .dr-items-solo, .rm-card, .rm-order, .rm-line, .rm-done, .rm-log, .nc-panel) {
+  background: var(--glass);
+  box-shadow: var(--glass-shine);
+}
