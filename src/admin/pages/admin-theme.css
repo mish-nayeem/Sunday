@@ -663,3 +663,47 @@ html:has(.admin)::-webkit-scrollbar-thumb:hover { background: rgba(120, 130, 125
   background: var(--glass);
   box-shadow: var(--glass-shine);
 }
+
+/* ---------- SUNDAY: burgundy & bright white ---------- */
+/* White for everything that holds text — cards, the order sheet, the page —
+   so nothing is read through a burgundy wash; burgundy stays on the sidebar,
+   borders and accents. */
+.admin[data-theme='burgundy'] {
+  --paper-dim: #ffffff;
+  --glass: #ffffff;
+  --glass-hover: #ffffff;
+  --glass-shine: none;
+  --glass-bg: #ffffff;
+  --detail-bg: #ffffff;
+  --order-edge: rgba(122, 31, 43, 0.28);
+  --card-shadow: 0 1px 2px rgba(86, 28, 36, 0.06), 0 6px 18px rgba(86, 28, 36, 0.06);
+}
+
+/* Headings in the panel's own sans, opened up a little: the condensed
+   display face set tight was hard to read. */
+.admin[data-theme='burgundy'] .display {
+  font-family: var(--admin-font);
+  font-weight: 800;
+  letter-spacing: 0.02em;
+}
+.admin[data-theme='burgundy'] .side-brand .display { letter-spacing: 0.08em; }
+.admin[data-theme='burgundy'] .side-brand { padding-bottom: 36px; }
+
+/* Two panes that scroll on their own: the sidebar stays put (only its list
+   moves, with the pointer over it) and the content scrolls with the pointer
+   over it. Phones keep the drawer and page scroll (admin-mobile.css). */
+@media screen and (min-width: 761px) {
+  .admin[data-theme='burgundy'] {
+    height: 100vh;
+    overflow: hidden;
+  }
+  .admin[data-theme='burgundy'] .side {
+    height: 100vh;
+    overscroll-behavior: contain;
+  }
+  .admin[data-theme='burgundy'] .main {
+    height: 100vh;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+}
