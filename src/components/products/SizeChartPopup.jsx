@@ -22,7 +22,6 @@ export default function SizeChartPopup({ open, onClose, chart }) {
   }, [open, onClose]);
 
   if (!open) return null;
-  const c = chart?.rows?.length ? chart : DEFAULT_CHART;
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/30 px-4" onClick={onClose} role="dialog" aria-modal="true" aria-label="Size guide">
@@ -31,30 +30,40 @@ export default function SizeChartPopup({ open, onClose, chart }) {
           <h2 className="font-heading text-[24px]">Size guide</h2>
           <button type="button" onClick={onClose} aria-label="Close" className="p-1"><X size={20} strokeWidth={1.5} /></button>
         </div>
-        <div className="overflow-x-auto">
-          <table className="w-full text-[13px]">
-            <thead>
-              <tr className="border-b border-ink">
-                <th className="text-left font-normal py-2 pr-4 text-graphite"></th>
-                {c.columns.map((col) => <th key={col} className="text-left font-normal py-2 px-2">{col}</th>)}
-              </tr>
-            </thead>
-            <tbody>
-              {c.rows.map((r) => (
-                <tr key={r.label} className="border-b border-rule">
-                  <td className="py-2 pr-4">{r.label}</td>
-                  {c.columns.map((col, i) => <td key={col} className="py-2 px-2 tabular-nums">{r.values?.[i] ?? ''}</td>)}
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-        {c.notes?.length > 0 && (
-          <ul className="mt-4 space-y-1 text-[12px] text-graphite">
-            {c.notes.map((n) => <li key={n}>{n}</li>)}
-          </ul>
-        )}
+        <SizeTable chart={chart} />
       </div>
     </div>
+  );
+}
+
+// The chart itself, also shown inline under Sizing on the product page.
+export function SizeTable({ chart }) {
+  const c = chart?.rows?.length ? chart : DEFAULT_CHART;
+  return (
+    <>
+      <div className="overflow-x-auto">
+        <table className="w-full text-[13px]">
+          <thead>
+            <tr className="border-b border-ink">
+              <th className="text-left font-normal py-2 pr-4 text-graphite"></th>
+              {c.columns.map((col) => <th key={col} className="text-left font-normal py-2 px-2">{col}</th>)}
+            </tr>
+          </thead>
+          <tbody>
+            {c.rows.map((r) => (
+              <tr key={r.label} className="border-b border-rule">
+                <td className="py-2 pr-4">{r.label}</td>
+                {c.columns.map((col, i) => <td key={col} className="py-2 px-2 tabular-nums">{r.values?.[i] ?? ''}</td>)}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      {c.notes?.length > 0 && (
+        <ul className="mt-4 space-y-1 text-[12px] text-graphite">
+          {c.notes.map((n) => <li key={n}>{n}</li>)}
+        </ul>
+        )}
+    </>
   );
 }
