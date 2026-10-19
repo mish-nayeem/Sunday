@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { supabase } from '@/lib/supabaseClient';
-import { uploadToCloudinary } from '@/lib/cloudinaryUpload';
+import { uploadImage } from '@/lib/storage';
 import { Upload, X } from 'lucide-react';
 
 const categoryLabels = { full_sleeve_shirts: 'Full Sleeve Shirts', half_sleeve_shirts: 'Half Sleeve Shirts', formal_shirts: 'Formal Shirts', polo: 'Polo', t_shirts: 'T-Shirts', cargo: 'Cargo', formal_pants: 'Formal Pants' };
@@ -78,7 +78,7 @@ export default function ProductForm({ onCreated, product = null, onCancel }) {
     for (const file of files) {
       try {
         const compressed = await compressImage(file);
-        const url = await uploadToCloudinary(compressed);
+        const url = await uploadImage(compressed);
         setImages(prev => [...prev, url]);
       } catch (err) {
         console.error('Compression/upload failed:', err);
