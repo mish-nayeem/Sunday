@@ -9,27 +9,26 @@ import ScrollToTop from './components/ScrollToTop';
 
 import SiteLayout from '@/components/layout/SiteLayout';
 import Home from '@/pages/Home';
-import Shop from '@/pages/Shop';
-import ProductDetail from '@/pages/ProductDetail';
-import Checkout from '@/pages/Checkout';
-import Cart from '@/pages/Cart';
-import OrderConfirmation from '@/pages/OrderConfirmation';
-import About from '@/pages/About';
-import SizeGuide from '@/pages/SizeGuide';
-import Contact from '@/pages/Contact';
-import OrderTracking from '@/pages/OrderTracking';
-import FAQ from '@/pages/FAQ';
-import Privacy from '@/pages/Privacy';
-import Terms from '@/pages/Terms';
-import RefundPolicy from '@/pages/RefundPolicy';
-import Wishlist from '@/pages/Wishlist';
 import ProtectedRoute from '@/components/ProtectedRoute';
 
-// These pages are only needed by you (admin) or by a small slice of visitors
-// (login/register). Loading them lazily means a normal shopper browsing the
-// storefront never downloads the admin panel's heavy libraries (PDF export,
-// charts, drag-and-drop, rich text editor) — those only load if/when someone
-// actually navigates to /admin, /login, etc.
+// Every page except Home loads on demand, so the first visit downloads only
+// what the home page needs. The admin panel in particular never reaches a
+// normal shopper — its heavy libraries (PDF export, charts, drag-and-drop,
+// rich text editor) load only if/when someone navigates to /admin.
+const Shop = lazy(() => import('@/pages/Shop'));
+const ProductDetail = lazy(() => import('@/pages/ProductDetail'));
+const Checkout = lazy(() => import('@/pages/Checkout'));
+const Cart = lazy(() => import('@/pages/Cart'));
+const OrderConfirmation = lazy(() => import('@/pages/OrderConfirmation'));
+const About = lazy(() => import('@/pages/About'));
+const SizeGuide = lazy(() => import('@/pages/SizeGuide'));
+const Contact = lazy(() => import('@/pages/Contact'));
+const OrderTracking = lazy(() => import('@/pages/OrderTracking'));
+const FAQ = lazy(() => import('@/pages/FAQ'));
+const Privacy = lazy(() => import('@/pages/Privacy'));
+const Terms = lazy(() => import('@/pages/Terms'));
+const RefundPolicy = lazy(() => import('@/pages/RefundPolicy'));
+const Wishlist = lazy(() => import('@/pages/Wishlist'));
 const Admin = lazy(() => import('@/pages/Admin'));
 const Login = lazy(() => import('@/pages/Login'));
 const Register = lazy(() => import('@/pages/Register'));

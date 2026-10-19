@@ -20,5 +20,18 @@ export default defineConfig(({ command, mode }) => {
         '@': '/src',
       },
     },
+    build: {
+      rollupOptions: {
+        output: {
+          // Big libraries get their own files: they change far less often
+          // than the site's code, so returning visitors keep them cached.
+          manualChunks: {
+            react: ['react', 'react-dom', 'react-router-dom'],
+            supabase: ['@supabase/supabase-js'],
+            motion: ['framer-motion'],
+          },
+        },
+      },
+    },
   }
 });
