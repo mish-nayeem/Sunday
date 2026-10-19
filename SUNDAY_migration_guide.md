@@ -1,7 +1,7 @@
 # SUNDAY — Base44 → Supabase Migration Guide
 
 This guide replaces every `base44.*` call in your codebase with a Supabase equivalent,
-so the app can be self-hosted for free (Vercel/Netlify + Supabase free tier) instead of
+so the app can be self-hosted for free (Cloudflare + Supabase free tier) instead of
 paying Base44's monthly fee.
 
 Database schema: see `sunday_supabase_schema.sql` (already provided — run it first in
@@ -19,7 +19,7 @@ Supabase SQL Editor before doing anything below).
    npm uninstall @base44/sdk @base44/vite-plugin
    npm install @supabase/supabase-js
    ```
-5. Add to `.env.local` (and to Vercel/Netlify env vars when you deploy):
+5. Add to `.env.local` (and to Cloudflare → Settings → Builds → Variables when you deploy):
    ```
    VITE_SUPABASE_URL=https://your-project.supabase.co
    VITE_SUPABASE_ANON_KEY=your-anon-key
@@ -487,18 +487,9 @@ stay (they're unrelated to Base44).
 
 ## 9. Deploy for free
 
-1. Push the whole repo to GitHub (a plain git repo, not tied to Base44 anymore).
-2. Go to vercel.com → New Project → import the GitHub repo.
-3. Framework preset: Vite. Build command: `npm run build`. Output directory: `dist`.
-4. Add environment variables `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` in
-   Vercel → Project Settings → Environment Variables.
-5. Deploy. Add your custom domain (`sunday.com.bd`) under Vercel → Domains — same DNS
-   process as pointing any domain at any host.
-6. In Supabase → Authentication → URL Configuration, set your Site URL to the real
-   domain (needed for the OAuth/reset-password redirects to work correctly).
-
-Netlify works the same way if you prefer it over Vercel — build command and output
-directory are identical.
+The site is hosted on Cloudflare (Workers static assets, `wrangler.jsonc`), not Vercel.
+See **Deploying to Cloudflare** in `README.md` for the full steps — build variables,
+custom domain, and the Supabase URL Configuration for login redirects.
 
 ---
 
