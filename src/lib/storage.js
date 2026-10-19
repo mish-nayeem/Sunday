@@ -1,10 +1,6 @@
-// Product photos live in Supabase Storage — the public `images` bucket
-// (see supabase/migrations/storage_images_bucket.sql). Only an admin can
-// upload there (storage policies check public.is_admin()), so the browser
-// uploads directly with the signed-in session; no secret key is involved.
-import { supabase } from '@/lib/supabaseClient';
-
-export const IMAGE_BUCKET = 'images';
+// Product photos live in Supabase Storage — the public `images` bucket.
+// Uploads happen in the admin panel (src/admin/lib/images.js); the storefront
+// only reads them, sized for where they show.
 
 const OBJECT_PATH = '/storage/v1/object/public/';
 const RENDER_PATH = '/storage/v1/render/image/public/';
@@ -21,20 +17,4 @@ export function imgUrl(url, width) {
   const params = new URLSearchParams({ quality: '75', resize: 'contain' });
   if (width) params.set('width', String(width));
   return url.replace(OBJECT_PATH, RENDER_PATH) + '?' + params;
-}
-
-// Uploads a File/Blob and returns its public URL to store in the DB.
-// A random name means two photos called IMG_0001.jpg never collide.
-export async function uploadImage(file, folder = 'products') {
-  const ext = ((file.name || '').split('.').pop() || 'jpg').toLowerCase().replace(/[^a-z0-9]/g, '') || 'jpg';
-  const path = `${folder}/${crypto.randomUUID()}.${ext}`;
-
-  const { error } = await supabase.storage.from(IMAGE_BUCKET).upload(path, file, {
-    contentType: file.type || undefined,
-    cacheControl: '31536000', // a path is never reused, so cache it for a year
-    upsert: false,
-  });
-  if (error) throw new Error(error.message);
-
-  return supabase.storage.from(IMAGE_BUCKET).getPublicUrl(path).data.publicUrl;
 }

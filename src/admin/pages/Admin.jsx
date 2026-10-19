@@ -1077,9 +1077,6 @@ export default function Admin() {
 
         <div className="side-foot mono">
           <Link to="/"><IconExternal width="13" height="13" />View storefront</Link>
-          {/* SUNDAY's own extras (expenses, invoices, bulk upload, store
-              settings) still live on the previous panel. */}
-          <Link to="/admin-classic"><IconExternal width="13" height="13" />Expenses &amp; invoices</Link>
           <button onClick={handleSignOut} className="signout">
             <IconLogout width="13" height="13" />Sign out
           </button>
