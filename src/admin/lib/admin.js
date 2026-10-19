@@ -1,6 +1,9 @@
 import { supabase } from './supabaseClient.js'
 import { fromLocalInput } from './schedule.js'
 import { lowSizes, LOW_STOCK_AT } from './stock.js'
+// Only SUNDAY's own address opens the panel; the database's
+// public.is_admin() makes the same check, so RLS agrees.
+import { isAdminEmail } from '@/lib/adminEmail'
 
 // ---------- Admin allowlist ----------
 
@@ -15,14 +18,6 @@ function itemsNet(o) {
   return Number(o.subtotal) - (Number(o.discount_amount) || 0)
 }
 
-// SUNDAY keeps the admin flag on the profiles table (role = 'admin'), the
-// same check the storefront's AuthContext and the RLS policies use.
-export async function isAdminUser(userId) {
-  if (!userId) return false
-  const { data } = await supabase.from('profiles').select('role').eq('id', userId).maybeSingle()
-  return data?.role === 'admin'
-}
-
 // ---------- Auth ----------
 
 export async function signOut() {
@@ -35,7 +30,7 @@ export async function getSession() {
 
   // A signed-in customer isn't an admin — but they're still a customer, so
   // this reports "no admin session" without ending their login.
-  if (session && !(await isAdminUser(session.user?.id))) return null
+  if (session && !isAdminEmail(session.user?.email)) return null
 
   return session
 }

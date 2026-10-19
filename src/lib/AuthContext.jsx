@@ -1,5 +1,6 @@
 import React, { createContext, useState, useContext, useEffect } from 'react';
 import { supabase } from '@/lib/supabaseClient';
+import { isAdminEmail } from '@/lib/adminEmail';
 
 const AuthContext = createContext();
 
@@ -63,7 +64,8 @@ export const AuthProvider = ({ children }) => {
       authChecked,
       logout,
       checkUserAuth,
-      isAdmin: profile?.role === 'admin',
+      // Only the shop's own address is an admin, whatever a profile row says.
+      isAdmin: isAdminEmail(user?.email),
     }}>
       {children}
     </AuthContext.Provider>

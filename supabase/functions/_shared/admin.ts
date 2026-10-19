@@ -1,8 +1,10 @@
 // SUNDAY's admin check for edge functions: the caller's own token must belong
-// to a user whose profiles.role is 'admin' (the same rule as public.is_admin()
-// and the admin panel). The anon key alone is a valid JWT, so a token merely
+// to the shop's address — the same rule as public.is_admin() and
+// src/lib/adminEmail.js. The anon key alone is a valid JWT, so a token merely
 // existing proves nothing.
 import { createClient, SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2'
+
+export const ADMIN_EMAIL = 'sundayclothin@gmail.com'
 
 export function serviceClient(): SupabaseClient {
   return createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!)
@@ -12,10 +14,7 @@ export async function isAdminRequest(req: Request, client: SupabaseClient = serv
   const token = (req.headers.get('Authorization') ?? '').replace(/^Bearer\s+/i, '')
   if (!token) return false
   const { data } = await client.auth.getUser(token)
-  const id = data?.user?.id
-  if (!id) return false
-  const { data: profile } = await client.from('profiles').select('role').eq('id', id).maybeSingle()
-  return profile?.role === 'admin'
+  return (data?.user?.email ?? '').trim().toLowerCase() === ADMIN_EMAIL
 }
 
 // SUNDAY's order row in the shape these functions were written for (PAUSE's

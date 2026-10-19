@@ -225,7 +225,7 @@ export default function Checkout() {
               {!isAuthenticated && (
                 <p className="text-xs text-charcoal/60">
                   Returning customer?{' '}
-                  <Link to="/login" className="text-obsidian underline hover:text-graphite transition-colors">
+                  <Link to="/login?next=/checkout" className="text-obsidian underline hover:text-graphite transition-colors">
                     Login
                   </Link>
                 </p>

@@ -33,9 +33,6 @@ const Admin = lazy(() => import('@/admin/pages/Admin'));
 // settings until those move into the new one.
 const AdminClassic = lazy(() => import('@/pages/Admin'));
 const Login = lazy(() => import('@/pages/Login'));
-const Register = lazy(() => import('@/pages/Register'));
-const ForgotPassword = lazy(() => import('@/pages/ForgotPassword'));
-const ResetPassword = lazy(() => import('@/pages/ResetPassword'));
 
 const RouteFallback = () => (
   <div className="fixed inset-0 flex items-center justify-center bg-white">
@@ -82,9 +79,10 @@ const AuthenticatedApp = () => {
           <Route path="/wishlist" element={<Wishlist />} />
         </Route>
         <Route path="/login" element={<Login />} />
-        <Route path="/register" element={<Register />} />
-        <Route path="/forgot-password" element={<ForgotPassword />} />
-        <Route path="/reset-password" element={<ResetPassword />} />
+        {/* Passwords are gone: one-time codes on /login open accounts too. */}
+        <Route path="/register" element={<Navigate to="/login" replace />} />
+        <Route path="/forgot-password" element={<Navigate to="/login" replace />} />
+        <Route path="/reset-password" element={<Navigate to="/login" replace />} />
         <Route element={<ProtectedRoute unauthenticatedElement={<Navigate to="/login" replace />} />}>
           <Route path="/admin" element={<Admin />} />
           <Route path="/admin-classic" element={<AdminClassic />} />
