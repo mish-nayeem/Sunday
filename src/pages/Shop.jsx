@@ -82,6 +82,16 @@ export default function Shop() {
     return true;
   }), [products, inStockOnly, sizes.join(',')]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Colourways of the same piece (colour group), for the swatches on each card.
+  const coloursOf = useMemo(() => {
+    const groups = new Map();
+    products.forEach((p) => {
+      if (!p.colour_group) return;
+      groups.set(p.colour_group, [...(groups.get(p.colour_group) || []), p]);
+    });
+    return (p) => (p.colour_group ? (groups.get(p.colour_group) || []).filter((o) => o.id !== p.id) : []);
+  }, [products]);
+
   const allSizes = useMemo(() => {
     const set = new Set(products.flatMap((p) => p.sizes || []));
     const rank = (s) => (SIZE_ORDER.includes(s) ? SIZE_ORDER.indexOf(s) : SIZE_ORDER.length);
@@ -139,7 +149,7 @@ export default function Shop() {
           </div>
         ) : (
           <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-x-2 md:gap-x-3 gap-y-8 md:gap-y-10">
-            {visible.map((p) => <ProductCard key={p.id} product={p} />)}
+            {visible.map((p) => <ProductCard key={p.id} product={p} colours={coloursOf(p)} />)}
           </div>
         )}
       </div>

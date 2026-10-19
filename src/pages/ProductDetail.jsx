@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { supabase } from '@/lib/supabaseClient';
 import { imgUrl } from '@/lib/storage';
-import { addToCart, openCartDrawer, addRecentlyViewed, isInWishlist, toggleWishlist } from '@/lib/cartStore';
+import { addToCart, openCartDrawer, addRecentlyViewed, getRecentlyViewed, isInWishlist, toggleWishlist } from '@/lib/cartStore';
 import { CATEGORY_LABELS, DELIVERY, sectionFor, isSizeAvailable, isSoldOut, formatPrice } from '@/lib/catalog';
 import ProductCard from '@/components/products/ProductCard';
 import SizeChartPopup, { SizeTable } from '@/components/products/SizeChartPopup';
@@ -126,6 +126,7 @@ export default function ProductDetail() {
   const [sizeChartOpen, setSizeChartOpen] = useState(false);
   const [slide, setSlide] = useState(0);
   const [look, setLook] = useState([]);
+  const [recent, setRecent] = useState([]);
   const railRef = useRef(null);
   const leftRef = useRef(null);
   const rightRef = useRef(null);
@@ -161,6 +162,14 @@ export default function ProductDetail() {
         if (!cancelled) setLook(lookProducts || []);
       } else if (!cancelled) {
         setLook([]);
+      }
+      // Recently viewed, read before this visit is added to the list.
+      const seen = getRecentlyViewed().filter((x) => x !== p.id).slice(0, 4);
+      if (seen.length) {
+        const { data: seenProducts } = await supabase.from('products').select('*').in('id', seen);
+        if (!cancelled) setRecent(seen.map((x) => (seenProducts || []).find((r) => r.id === x)).filter(Boolean));
+      } else if (!cancelled) {
+        setRecent([]);
       }
       setWishlisted(isInWishlist(p.id));
       setColor(p.colors?.[0] || '');
@@ -523,6 +532,15 @@ export default function ProductDetail() {
           <h2 className="font-heading text-[24px] md:text-[28px] mb-6">You may also like</h2>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-x-2 md:gap-x-3 gap-y-8">
             {related.map((p) => <ProductCard key={p.id} product={p} />)}
+          </div>
+        </section>
+      )}
+
+      {recent.length > 0 && (
+        <section className="px-4 md:px-6 pb-28 md:pb-24">
+          <h2 className="font-heading text-[24px] md:text-[28px] mb-6">Recently viewed</h2>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-x-2 md:gap-x-3 gap-y-8">
+            {recent.map((p) => <ProductCard key={p.id} product={p} />)}
           </div>
         </section>
       )}

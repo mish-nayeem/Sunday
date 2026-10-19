@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import InfoTip from './InfoTip.jsx'
 import { fetchCoupons, createCoupon, setCouponActive, deleteCoupon, describeCoupon } from '../lib/coupons.js'
 import './coupon-manager.css'
 
@@ -122,13 +123,13 @@ export default function CouponManager({ orders }) {
         <div className="pform-head"><h3 className="display">New coupon</h3></div>
         <div className="pf-grid">
           <label className="pf-field">
-            <span className="mono">CODE</span>
+            <span className="mono">CODE <InfoTip>What customers type at checkout, e.g. EID10. Capital letters, numbers, - or _, 3 to 24 characters.</InfoTip></span>
             <input value={draft.code} onChange={(e) => set('code', e.target.value.toUpperCase())} placeholder="EID10" />
             <em className="pf-hint mono">What the customer types at checkout.</em>
           </label>
 
           <label className="pf-field">
-            <span className="mono">DISCOUNT</span>
+            <span className="mono">DISCOUNT <InfoTip>% off the items, or a fixed taka amount off. Never taken off the delivery charge.</InfoTip></span>
             <div className="cp-amount">
               <select value={draft.kind} onChange={(e) => set('kind', e.target.value)}>
                 <option value="percent">% off</option>
@@ -140,36 +141,36 @@ export default function CouponManager({ orders }) {
           </label>
 
           <label className="pf-field">
-            <span className="mono">MINIMUM ORDER (৳, OPTIONAL)</span>
+            <span className="mono">MINIMUM ORDER (৳, OPTIONAL) <InfoTip>The items must add up to at least this for the code to work. Leave empty for no minimum.</InfoTip></span>
             <input type="number" min="0" value={draft.min_subtotal} onChange={(e) => set('min_subtotal', e.target.value)} placeholder="0" />
           </label>
 
           {draft.kind === 'percent' && (
             <label className="pf-field">
-              <span className="mono">MAX DISCOUNT (৳, OPTIONAL)</span>
+              <span className="mono">MAX DISCOUNT (৳, OPTIONAL) <InfoTip>For a % code: the most it can take off, e.g. 10% off but at most Tk 500.</InfoTip></span>
               <input type="number" min="1" value={draft.max_discount} onChange={(e) => set('max_discount', e.target.value)} placeholder="No cap" />
             </label>
           )}
 
           <label className="pf-field">
-            <span className="mono">TOTAL USES (OPTIONAL)</span>
+            <span className="mono">TOTAL USES (OPTIONAL) <InfoTip>How many orders in total can use the code. Leave empty for no limit. Cancelled orders give their use back.</InfoTip></span>
             <input type="number" min="1" value={draft.usage_limit} onChange={(e) => set('usage_limit', e.target.value)} placeholder="Unlimited" />
             <em className="pf-hint mono">e.g. 50 — the first 50 orders get it.</em>
           </label>
 
           <label className="pf-field">
-            <span className="mono">USES PER CUSTOMER</span>
+            <span className="mono">USES PER CUSTOMER <InfoTip>How many times one phone number can use it. 1 is usual.</InfoTip></span>
             <input type="number" min="1" value={draft.per_customer_limit} onChange={(e) => set('per_customer_limit', e.target.value)} placeholder="Unlimited" />
             <em className="pf-hint mono">Counted by phone number. Leave empty for no limit.</em>
           </label>
 
           <label className="pf-field">
-            <span className="mono">STARTS (OPTIONAL)</span>
+            <span className="mono">STARTS (OPTIONAL) <InfoTip>The code works from this time. Leave empty to start now.</InfoTip></span>
             <input type="date" value={draft.starts_at} onChange={(e) => set('starts_at', e.target.value)} />
           </label>
 
           <label className="pf-field">
-            <span className="mono">ENDS (OPTIONAL)</span>
+            <span className="mono">ENDS (OPTIONAL) <InfoTip>The code stops working after this time. Leave empty to keep it running until you switch it off.</InfoTip></span>
             <input type="date" value={draft.ends_at} onChange={(e) => set('ends_at', e.target.value)} />
             <em className="pf-hint mono">Works until 11:59 pm that day.</em>
           </label>

@@ -16,7 +16,7 @@ function taka(n) {
   return '৳ ' + Number(n || 0).toLocaleString()
 }
 
-// Products → Collections. A collection is a drop (PAUSE UNIVERSITY, CITYBOY…):
+// Products → Collections. A collection is a drop (EID 2026, SUMMER 26…):
 // made here, it shows up in the DROPS menu, the lookbook and Shop by
 // collection. Open one to see its products and add new ones straight into it.
 // The list is the same rows as Nav menus → DROPS, so the two stay in step.

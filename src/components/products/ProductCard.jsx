@@ -7,7 +7,9 @@ import { useLiveSales, withSale } from '@/lib/pricing';
 
 // Grid tile: photo on a quiet ground, name and price underneath. Hovering
 // shows the second photo and a row of sizes that add straight to the bag.
-export default function ProductCard({ product: raw }) {
+// `colours` (optional): the other colours of the same piece (colour group),
+// shown as small swatches under the price.
+export default function ProductCard({ product: raw, colours = [] }) {
   const product = withSale(raw, useLiveSales());
   const [added, setAdded] = useState('');
   const images = (product.images || []).filter(Boolean);
@@ -85,10 +87,28 @@ export default function ProductCard({ product: raw }) {
         </p>
         {soldOut ? (
           <p className="text-graphite mt-0.5">Sold out</p>
-        ) : colorCount > 1 ? (
+        ) : colorCount > 1 && colours.length === 0 ? (
           <p className="text-graphite mt-0.5">{colorCount} colours</p>
         ) : null}
       </Link>
+      {colours.length > 0 && (
+        <div className="flex gap-1.5 pt-1">
+          {[product, ...colours].map((c) => (
+            <Link
+              key={c.id}
+              to={`/product/${c.id}`}
+              title={c.variant || c.name}
+              aria-label={c.variant || c.name}
+              aria-current={c.id === product.id ? 'true' : undefined}
+              className={`w-6 h-6 p-px border ${c.id === product.id ? 'border-ink' : 'border-rule hover:border-graphite'}`}
+            >
+              <span className="block w-full h-full bg-stone overflow-hidden">
+                {c.images?.[0] && <img src={imgUrl(c.images[0], 60)} alt="" loading="lazy" className="w-full h-full object-cover" />}
+              </span>
+            </Link>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

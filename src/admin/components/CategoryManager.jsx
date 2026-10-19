@@ -19,7 +19,7 @@ const MENUS = {
     navLabel: 'SHOP',
     productField: 'category',
     noun: 'category',
-    placeholder: 'Category name, e.g. HOODIES',
+    placeholder: 'Category key, e.g. polo',
     intro:
       'This is the list that drops down under SHOP in the nav. Hiding or ' +
       'deleting a name here only takes it off the menu — the products stay in ' +

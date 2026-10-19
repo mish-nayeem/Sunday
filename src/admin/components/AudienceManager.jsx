@@ -138,7 +138,7 @@ export default function AudienceManager({ orders, products }) {
     const url = URL.createObjectURL(new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8' }))
     const a = document.createElement('a')
     a.href = url
-    a.download = `pause-customers-${new Date().toISOString().slice(0, 10)}.csv`
+    a.download = `sunday-customers-${new Date().toISOString().slice(0, 10)}.csv`
     a.click()
     URL.revokeObjectURL(url)
     setNote(`Downloaded ${target.length} ${target.length === 1 ? 'person' : 'people'}.`)

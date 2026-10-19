@@ -76,6 +76,8 @@ import ReturnsManager from '../components/ReturnsManager.jsx'
 import AnalyticsManager from '../components/AnalyticsManager.jsx'
 import { isNewRequest } from '../lib/support.js'
 import NoticeCenter from '../components/NoticeCenter.jsx'
+import InfoTip from '../components/InfoTip.jsx'
+import { pageHelp, PANEL_HELP } from '../lib/help.js'
 import '../styles/base.css'
 import './admin.css'
 import './admin-theme.css'
@@ -427,7 +429,7 @@ function PackingSlip({ order }) {
         </div>
 
         <div className="slip-foot mono">
-          Check the parcel in front of the rider · pause.bd@gmail.com
+          Check the parcel in front of the rider · sundayclothin@gmail.com
         </div>
       </div>
     </div>
@@ -1023,6 +1025,12 @@ export default function Admin() {
     { key: 'support', label: 'Support', badge: newRequests > 0 ? newRequests : null },
   ]
 
+  const currentSub = {
+    overview: overviewSub, orders: ordersSub, products: productsSub, customers: customersSub,
+    marketing: marketingSub, support: supportSub,
+  }[tab]
+  const currentHelp = pageHelp(tab, currentSub)
+
   return (
     // Black & orange is the dark theme with its own colours (data-accent), so
     // every rule written for the dark theme holds for it too.
@@ -1104,7 +1112,10 @@ export default function Admin() {
               {tab === 'support' &&
                 ` / ${SUPPORT_SUBS.find((s) => s.key === supportSub).label.toUpperCase()}`}
             </div>
-            <h1 className="display">{TAB_LABELS[tab]}</h1>
+            <h1 className="display">
+              {TAB_LABELS[tab]}
+              {currentHelp && <InfoTip label={`About ${TAB_LABELS[tab]}`}>{currentHelp}</InfoTip>}
+            </h1>
             <div className="top-sub mono">{session.user?.email}</div>
           </div>
           <div className="top-right">
@@ -1221,7 +1232,7 @@ export default function Admin() {
             <section className="panel">
               <div className="panel-head">
                 <div>
-                  <div className="panel-label mono"><IconTrend width="13" height="13" />SALES BY MONTH</div>
+                  <div className="panel-label mono"><IconTrend width="13" height="13" />SALES BY MONTH<InfoTip>{PANEL_HELP['SALES BY MONTH']}</InfoTip></div>
                   <div className="panel-note" style={{ marginTop: '6px' }}>
                     {monthMetric === 'units'
                       ? 'Pieces sold each month, last 6 months.'
@@ -1256,7 +1267,7 @@ export default function Admin() {
             <section className="panel">
               <div className="panel-label mono" style={{ marginBottom: '6px' }}>
                 <IconTrend width="13" height="13" />ORDERS BY SOURCE
-              </div>
+              <InfoTip>{PANEL_HELP['ORDERS BY SOURCE']}</InfoTip></div>
               <div className="panel-note" style={{ marginBottom: '18px' }}>
                 Where each order's link came from — reel, story or bio, tagged with
                 ?utm_source. Orders with no tag were typed in or bookmarked directly.
@@ -1275,7 +1286,7 @@ export default function Admin() {
             <section className="panel">
               <div className="panel-head">
                 <div>
-                  <div className="panel-label mono"><IconCash width="13" height="13" />DAILY MOMENTUM</div>
+                  <div className="panel-label mono"><IconCash width="13" height="13" />DAILY MOMENTUM<InfoTip>{PANEL_HELP['DAILY MOMENTUM']}</InfoTip></div>
                   <div className="panel-note" style={{ marginTop: '6px' }}>
                     {windowOrders} order{windowOrders === 1 ? '' : 's'} placed in the last 14 days ·{' '}
                     {taka(windowValue)}
@@ -1458,7 +1469,7 @@ export default function Admin() {
             <section className="panel">
               <div className="panel-label mono" style={{ marginBottom: '6px' }}>
                 ABANDONED CART
-              </div>
+              <InfoTip>{PANEL_HELP['ABANDONED CART']}</InfoTip></div>
               <div className="panel-note" style={{ marginBottom: '18px' }}>
                 Checkouts the storefront saw items reach but never turned into an
                 order. Clears itself the moment that same browser's order goes through.
@@ -1494,7 +1505,7 @@ export default function Admin() {
             <section className="panel">
               <div className="panel-label mono" style={{ marginBottom: '6px' }}>
                 BLOCKED ORDER ATTEMPTS
-              </div>
+              <InfoTip>{PANEL_HELP['BLOCKED ORDER ATTEMPTS']}</InfoTip></div>
               <div className="panel-note" style={{ marginBottom: '18px' }}>
                 place_order refuses more than 8 orders an hour from the same
                 IP (see supabase-migration-rate-limiting.sql) — every one it
@@ -1576,10 +1587,10 @@ export default function Admin() {
 
             {products.length > 1 && (
               <div className="queue-note mono">
-                This is the order of the shop's <strong>ALL</strong> page. Drag a product by
-                the <span className="queue-grip-inline">⠿</span> handle to move it up or down.
-                Category pages (hoodies, jackets…) always show the newest upload first, and a
-                new upload starts at the top here too.
+                This is the order products show in the shop (<strong>Featured</strong>, the
+                default sort) on Shop all and inside each category. Drag a product by the{' '}
+                <span className="queue-grip-inline">⠿</span> handle to move it up or down. A
+                new upload starts at the top.
               </div>
             )}
             {queueError && <div className="err-banner mono">{queueError}</div>}
@@ -1600,7 +1611,7 @@ export default function Admin() {
                   </div>
                   <div className="tc name">
                     {p.name}
-                    <div className="mini-id mono" style={{ marginTop: '2px' }}>{p.id}</div>
+                    <div className="mini-id mono" style={{ marginTop: '2px' }}>{p.sku || String(p.id).slice(0, 8)}</div>
                   </div>
                   <div className="tc mono dim">{p.variant}</div>
                   <div className="tc mono">{taka(p.price)}</div>
@@ -1665,7 +1676,7 @@ export default function Admin() {
 
           {productsSub === 'stock' && (
           <section className="panel sl-panel">
-            <div className="panel-label mono" style={{ marginBottom: '6px' }}>STOCK LEVELS</div>
+            <div className="panel-label mono" style={{ marginBottom: '6px' }}>STOCK LEVELS<InfoTip>{PANEL_HELP['STOCK LEVELS']}</InfoTip></div>
             <div className="sl-legend mono">
               <span className="sl-key ok">Plenty</span>
               <span className="sl-key low">Low ({LOW_STOCK_AT} or fewer)</span>
@@ -1717,7 +1728,7 @@ export default function Admin() {
           <section className="panel">
             <div className="panel-label mono" style={{ marginBottom: '18px' }}>
               <IconStar width="13" height="13" />BEST SELLERS
-            </div>
+            <InfoTip>{PANEL_HELP['BEST SELLERS']}</InfoTip></div>
             {top.length === 0 && <div className="empty mono">Nothing sold yet.</div>}
             {top.map((p, i) => (
               <div className="mini-row" key={p.id || p.name}>
@@ -1747,7 +1758,7 @@ export default function Admin() {
 
           {productsSub === 'margin' && (
           <section className="panel">
-            <div className="panel-label mono" style={{ marginBottom: '6px' }}>COST &amp; MARGIN</div>
+            <div className="panel-label mono" style={{ marginBottom: '6px' }}>COST &amp; MARGIN<InfoTip>{PANEL_HELP['COST & MARGIN']}</InfoTip></div>
             <div className="panel-note" style={{ marginBottom: '18px' }}>
               Only products with a cost entered in the product form show up here.
             </div>
@@ -1793,7 +1804,7 @@ export default function Admin() {
 
           {/* Where the money comes from: first-timers or the ones who came back. */}
           <section className="panel">
-            <div className="panel-label mono" style={{ marginBottom: '12px' }}>COLLECTED · NEW VS REPEAT</div>
+            <div className="panel-label mono" style={{ marginBottom: '12px' }}>COLLECTED · NEW VS REPEAT<InfoTip>{PANEL_HELP['COLLECTED · NEW VS REPEAT']}</InfoTip></div>
             {(() => {
               const total = custSplit.newSpent + custSplit.repeatSpent
               const pct = total ? Math.round((custSplit.repeatSpent / total) * 100) : 0
@@ -1811,7 +1822,7 @@ export default function Admin() {
           </section>
 
           <section className="panel">
-            <div className="panel-label mono" style={{ marginBottom: '6px' }}>REGULARS</div>
+            <div className="panel-label mono" style={{ marginBottom: '6px' }}>REGULARS<InfoTip>{PANEL_HELP['REGULARS']}</InfoTip></div>
             <div className="panel-note" style={{ marginBottom: '14px' }}>Everyone who's ordered more than once, most orders first.</div>
             {custSplit.regulars.length === 0 && <div className="empty mono">No repeat customers yet.</div>}
             {custSplit.regulars.map((c) => (
@@ -1843,7 +1854,7 @@ export default function Admin() {
 
           {customersSub === 'reviews' && (
           <section className="panel">
-            <div className="panel-label mono" style={{ marginBottom: '18px' }}>REVIEWS</div>
+            <div className="panel-label mono" style={{ marginBottom: '18px' }}>REVIEWS<InfoTip>{PANEL_HELP['REVIEWS']}</InfoTip></div>
             {allReviews.length === 0 && <div className="empty mono">No reviews yet.</div>}
             {allReviews.map((r) => {
               const product = products.find((p) => String(p.id) === String(r.product_id))
@@ -1866,7 +1877,7 @@ export default function Admin() {
           <section className="panel">
             <div className="panel-head">
               <div>
-                <div className="panel-label mono"><IconStar width="13" height="13" />RESTOCK DEMAND</div>
+                <div className="panel-label mono"><IconStar width="13" height="13" />RESTOCK DEMAND<InfoTip>{PANEL_HELP['RESTOCK DEMAND']}</InfoTip></div>
                 <div className="panel-note" style={{ marginTop: '6px' }}>
                   People waiting on a sold-out size, busiest first. Restocking a
                   size in the product form mails everyone on its list — this is
@@ -1969,7 +1980,7 @@ export default function Admin() {
               </form>
 
               <section className="panel">
-                <div className="panel-label mono" style={{ marginBottom: '18px' }}>AD SPEND / ROAS</div>
+                <div className="panel-label mono" style={{ marginBottom: '18px' }}>AD SPEND / ROAS<InfoTip>{PANEL_HELP['AD SPEND / ROAS']}</InfoTip></div>
                 {adSpend.length === 0 && <div className="empty mono">Nothing logged yet.</div>}
                 {adSpend.map((r) => (
                   <div className="mini-row" key={r.id}>
@@ -2016,7 +2027,7 @@ export default function Admin() {
               </form>
 
               <section className="panel">
-                <div className="panel-label mono" style={{ marginBottom: '18px' }}>EMAIL CAMPAIGNS</div>
+                <div className="panel-label mono" style={{ marginBottom: '18px' }}>EMAIL CAMPAIGNS<InfoTip>{PANEL_HELP['EMAIL CAMPAIGNS']}</InfoTip></div>
                 {emailCampaigns.length === 0 && <div className="empty mono">Nothing logged yet.</div>}
                 {emailCampaigns.map((r) => (
                   <div className="mini-row" key={r.id}>
@@ -2063,7 +2074,7 @@ export default function Admin() {
               </form>
 
               <section className="panel">
-                <div className="panel-label mono" style={{ marginBottom: '18px' }}>SOCIAL TRACKING</div>
+                <div className="panel-label mono" style={{ marginBottom: '18px' }}>SOCIAL TRACKING<InfoTip>{PANEL_HELP['SOCIAL TRACKING']}</InfoTip></div>
                 {socialStats.length === 0 && <div className="empty mono">Nothing logged yet.</div>}
                 {socialStats.map((r) => (
                   <div className="mini-row" key={r.id}>

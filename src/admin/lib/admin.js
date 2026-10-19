@@ -733,6 +733,7 @@ export function toPanelProduct(p) {
     cost: p.cost_price,
     is_new: p.is_new_arrival,
     featured: p.is_featured,
+    best_seller: p.is_best_seller,
   }
 }
 
@@ -758,6 +759,7 @@ function toRow(p, isNewRecord) {
     category: p.category || null,
     is_new_arrival: Boolean(p.isNew),
     is_featured: Boolean(p.featured),
+    is_best_seller: Boolean(p.bestSeller),
     images: p.images ?? [],
     description: p.description ?? '',
     sizes: p.sizes ?? [],
@@ -783,18 +785,20 @@ function toRow(p, isNewRecord) {
 export async function saveProduct(product, isNewRecord) {
   const row = toRow(product, isNewRecord)
 
+  // A new row's id comes from the database (SUNDAY's ids are uuids), so the
+  // insert hands it back for whatever the form does next.
   const query = isNewRecord
-    ? supabase.from('products').insert(row)
-    : supabase.from('products').update(row).eq('id', product.id)
+    ? supabase.from('products').insert(row).select('id').single()
+    : supabase.from('products').update(row).eq('id', product.id).select('id').single()
 
-  const { error } = await query
+  const { data, error } = await query
 
   if (error) {
     console.error('[Supabase] saveProduct failed:', error.message)
-    return { error }
+    return { error, id: null }
   }
 
-  return { error: null }
+  return { error: null, id: data?.id ?? product.id }
 }
 
 export async function deleteProduct(id) {

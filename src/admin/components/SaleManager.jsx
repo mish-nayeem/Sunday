@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import InfoTip from './InfoTip.jsx'
 import { listSales, createSale, setSaleActive, deleteSale, salePrice } from '../lib/sales.js'
 import './coupon-manager.css'
 import './sale-manager.css'
@@ -132,13 +133,13 @@ export default function SaleManager({ products }) {
         <div className="pform-head"><h3 className="display">New sale</h3></div>
         <div className="pf-grid">
           <label className="pf-field">
-            <span className="mono">NAME (OPTIONAL)</span>
+            <span className="mono">NAME (OPTIONAL) <InfoTip>Shown next to the price, e.g. Eid sale.</InfoTip></span>
             <input value={draft.name} onChange={(e) => set('name', e.target.value)} placeholder="Eid sale" />
             <em className="pf-hint mono">Shown on the product page next to the countdown.</em>
           </label>
 
           <label className="pf-field">
-            <span className="mono">PERCENT OFF</span>
+            <span className="mono">PERCENT OFF <InfoTip>1 to 90. The sale price is rounded to the nearest taka.</InfoTip></span>
             <input type="number" min="1" max="90" value={draft.percent} onChange={(e) => set('percent', e.target.value)} placeholder="20" />
             <em className="pf-hint mono">
               {example && pct >= 1 && pct <= 90
@@ -148,19 +149,19 @@ export default function SaleManager({ products }) {
           </label>
 
           <label className="pf-field">
-            <span className="mono">STARTS</span>
+            <span className="mono">STARTS <InfoTip>When the sale price starts showing.</InfoTip></span>
             <input type="datetime-local" value={draft.starts_at} onChange={(e) => set('starts_at', e.target.value)} />
             <em className="pf-hint mono">Leave empty to start right away.</em>
           </label>
 
           <label className="pf-field">
-            <span className="mono">ENDS</span>
+            <span className="mono">ENDS <InfoTip>When it stops. A countdown to this time shows on the product page.</InfoTip></span>
             <input type="datetime-local" value={draft.ends_at} onChange={(e) => set('ends_at', e.target.value)} />
             <em className="pf-hint mono">Prices go back to normal at this time by themselves.</em>
           </label>
 
           <div className="pf-field sm-wide">
-            <span className="mono">ON</span>
+            <span className="mono">ON <InfoTip>The whole shop, one drop, or only the products you pick.</InfoTip></span>
             <div className="sm-targets">
               {[
                 ['drop', 'A drop'],

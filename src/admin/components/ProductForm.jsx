@@ -23,6 +23,7 @@ const BLANK = {
   category: 't_shirts',
   isNew: false,
   featured: false,
+  bestSeller: false,
   images: [],
   description: '',
   sizes: ['S', 'M', 'L', 'XL'],
@@ -46,6 +47,7 @@ function fromRow(row) {
     category: row.category || '',
     isNew: row.is_new,
     featured: row.featured,
+    bestSeller: row.best_seller,
     images: row.images ?? [],
     description: row.description ?? '',
     sizes: row.sizes ?? [],
@@ -420,7 +422,7 @@ export default function ProductForm({ existing, copyFrom = null, allProducts = [
     // An older product keeps whatever SKU it already had.
     const id = p.id.trim()
     const link = colourLink({ ...p, id }, allProducts)
-    const { error: saveError } = await saveProduct(
+    const { error: saveError, id: savedId } = await saveProduct(
       { ...p, id, colourGroup: link.group, sku: p.sku?.trim() || id.toUpperCase(), price: Number(p.price) },
       isNewRecord
     )
@@ -463,7 +465,7 @@ export default function ProductForm({ existing, copyFrom = null, allProducts = [
 
     // A new product goes straight on to its other colours, if it has any.
     if (isNewRecord) {
-      setQuickBase({ ...p, id, colourGroup: link.group, sku: p.sku?.trim() || id.toUpperCase(), price: Number(p.price) })
+      setQuickBase({ ...p, id: savedId || id, colourGroup: link.group, sku: p.sku?.trim() || id.toUpperCase(), price: Number(p.price) })
       return
     }
     onDone()
@@ -522,7 +524,7 @@ export default function ProductForm({ existing, copyFrom = null, allProducts = [
         <Box
           title="IMAGES"
           wide
-          tip={<>The <strong>MAIN</strong> photo is the one on the shop card and first on the product page; the rest follow in this order. Use ← → to reorder, or "Set as main" on any photo.</>}
+          tip={<>Upload every angle of the piece: <strong>front, back, a close-up, then folded or worn</strong>. The <strong>MAIN</strong> photo is the shop card; the <strong>second</strong> one shows when a customer hovers the card. On the product page all photos stack in the middle column in this order. Best size: portrait <strong>4:5</strong> (e.g. 1600 × 2000 px) on a plain light background, so every card lines up. Use ← → to reorder, or "Set as main".</>}
         >
           <div className="pf-images">
             {p.images.map((url, i) => (
@@ -602,14 +604,14 @@ export default function ProductForm({ existing, copyFrom = null, allProducts = [
           </label>
 
           <label className="pf-field">
-            <FieldLabel tip="Optional. Shown under the colour photos on the product page, e.g. Bone White.">COLOUR NAME (OPTIONAL)</FieldLabel>
+            <FieldLabel tip="The colour of this one, e.g. Navy. Shown under the name on the product page and as the name of its swatch.">COLOUR NAME (OPTIONAL)</FieldLabel>
             <input value={p.variant} onChange={(e) => set('variant', e.target.value)} placeholder="Bone White" />
           </label>
 
           {/* No colour-group box to fill in: products with the same name are
               colours of one piece and link up by themselves when saved. */}
           <div className="pf-field">
-            <FieldLabel tip="Products with the same name are shown as colours of one piece: each colour its own card in the shop, and a colour picker on the product page. Use + Add another colour at the top, or give another product the same name.">
+            <FieldLabel tip="Products with the same name are colours of one piece. Each colour is its own card in the shop with small colour swatches under it, and the product page shows a swatch for every colour. Use + Add another colour at the top, or give another product the same name.">
               OTHER COLOURS
             </FieldLabel>
             <div className="pf-colours mono">
@@ -619,7 +621,7 @@ export default function ProductForm({ existing, copyFrom = null, allProducts = [
         </Box>
 
         {/* ---- Collection / drop ---- */}
-        <Box title="COLLECTION / DROP" tip="The collections made in Products → Collections. Picking one keeps the spelling the same as the menu and the lookbook — or type a new name.">
+        <Box title="COLLECTION / DROP" tip="Optional. Group pieces released together, e.g. EID 2026. A drop gets its own page (Shop → Drops in the menu) and its own lookbook. Pick an existing one so the spelling matches, or type a new name.">
           {drops.length > 0 && (
             <div className="pf-cats">
               {[...new Set([...drops, p.drop].filter(Boolean))].map((d) => (
@@ -696,7 +698,7 @@ export default function ProductForm({ existing, copyFrom = null, allProducts = [
         </Box>
 
         {/* ---- Description ---- */}
-        <Box title="DESCRIPTION" tip="Shown on the product page under the price — fabric, fit, what makes it worth buying.">
+        <Box title="DESCRIPTION" tip="Two or three plain sentences: fabric, fit, what it's for. Shown first under Product details on the product page.">
           <div className="pf-field">
             <textarea
               rows={5}
@@ -821,7 +823,7 @@ export default function ProductForm({ existing, copyFrom = null, allProducts = [
         </Box>
 
         {/* ---- Stock ---- */}
-        <Box title="STOCK" tip="Pieces left in each size. Every order takes its own off the count, and a size that hits 0 goes sold out on the product page by itself. Turn counting off and this product sells with no limit.">
+        <Box title="STOCK" tip="Pieces on the shelf in each size. A size comes off the count when its order is marked Delivered. At 0 the size shows sold out, and customers can ask to be emailed when it's back; raising it from 0 mails them. Turn counting off and the product sells with no limit.">
           {p.sizes.length === 0 ? (
             <div className="pf-note mono">Tick a size first to count stock for it.</div>
           ) : !tracking ? (
@@ -882,15 +884,13 @@ export default function ProductForm({ existing, copyFrom = null, allProducts = [
           <div className="pf-flags">
             <label className="pf-check mono">
               <input type="checkbox" checked={p.isNew} onChange={(e) => set('isNew', e.target.checked)} />
-              Show NEW badge
+              New arrival
+              <InfoTip>Shows a NEW tag on the shop card, and puts the product on the New arrivals page and the New arrivals row on the home page. Untick it once the piece is no longer new.</InfoTip>
             </label>
             <label className="pf-check mono">
-              <input
-                type="checkbox"
-                checked={p.featured}
-                onChange={(e) => set('featured', e.target.checked)}
-              />
-              Feature on shop grid (large tile)
+              <input type="checkbox" checked={p.bestSeller} onChange={(e) => set('bestSeller', e.target.checked)} />
+              Best seller
+              <InfoTip>Puts the product on the Best sellers page (Shop → Best sellers) and in the Best sellers row at the bottom of the home page. Pick 4 or more so the row is full.</InfoTip>
             </label>
           </div>
         </Box>
@@ -899,7 +899,7 @@ export default function ProductForm({ existing, copyFrom = null, allProducts = [
         <Box
           title="SIZE CHART"
           wide
-          tip={<>Each product carries its own chart — a jacket and a tee don't measure the same way. Picking a category fills in the chart from the last product in that category ({p.category || 'none picked'}); change it if this one differs. Without a chart, the SIZE CHART button stays hidden on the page.</>}
+          tip={<>Each product carries its own chart — a shirt and trousers don't measure the same way. Picking a category fills in the chart from the last product in that category ({p.category || 'none picked'}); change it if this one differs. It shows under Sizing on the product page and in its Size guide popup; without one, the shop's standard chart is used.</>}
         >
           {!p.sizeChart ? (
             <button
