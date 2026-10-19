@@ -80,8 +80,9 @@ injects those into every Edge Function automatically.
 1. `npm install`
 2. Copy `.env.local.example` to `.env.local` and fill in your Supabase project URL + anon key
 3. Run `sunday_supabase_schema.sql` in your Supabase project's SQL Editor (if you haven't already)
-4. Run `supabase/migrations/20261019000000_storage_images_bucket.sql` in the SQL Editor — creates the
-   public `images` bucket where admin-uploaded product photos are stored
+4. Database changes after the original schema live in `supabase/migrations/` and are
+   applied automatically when they reach `main` (Supabase GitHub integration — see
+   `supabase/README.md`)
 5. In Supabase → Authentication → Providers, enable Google if you want Google login
 6. `npm run dev` to test locally
 7. Deploy to Cloudflare (below)
