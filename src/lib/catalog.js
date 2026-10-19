@@ -35,6 +35,8 @@ export function sectionFor(category) {
 
 // Per-size stock when the product tracks it, otherwise the overall quantity.
 export function isSizeAvailable(product, size) {
+  // Sizes switched off by hand in the admin panel, whatever the count says.
+  if ((product.sizes_out || []).includes(size)) return false;
   const stock = product.size_stock;
   if (stock && Object.keys(stock).length > 0) return (stock[size] || 0) > 0;
   return (product.quantity || 0) > 0;

@@ -5,6 +5,22 @@ import { motion } from 'framer-motion';
 import { Truck, ShieldCheck, ArrowLeft, Copy, Check } from 'lucide-react';
 import { getCart, clearCart } from '@/lib/cartStore';
 import { useAuth } from '@/lib/AuthContext';
+import { checkCoupon } from '@/admin/lib/coupons.js';
+import { getAttribution } from '@/lib/attribution';
+import { saveAbandonedCart, markCartConverted } from '@/lib/abandonedCart';
+import { fetchLiveSales } from '@/admin/lib/sales.js';
+import { withSale } from '@/lib/pricing';
+
+// create_order's tagged errors, said plainly.
+function orderErrorMessage(error) {
+  const raw = error?.message || '';
+  let m;
+  if ((m = raw.match(/SOLD_OUT:(.*):(.*)/))) return `${m[1]} in size ${m[2]} has just sold out. Remove it from your bag to continue.`;
+  if ((m = raw.match(/UNAVAILABLE:(.*)/))) return `${m[1]} isn’t available yet. Remove it from your bag to continue.`;
+  if (raw.includes('RATE_LIMITED')) return 'Too many orders from this connection. Wait a few minutes and try again.';
+  if (raw.includes('COUPON_')) return 'That code can’t be used on this order any more. Remove it and try again.';
+  return 'The order didn’t go through. Check your details and try again.';
+}
 
 const districts = [
   'Dhaka', 'Chittagong', 'Rajshahi', 'Khulna', 'Sylhet', 'Rangpur', 'Barisal', 'Mymensingh',
@@ -27,6 +43,23 @@ export default function Checkout() {
   const [bkashTrxId, setBkashTrxId] = useState('');
   const [numberCopied, setNumberCopied] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState('');
+  const [couponInput, setCouponInput] = useState('');
+  const [coupon, setCoupon] = useState(null); // { code, discount }
+  const [couponError, setCouponError] = useState('');
+  const [checkingCoupon, setCheckingCoupon] = useState(false);
+
+  // Bag prices are refreshed from the catalog and any running sale, so the
+  // summary matches what create_order will charge.
+  useEffect(() => {
+    const ids = [...new Set(getCart().map((i) => i.productId))];
+    if (!ids.length) return;
+    Promise.all([supabase.from('products').select('*').in('id', ids), fetchLiveSales()]).then(([{ data }, sales]) => {
+      if (!data) return;
+      const byId = new Map(data.map((p) => [p.id, withSale(p, sales)]));
+      setCart((prev) => prev.map((i) => (byId.has(i.productId) ? { ...i, price: byId.get(i.productId).price } : i)));
+    });
+  }, []);
 
   useEffect(() => {
     if (cart.length === 0) {
@@ -40,7 +73,33 @@ export default function Checkout() {
   const shippingMethod = form.district === 'Dhaka' ? 'inside_dhaka' : 'outside_dhaka_advance';
   const selectedMethod = SHIPPING_METHODS.find(m => m.key === shippingMethod);
   const deliveryCharge = form.district ? (selectedMethod?.price || 0) : 0;
-  const total = subtotal + deliveryCharge;
+  const discount = coupon ? Math.min(coupon.discount, subtotal) : 0;
+  const total = subtotal - discount + deliveryCharge;
+
+  // A checkout that's never finished shows up in Admin → Orders → Abandoned
+  // cart, once there's a name or phone to follow up with.
+  useEffect(() => {
+    if (!form.full_name.trim() && !form.mobile.trim()) return;
+    const t = setTimeout(() => {
+      saveAbandonedCart({
+        name: form.full_name,
+        phone: form.mobile,
+        items: cart.map((i) => ({ product_id: i.productId, product_name: i.name, size: i.size, qty: i.quantity, price: i.price })),
+        cartValue: subtotal,
+      });
+    }, 1500);
+    return () => clearTimeout(t);
+  }, [form.full_name, form.mobile, cart, subtotal]);
+
+  const applyCoupon = async () => {
+    if (!couponInput.trim()) return;
+    setCheckingCoupon(true);
+    setCouponError('');
+    const { coupon: c, error } = await checkCoupon(couponInput.trim(), subtotal, form.mobile);
+    setCheckingCoupon(false);
+    if (error) { setCoupon(null); setCouponError(error.replace(/৳ ?/g, 'Tk ')); return; }
+    setCoupon(c);
+  };
   const isAdvancePay = shippingMethod === 'outside_dhaka_advance' && !!form.district;
 
   const handleCopyNumber = async () => {
@@ -55,6 +114,8 @@ export default function Checkout() {
     e.preventDefault();
     if (isAdvancePay && !bkashTrxId.trim()) return;
     setSubmitting(true);
+    setSubmitError('');
+    const utm = getAttribution();
 
     // Prices are re-verified server-side inside create_order — only product_id,
     // size and quantity are sent. The price/subtotal/total shown on this page
@@ -65,7 +126,7 @@ export default function Checkout() {
       quantity: i.quantity,
     }));
 
-    const { data: result, error: orderError } = await supabase.rpc('create_order', {
+    const base = {
       p_full_name: form.full_name,
       p_email: form.email,
       p_mobile: form.mobile,
@@ -76,15 +137,29 @@ export default function Checkout() {
       p_items: cartItems,
       p_payment_method: isAdvancePay ? 'bkash_advance' : 'cod',
       p_bkash_transaction_id: isAdvancePay ? bkashTrxId.trim() : null,
+    };
+    let { data: result, error: orderError } = await supabase.rpc('create_order', {
+      ...base,
+      p_coupon_code: coupon?.code || null,
+      p_utm_source: utm.utm_source || null,
+      p_utm_medium: utm.utm_medium || null,
+      p_utm_campaign: utm.utm_campaign || null,
     });
+    // The database not updated yet (no coupon/link parameters): place the
+    // order the old way rather than losing it. A coupon can't apply then.
+    if (orderError?.code === 'PGRST202' && !coupon) {
+      ({ data: result, error: orderError } = await supabase.rpc('create_order', base));
+    }
 
     if (orderError || !result?.[0]) {
       console.error('Order creation failed:', orderError);
+      setSubmitError(orderErrorMessage(orderError));
       setSubmitting(false);
       return;
     }
 
     const oid = result[0].order_id;
+    await markCartConverted(oid);
 
     // Stock is NOT decremented here anymore — it only decrements once the order
     // reaches "Delivered" status (handled in AdminOrders.jsx), so cancelled/returned
@@ -102,6 +177,8 @@ export default function Checkout() {
           district: form.district,
           items: cart.map(i => ({ name: i.name, size: i.size, quantity: i.quantity, price: i.price })),
           subtotal: result[0].subtotal,
+          discount,
+          coupon_code: coupon?.code || null,
           delivery_charge: result[0].delivery_charge,
           total: result[0].total,
           payment_method: isAdvancePay ? 'bkash_advance' : 'cod',
@@ -267,6 +344,8 @@ export default function Checkout() {
                 </div>
               )}
 
+              {submitError && <p className="text-[13px] text-coral" role="alert">{submitError}</p>}
+
               <button
                 type="submit"
                 disabled={submitting}
@@ -297,10 +376,39 @@ export default function Checkout() {
                 <span className="text-sm text-charcoal/60">Subtotal</span>
                 <span className="text-sm font-mono">Tk {subtotal.toLocaleString()}</span>
               </div>
+              {coupon && (
+                <div className="flex justify-between mb-2.5">
+                  <span className="text-sm text-charcoal/60">
+                    Discount ({coupon.code}){' '}
+                    <button type="button" onClick={() => { setCoupon(null); setCouponInput(''); }} className="underline underline-offset-2 text-[12px]">Remove</button>
+                  </span>
+                  <span className="text-sm font-mono">− Tk {discount.toLocaleString()}</span>
+                </div>
+              )}
               <div className="flex justify-between mb-4">
                 <span className="text-sm text-charcoal/60">Shipping</span>
                 <span className="text-sm font-mono">{form.district ? `Tk ${deliveryCharge}` : 'Choose a district'}</span>
               </div>
+
+              {!coupon && (
+                <div className="mb-5">
+                  <div className="flex border border-rule">
+                    <label htmlFor="coupon" className="sr-only">Discount code</label>
+                    <input
+                      id="coupon"
+                      value={couponInput}
+                      onChange={(e) => setCouponInput(e.target.value.toUpperCase())}
+                      onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); applyCoupon(); } }}
+                      placeholder="Discount code"
+                      className="flex-1 min-w-0 px-3 py-2.5 text-[13px] outline-none bg-transparent"
+                    />
+                    <button type="button" onClick={applyCoupon} disabled={checkingCoupon} className="px-4 text-[13px] border-l border-rule hover:bg-stone disabled:opacity-50">
+                      {checkingCoupon ? 'Checking…' : 'Apply'}
+                    </button>
+                  </div>
+                  {couponError && <p className="mt-1.5 text-[12px] text-coral">{couponError}</p>}
+                </div>
+              )}
 
               <div className="flex justify-between items-center bg-stone px-4 py-4 mb-6">
                 <span className="font-semibold text-black">Total</span>

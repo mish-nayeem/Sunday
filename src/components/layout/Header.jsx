@@ -3,7 +3,9 @@ import { Link, useLocation } from 'react-router-dom';
 import { Menu, X, Search, ShoppingBag } from 'lucide-react';
 import { getCartCount, subscribeCart, openCartDrawer } from '@/lib/cartStore';
 import { useAuth } from '@/lib/AuthContext';
-import { SECTIONS, COLLECTIONS } from '@/lib/catalog';
+import { COLLECTIONS } from '@/lib/catalog';
+import { useMenus } from '@/lib/menus';
+import { fetchTicker } from '@/admin/lib/siteSettings.js';
 import SearchOverlay from './SearchOverlay';
 import logo from '@/assets/logo.png';
 
@@ -17,6 +19,19 @@ export default function Header() {
   const [searchOpen, setSearchOpen] = useState(false);
   const { isAuthenticated, isAdmin, logout } = useAuth();
   const location = useLocation();
+  const menus = useMenus();
+  const [ticker, setTicker] = useState([]);
+  const [line, setLine] = useState(0);
+
+  // The strip's lines come from Admin → Homepage → Ticker.
+  useEffect(() => {
+    fetchTicker().then(setTicker).catch(() => {});
+  }, []);
+  useEffect(() => {
+    if (ticker.length < 2) return;
+    const t = setInterval(() => setLine((n) => (n + 1) % ticker.length), 4000);
+    return () => clearInterval(t);
+  }, [ticker.length]);
 
   useEffect(() => {
     const update = () => setCartCount(getCartCount());
@@ -40,8 +55,8 @@ export default function Header() {
 
   return (
     <>
-      <div className="bg-ink text-white text-[12px] text-center py-2 px-4">
-        Delivery all over Bangladesh. Cash on delivery inside Dhaka.
+      <div className="bg-ink text-white text-[12px] text-center py-2 px-4" aria-live="polite">
+        {ticker[line] || 'Delivery all over Bangladesh. Cash on delivery inside Dhaka.'}
       </div>
 
       <header
@@ -109,16 +124,26 @@ export default function Header() {
         {/* Desktop shop menu */}
         {menuOpen && (
           <div className="hidden md:block absolute inset-x-0 top-full bg-white border-b border-rule">
-            <div className="px-6 py-8 grid grid-cols-[repeat(3,minmax(0,200px))] gap-10">
+            <div className="px-6 py-8 grid grid-cols-[repeat(4,minmax(0,200px))] gap-10">
               <div>
                 <p className="text-[12px] text-graphite mb-3">Clothing</p>
                 <ul className="space-y-2">
                   <li><Link to="/shop" className={link}>View all</Link></li>
-                  {SECTIONS.map((s) => (
-                    <li key={s.key}><Link to={`/shop?category=${s.key}`} className={link}>{s.label}</Link></li>
+                  {menus.shop.map((s) => (
+                    <li key={s.key}><Link to={s.to} className={link}>{s.label}</Link></li>
                   ))}
                 </ul>
               </div>
+              {menus.drops.length > 0 && (
+                <div>
+                  <p className="text-[12px] text-graphite mb-3">Drops</p>
+                  <ul className="space-y-2">
+                    {menus.drops.map((d) => (
+                      <li key={d.key}><Link to={d.to} className={link}>{d.label}</Link></li>
+                    ))}
+                  </ul>
+                </div>
+              )}
               <div>
                 <p className="text-[12px] text-graphite mb-3">Collections</p>
                 <ul className="space-y-2">
@@ -130,7 +155,8 @@ export default function Header() {
               <div>
                 <p className="text-[12px] text-graphite mb-3">Help</p>
                 <ul className="space-y-2">
-                  <li><Link to="/size-guide" className={link}>Size guide</Link></li>
+                  <li><Link to="/support/size-guide" className={link}>Size guide</Link></li>
+                  <li><Link to="/support/portal" className={link}>Returns and exchanges</Link></li>
                   <li><Link to="/order-tracking" className={link}>Track an order</Link></li>
                   <li><Link to="/contact" className={link}>Contact</Link></li>
                 </ul>
@@ -152,8 +178,11 @@ export default function Header() {
           <nav className="flex-1 overflow-y-auto px-4 py-6" aria-label="Mobile">
             <ul className="space-y-4 font-heading text-[26px] leading-tight">
               <li><Link to="/shop">Shop all</Link></li>
-              {SECTIONS.map((s) => (
-                <li key={s.key}><Link to={`/shop?category=${s.key}`}>{s.label}</Link></li>
+              {menus.shop.map((s) => (
+                <li key={s.key}><Link to={s.to}>{s.label}</Link></li>
+              ))}
+              {menus.drops.map((d) => (
+                <li key={`drop-${d.key}`}><Link to={d.to}>{d.label}</Link></li>
               ))}
               {COLLECTIONS.map((c) => (
                 <li key={c.key}><Link to={`/shop?filter=${c.key}`}>{c.label}</Link></li>

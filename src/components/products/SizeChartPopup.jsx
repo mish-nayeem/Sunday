@@ -1,45 +1,59 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { X } from 'lucide-react';
 
-const sizeChart = {
-  default: [
-    { size: 'S', chest: '38', length: '27' },
-    { size: 'M', chest: '40', length: '28' },
-    { size: 'L', chest: '42', length: '29' },
-    { size: 'XL', chest: '44', length: '30' },
-    { size: 'XXL', chest: '46', length: '31' },
+// Used when a product has no chart of its own (inches).
+const DEFAULT_CHART = {
+  columns: ['S', 'M', 'L', 'XL', 'XXL'],
+  rows: [
+    { label: 'Chest', values: ['38', '40', '42', '44', '46'] },
+    { label: 'Length', values: ['27', '28', '29', '30', '31'] },
   ],
+  notes: ['Measurements in inches.'],
 };
 
-export default function SizeChartPopup({ open, onClose }) {
+// The product's own chart from the admin panel's product form
+// ({ columns, rows: [{ label, values }], notes }), or the default above.
+export default function SizeChartPopup({ open, onClose, chart }) {
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e) => e.key === 'Escape' && onClose();
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [open, onClose]);
+
   if (!open) return null;
-  const rows = sizeChart.default;
+  const c = chart?.rows?.length ? chart : DEFAULT_CHART;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-5" onClick={onClose}>
-      <div className="bg-white max-w-md w-full p-6" onClick={e => e.stopPropagation()}>
-        <div className="flex justify-between items-center mb-4">
-          <h3 className="text-sm tracking-[0.15em] uppercase font-medium">Size Guide (inches)</h3>
-          <button onClick={onClose}><X size={18} /></button>
+    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/30 px-4" onClick={onClose} role="dialog" aria-modal="true" aria-label="Size guide">
+      <div className="bg-white w-full max-w-lg p-6" onClick={(e) => e.stopPropagation()}>
+        <div className="flex justify-between items-center mb-5">
+          <h2 className="font-heading text-[24px]">Size guide</h2>
+          <button type="button" onClick={onClose} aria-label="Close" className="p-1"><X size={20} strokeWidth={1.5} /></button>
         </div>
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="border-b border-sand/30">
-              <th className="text-left py-2">Size</th>
-              <th className="text-left py-2">Chest</th>
-              <th className="text-left py-2">Length</th>
-            </tr>
-          </thead>
-          <tbody>
-            {rows.map(r => (
-              <tr key={r.size} className="border-b border-sand/10">
-                <td className="py-2 font-medium">{r.size}</td>
-                <td className="py-2 font-mono">{r.chest}"</td>
-                <td className="py-2 font-mono">{r.length}"</td>
+        <div className="overflow-x-auto">
+          <table className="w-full text-[13px]">
+            <thead>
+              <tr className="border-b border-ink">
+                <th className="text-left font-normal py-2 pr-4 text-graphite"></th>
+                {c.columns.map((col) => <th key={col} className="text-left font-normal py-2 px-2">{col}</th>)}
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {c.rows.map((r) => (
+                <tr key={r.label} className="border-b border-rule">
+                  <td className="py-2 pr-4">{r.label}</td>
+                  {c.columns.map((col, i) => <td key={col} className="py-2 px-2 tabular-nums">{r.values?.[i] ?? ''}</td>)}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        {c.notes?.length > 0 && (
+          <ul className="mt-4 space-y-1 text-[12px] text-graphite">
+            {c.notes.map((n) => <li key={n}>{n}</li>)}
+          </ul>
+        )}
       </div>
     </div>
   );

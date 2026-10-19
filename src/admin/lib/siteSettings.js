@@ -27,10 +27,7 @@ export async function saveSetting(key, value) {
 
 // The homepage ticker's lines when none are saved (or the table isn't there).
 export const DEFAULT_TICKER = [
-  'EVERYTHING ON HOLD',
-  'CUT & SEWN IN DHAKA',
-  'RELEASED IN SMALL DROPS',
-  "WHEN IT'S GONE, IT'S GONE",
+  'Delivery all over Bangladesh. Cash on delivery inside Dhaka.',
 ]
 
 export async function fetchTicker() {
@@ -41,7 +38,7 @@ export async function fetchTicker() {
 
 // The homepage hero's button and its optional drop countdown — Admin →
 // Homepage. Stored as site_settings 'hero_button' and 'hero_countdown'.
-export const DEFAULT_HERO_BUTTON = { label: 'VIEW SHOP', link: '/shop' }
+export const DEFAULT_HERO_BUTTON = { label: 'Shop new arrivals', link: '/shop?filter=new_arrival' }
 
 export async function fetchHeroExtras() {
   const [b, c] = await Promise.all([fetchSetting('hero_button'), fetchSetting('hero_countdown')])

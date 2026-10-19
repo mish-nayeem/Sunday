@@ -1,37 +1,31 @@
-// All the static page copy lives here so it can be edited without touching any
-// component. Each entry renders through src/pages/Info.jsx.
-//
-// Anything in [SQUARE BRACKETS] is a placeholder you must replace with your
-// real details before launch.
+// SUNDAY's support copy. Each entry renders on /support/<slug>; Admin →
+// Support → Support pages can rewrite any of them without a deploy (saved
+// pages replace these defaults whole — see lib/support.js mergePages).
+// Built from the policy pages SUNDAY already had.
 
-export const CONTACT_EMAIL = 'pause.bd@gmail.com'
-export const CONTACT_PHONE = '+8801706188605'
-export const INSTAGRAM = 'https://www.instagram.com/pause.cultour'
-export const FACEBOOK = 'https://www.facebook.com/pause.bd'
-// No TikTok account yet — the footer icon points here until there is one.
-// Either fill this in or remove the TikTok icon from src/components/Footer.jsx.
-export const TIKTOK = 'https://www.instagram.com/pause.cultour'
+export const CONTACT_EMAIL = 'sundayclothin@gmail.com'
+export const CONTACT_PHONE = '01629178834'
+export const INSTAGRAM = 'https://www.instagram.com/sunday.clothin'
+export const FACEBOOK = 'https://www.facebook.com/share/19U1FfCwMY/'
 
 export const INFO_PAGES = {
   contact: {
     title: 'Contact info',
     eyebrow: 'SUPPORT',
-    intro:
-      "Questions about an order, a size, or a drop? Message us and we'll get back within one working day.",
+    intro: "Questions about an order, a size or a delivery? Message us and we'll get back to you.",
     blocks: [
       {
         type: 'contact',
         items: [
           { label: 'EMAIL', value: CONTACT_EMAIL, href: `mailto:${CONTACT_EMAIL}` },
           { label: 'PHONE / WHATSAPP', value: CONTACT_PHONE, href: `tel:${CONTACT_PHONE}` },
-          { label: 'INSTAGRAM', value: '@pause.cultour', href: INSTAGRAM },
+          { label: 'INSTAGRAM', value: '@sunday.clothin', href: INSTAGRAM },
         ],
       },
       {
         type: 'text',
         heading: 'About your order',
-        body:
-          'Have your order number ready — it starts with PC and is in the confirmation email we sent when you placed the order. With it we can check your delivery status straight away.',
+        body: 'Have your order number ready. It starts with SND and is in your confirmation email and on the order confirmation page.',
       },
     ],
   },
@@ -39,42 +33,19 @@ export const INFO_PAGES = {
   'size-guide': {
     title: 'Size guide',
     eyebrow: 'SUPPORT',
-    intro:
-      'All measurements are of the garment laid flat, in inches. Measure a piece you already own and compare — it is more reliable than body measurements.',
+    intro: 'Measurements are of the garment laid flat, in inches. Measure a piece you already own and compare.',
     blocks: [
       {
         type: 'table',
-        heading: 'Tops — t-shirts, shirts, hoodies',
+        heading: 'Tops: shirts, polos, t-shirts',
         head: ['SIZE', 'CHEST', 'LENGTH', 'SHOULDER'],
         rows: [
-          ['S', '20', '27', '17.5'],
-          ['M', '21', '28', '18.5'],
-          ['L', '22', '29', '19.5'],
-          ['XL', '23', '30', '20.5'],
+          ['S', '38', '27', '17'],
+          ['M', '40', '28', '17.5'],
+          ['L', '42', '29', '18'],
+          ['XL', '44', '30', '18.5'],
+          ['XXL', '46', '31', '19'],
         ],
-      },
-      {
-        type: 'table',
-        heading: 'Bottoms — pants, shorts',
-        head: ['SIZE', 'WAIST', 'HIP', 'INSEAM'],
-        rows: [
-          ['S', '29', '39', '29'],
-          ['M', '31', '41', '29.5'],
-          ['L', '33', '43', '30'],
-          ['XL', '35', '45', '30.5'],
-        ],
-      },
-      {
-        type: 'text',
-        heading: 'How to measure',
-        body:
-          'Lay the garment flat and smooth out the fabric. Chest is measured one inch below the armhole, straight across. Length runs from the highest point of the shoulder to the hem. Waist is measured across the top of the waistband and doubled.',
-      },
-      {
-        type: 'text',
-        heading: 'Between two sizes?',
-        body:
-          'Our fits run boxy, so size down for a closer fit or stay on the larger size if you like room. Each product page carries its own measurements under SIZE CHART.',
       },
     ],
   },
@@ -82,111 +53,26 @@ export const INFO_PAGES = {
   delivery: {
     title: 'Delivery info',
     eyebrow: 'SUPPORT',
-    intro:
-      'Everything is cash on delivery. You pay the rider when the parcel reaches you — nothing is charged before that.',
+    intro: 'We deliver all over Bangladesh.',
     blocks: [
       {
         type: 'table',
-        heading: 'Timeline and charges',
-        head: ['AREA', 'TIME', 'CHARGE'],
+        heading: 'Charges and times',
+        head: ['AREA', 'TIME', 'CHARGE', 'PAYMENT'],
         rows: [
-          ['Inside Dhaka', '1–2 working days', '[৳60]'],
-          ['Outside Dhaka', '3–5 working days', '[৳120]'],
+          ['Inside Dhaka', '1–3 business days', 'Tk 80', 'Cash on delivery'],
+          ['Outside Dhaka', '3–7 business days', 'Tk 200', 'Delivery charge by bKash in advance, the rest in cash'],
         ],
       },
       {
         type: 'text',
-        heading: 'How it works',
-        body:
-          'Once you place an order you get a confirmation email with your order number. We email you again when the parcel leaves us, and a last time once it has been delivered. If you did not give an email address, we will call you instead.',
+        heading: 'bKash advance',
+        body: 'For orders outside Dhaka, send the delivery charge by bKash and enter the Transaction ID at checkout. An incorrect or unverifiable Transaction ID may delay or cancel the order.',
       },
       {
         type: 'text',
-        heading: 'Before you accept the parcel',
-        body:
-          'Please check the parcel in front of the rider. If anything is wrong — wrong size, wrong item, or damage — refuse the delivery and call us the same day. It is much easier to fix at that point than after the rider has left.',
-      },
-      {
-        type: 'text',
-        heading: 'Failed deliveries',
-        body:
-          'Our courier attempts delivery twice. If both attempts fail because the number is unreachable or the address is wrong, the order is cancelled and returned to us.',
-      },
-    ],
-  },
-
-  privacy: {
-    title: 'Privacy policy',
-    eyebrow: 'SUPPORT',
-    intro:
-      'We collect the minimum needed to get a parcel to your door, and we do not sell it to anyone.',
-    blocks: [
-      {
-        type: 'text',
-        heading: 'What we collect',
-        body:
-          'When you place an order: your name, phone number, delivery address and area, an optional email address, and any delivery note you write. When you join our mailing list: your email address only.',
-      },
-      {
-        type: 'text',
-        heading: 'What we use it for',
-        body:
-          'Your details are used to pack and deliver your order, to contact you about that order, and — if you subscribed — to tell you when a new drop lands. Nothing else.',
-      },
-      {
-        type: 'text',
-        heading: 'Who else sees it',
-        body:
-          'The courier gets your name, phone number and address, because they cannot deliver without it. Our order data is stored with Supabase and our order emails are sent through Brevo. We do not sell or rent your information to anyone.',
-      },
-      {
-        type: 'text',
-        heading: 'Payment',
-        body:
-          'We are cash on delivery only. We never ask for card details, mobile banking PINs, or OTPs — if anyone claiming to be us asks for those, it is not us.',
-      },
-      {
-        type: 'text',
-        heading: 'Your choices',
-        body: `Every newsletter has an unsubscribe link. To have your details removed from our records, email ${CONTACT_EMAIL} with your order number and we will delete them, except where we are required to keep a sales record.`,
-      },
-    ],
-  },
-
-  terms: {
-    title: 'Terms of service',
-    eyebrow: 'SUPPORT',
-    intro: 'The short version of how ordering from us works.',
-    blocks: [
-      {
-        type: 'text',
-        heading: 'Orders',
-        body:
-          'Placing an order is a request, not a confirmed sale. We confirm it by email or phone. We may cancel an order if the item turns out to be out of stock, if the address is outside our delivery area, or if we cannot reach you.',
-      },
-      {
-        type: 'text',
-        heading: 'Stock',
-        body:
-          'We release in small drops. When a size sells out it is marked sold out on the product page, and we usually do not restock a finished drop.',
-      },
-      {
-        type: 'text',
-        heading: 'Prices',
-        body:
-          'All prices are in Bangladeshi Taka and include VAT where applicable. Delivery is charged separately and shown before you confirm. Prices can change, but never after you have placed an order.',
-      },
-      {
-        type: 'text',
-        heading: 'Product images',
-        body:
-          'We photograph every piece ourselves. Colours can still look slightly different between screens, so small variation between the photo and the garment is normal.',
-      },
-      {
-        type: 'text',
-        heading: 'Our designs',
-        body:
-          'The SUNDAY name, our graphics and our photography belong to us. Please do not reproduce them commercially.',
+        heading: 'Delays',
+        body: 'Couriers or weather can occasionally delay a delivery. Delivery charges are non-refundable once an order has been dispatched.',
       },
     ],
   },
@@ -194,31 +80,22 @@ export const INFO_PAGES = {
   refunds: {
     title: 'Return & refund',
     eyebrow: 'SUPPORT',
-    intro:
-      'We want you in something that fits. If something is wrong, tell us within 3 days of delivery.',
+    intro: 'SUNDAY offers exchanges, not cash refunds, except for an out-of-stock item after a bKash advance.',
     blocks: [
       {
         type: 'text',
-        heading: 'When we refund',
-        body:
-          'If we sent the wrong item, or it arrived with a manufacturing fault, we refund the full amount including delivery. Send us photos within 3 days of delivery and we will arrange a pickup.',
+        heading: 'Exchange only',
+        body: 'We offer exchanges for a different size or another product of equal value. We do not offer cash refunds.',
       },
       {
         type: 'text',
-        heading: 'What we cannot take back',
-        body:
-          'Items that have been worn, washed, altered or damaged after delivery, and anything without its tags. For hygiene reasons, headwear and accessories cannot be returned unless faulty.',
+        heading: 'Out-of-stock advance payments',
+        body: "If you paid a bKash advance for an outside-Dhaka order and the item turns out to be out of stock, you're entitled to a full refund of that advance, or store credit toward another item. Your choice.",
       },
       {
         type: 'text',
-        heading: 'Changed your mind',
-        body:
-          'Because we are cash on delivery, the easiest time to change your mind is at the door — just refuse the parcel and nothing is charged. Once you have paid and accepted it, we can only exchange, not refund.',
-      },
-      {
-        type: 'text',
-        heading: 'How to start',
-        body: `Open the Return & Exchange Portal on this page, enter your order number with the email or phone you ordered with, and send the request. You can also email ${CONTACT_EMAIL} or message us on Instagram. We reply within one working day.`,
+        heading: 'How to ask',
+        body: 'Use the Return & Exchange Portal with your order number and the phone or email you ordered with, or contact us within 3 days of delivery.',
       },
     ],
   },
@@ -226,32 +103,93 @@ export const INFO_PAGES = {
   exchange: {
     title: 'Exchange policy',
     eyebrow: 'SUPPORT',
-    intro: 'Wrong size? Swap it for another size of the same piece within 3 days of delivery.',
+    intro: 'You can request an exchange within 3 days of delivery.',
     blocks: [
       {
         type: 'text',
-        heading: 'What can be exchanged',
-        body:
-          'Any piece for another size of the same product, subject to stock. The item must be unworn and unwashed, with tags on and in its original packaging.',
+        heading: 'Conditions',
+        body: 'The item must be unused, unwashed and unworn, in its original condition with all tags attached, and in its original packaging. Damaged, altered or worn items cannot be exchanged.',
       },
       {
         type: 'text',
-        heading: 'Delivery charges',
-        body:
-          'Delivery charges for a size exchange are paid by the customer. If we sent the wrong size or a faulty piece, the exchange is free.',
+        heading: 'Delivery charges for an exchange',
+        body: 'You cover the cost of returning the original item to us. SUNDAY covers sending the replacement back to you.',
       },
       {
         type: 'text',
-        heading: 'How it works',
-        body:
-          'Send an exchange request from the Return & Exchange Portal with the size you want. We confirm stock, the rider brings the new size and takes the old one back in the same trip.',
+        heading: 'Cancelling an order',
+        body: 'You can cancel an order before it is dispatched by contacting us. Shipped orders cannot be cancelled, but may be exchanged under this policy.',
+      },
+    ],
+  },
+
+  privacy: {
+    title: 'Privacy policy',
+    eyebrow: 'SUPPORT',
+    intro: 'What we collect when you order, and what we do with it.',
+    blocks: [
+      {
+        type: 'text',
+        heading: 'Information we collect',
+        body: 'When you place an order we collect your name, email address, mobile number, delivery address and order details. If you pay by bKash we also record the Transaction ID for verification.',
+      },
+      {
+        type: 'text',
+        heading: 'How we use it',
+        body: 'To process, confirm and deliver your order; to send your confirmation email and invoice; to contact you about your order; to send occasional emails about new arrivals and offers (you can unsubscribe any time); and to run advertising on Facebook and Instagram. We never sell your information.',
+      },
+      {
+        type: 'text',
+        heading: 'Services we use',
+        body: 'Supabase stores our order and customer database, Brevo sends order emails, and Meta (Facebook/Instagram) is used for advertising.',
+      },
+      {
+        type: 'text',
+        heading: 'Your bag and browser storage',
+        body: 'Your bag is kept in your browser on your device until you check out.',
+      },
+      {
+        type: 'text',
+        heading: 'Your rights',
+        body: `We keep order information for accounting and support. To get a copy, correct it or ask us to delete it, email ${CONTACT_EMAIL}.`,
+      },
+    ],
+  },
+
+  terms: {
+    title: 'Terms of service',
+    eyebrow: 'SUPPORT',
+    intro: 'The terms for ordering from SUNDAY.',
+    blocks: [
+      {
+        type: 'text',
+        heading: 'Orders and pricing',
+        body: "Prices are in Bangladeshi Taka and include applicable taxes. We may change prices, descriptions and availability without notice. If an item is out of stock after you order, we'll offer an alternative, store credit, or a full refund of any advance paid.",
+      },
+      {
+        type: 'text',
+        heading: 'Payment',
+        body: 'Inside Dhaka: cash on delivery for the full amount. Outside Dhaka: the delivery charge in advance by bKash, the rest in cash on delivery.',
+      },
+      {
+        type: 'text',
+        heading: 'Intellectual property',
+        body: 'The SUNDAY name, logo, product photography and descriptions belong to SUNDAY and may not be copied or reused without permission.',
+      },
+      {
+        type: 'text',
+        heading: 'Liability',
+        body: 'SUNDAY is not liable for delays caused by couriers, payment processors or events outside our control. Our liability for any claim is limited to the amount paid for the order.',
+      },
+      {
+        type: 'text',
+        heading: 'Governing law',
+        body: 'These terms are governed by the laws of Bangladesh.',
       },
     ],
   },
 }
 
-// The tab row on /support, left to right. `portal` isn't a page of copy —
-// it's the refund / exchange request form (src/components/ReturnPortal.jsx).
 export const SUPPORT_TABS = [
   { slug: 'refunds', label: 'Return & Refund' },
   { slug: 'exchange', label: 'Exchange Policy' },

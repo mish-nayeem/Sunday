@@ -6,6 +6,59 @@ import { addToCart, openCartDrawer, addRecentlyViewed, isInWishlist, toggleWishl
 import { CATEGORY_LABELS, DELIVERY, sectionFor, isSizeAvailable, isSoldOut, formatPrice } from '@/lib/catalog';
 import ProductCard from '@/components/products/ProductCard';
 import SizeChartPopup from '@/components/products/SizeChartPopup';
+import { useLiveSales, withSale } from '@/lib/pricing';
+import { timeLeft } from '@/admin/lib/sales.js';
+import { joinWishlist, hasJoined, savedEmail } from '@/admin/lib/wishlist.js';
+
+// "Email me when it's back" for one sold-out size. The admin panel's
+// Customers → Wishlist lists the requests, and restocking the size mails them.
+function RestockForm({ product, size }) {
+  const [email, setEmail] = useState(savedEmail());
+  const [state, setState] = useState(hasJoined(product.id, size) ? 'done' : 'idle');
+
+  if (state === 'done') {
+    return <p className="mt-3 text-[13px]">We’ll email you when size {size} is back.</p>;
+  }
+
+  const submit = async (e) => {
+    e.preventDefault();
+    setState('sending');
+    const { error } = await joinWishlist({ product, size, email });
+    setState(error ? 'error' : 'done');
+  };
+
+  return (
+    <form onSubmit={submit} className="mt-3">
+      <p className="text-[13px] mb-2">Size {size} is sold out. Get an email when it’s back.</p>
+      <div className="flex border-b border-ink">
+        <label htmlFor="restock-email" className="sr-only">Email address</label>
+        <input
+          id="restock-email"
+          type="email"
+          required
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          placeholder="Email address"
+          className="flex-1 min-w-0 bg-transparent py-2 text-[13px] outline-none placeholder:text-graphite"
+        />
+        <button type="submit" disabled={state === 'sending'} className="pl-4 text-[13px] hover:underline underline-offset-4">
+          Notify me
+        </button>
+      </div>
+      {state === 'error' && <p className="mt-2 text-[12px] text-coral">That didn’t go through. Check the address and try again.</p>}
+    </form>
+  );
+}
+
+function SaleCountdown({ endsAt }) {
+  const [, tick] = useState(0);
+  useEffect(() => {
+    const t = setInterval(() => tick((n) => n + 1), 1000);
+    return () => clearInterval(t);
+  }, []);
+  const left = timeLeft(endsAt);
+  return left ? <span className="text-graphite"> · ends in {left}</span> : null;
+}
 
 function Disclosure({ title, children }) {
   const [open, setOpen] = useState(false);
@@ -29,7 +82,11 @@ function Disclosure({ title, children }) {
 export default function ProductDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const [product, setProduct] = useState(null);
+  const [raw, setRaw] = useState(null);
+  const [colours, setColours] = useState([]);
+  const [waitSize, setWaitSize] = useState('');
+  const sales = useLiveSales();
+  const product = withSale(raw, sales);
   const [related, setRelated] = useState([]);
   const [loading, setLoading] = useState(true);
   const [size, setSize] = useState('');
@@ -45,12 +102,21 @@ export default function ProductDetail() {
     const load = async () => {
       setLoading(true);
       setSize('');
+      setWaitSize('');
       setSizeError(false);
       setSlide(0);
       const { data: p } = await supabase.from('products').select('*').eq('id', id).single();
       if (cancelled) return;
-      if (!p) { setProduct(null); setLoading(false); return; }
-      setProduct(p);
+      if (!p) { setRaw(null); setLoading(false); return; }
+      setRaw(p);
+      // The same piece in its other colours (Admin: colour group).
+      if (p.colour_group) {
+        const { data: sibs } = await supabase.from('products').select('id,name,variant,images')
+          .eq('colour_group', p.colour_group).neq('id', p.id);
+        if (!cancelled) setColours(sibs || []);
+      } else {
+        setColours([]);
+      }
       setWishlisted(isInWishlist(p.id));
       setColor(p.colors?.[0] || '');
       // A single-size product needs no choice.
@@ -120,7 +186,7 @@ export default function ProductDetail() {
 
   const images = (product.images || []).filter(Boolean);
   const soldOut = isSoldOut(product);
-  const onSale = product.discount_percentage > 0 && product.original_price > product.price;
+  const onSale = !!product.compare_at;
   const section = sectionFor(product.category);
 
   return (
@@ -183,10 +249,33 @@ export default function ProductDetail() {
             </nav>
 
             <h1 className="font-heading text-[28px] md:text-[32px] leading-tight">{product.name}</h1>
+            {product.variant && <p className="text-[14px] text-graphite mt-1">{product.variant}</p>}
             <p className="mt-2 text-[15px]">
-              {onSale && <span className="text-graphite line-through mr-2">{formatPrice(product.original_price)}</span>}
+              {onSale && <span className="text-graphite line-through mr-2">{formatPrice(product.compare_at)}</span>}
               <span className={onSale ? 'text-coral' : ''}>{formatPrice(product.price)}</span>
             </p>
+            {product.sale && (
+              <p className="mt-1 text-[13px] text-coral">
+                {product.sale.percent}% off{product.sale.name ? `, ${product.sale.name}` : ''}
+                <SaleCountdown endsAt={product.sale.endsAt} />
+              </p>
+            )}
+
+            {colours.length > 0 && (
+              <div className="mt-6">
+                <p className="text-[13px] mb-2">Also in</p>
+                <div className="flex gap-2">
+                  {colours.map((c) => (
+                    <Link key={c.id} to={`/product/${c.id}`} className="w-14 group" title={c.variant || c.name}>
+                      <div className="aspect-[4/5] bg-stone overflow-hidden border border-transparent group-hover:border-ink">
+                        {c.images?.[0] && <img src={imgUrl(c.images[0], 120)} alt={c.variant || c.name} className="w-full h-full object-cover" />}
+                      </div>
+                      {c.variant && <p className="text-[11px] text-graphite mt-1 truncate">{c.variant}</p>}
+                    </Link>
+                  ))}
+                </div>
+              </div>
+            )}
 
             {product.colors?.length > 0 && (
               <div className="mt-7">
@@ -224,11 +313,14 @@ export default function ProductDetail() {
                       <button
                         key={s}
                         type="button"
-                        disabled={!ok}
-                        aria-pressed={size === s}
-                        onClick={() => { setSize(s); setSizeError(false); }}
+                        aria-pressed={ok ? size === s : waitSize === s}
+                        aria-label={ok ? `Size ${s}` : `Size ${s}, sold out`}
+                        onClick={() => {
+                          if (ok) { setSize(s); setWaitSize(''); setSizeError(false); }
+                          else { setWaitSize(waitSize === s ? '' : s); }
+                        }}
                         className={`h-11 text-[13px] border ${
-                          !ok ? 'border-rule text-graphite/50 line-through cursor-not-allowed'
+                          !ok ? `text-graphite/60 line-through ${waitSize === s ? 'border-ink' : 'border-rule hover:border-graphite'}`
                             : size === s ? 'border-ink bg-ink text-white'
                               : 'border-rule hover:border-ink'
                         }`}
@@ -238,6 +330,7 @@ export default function ProductDetail() {
                     );
                   })}
                 </div>
+                {waitSize && <RestockForm key={waitSize} product={product} size={waitSize} />}
               </div>
             )}
 
@@ -300,7 +393,7 @@ export default function ProductDetail() {
         </div>
       )}
 
-      <SizeChartPopup open={sizeChartOpen} onClose={() => setSizeChartOpen(false)} category={product.category} />
+      <SizeChartPopup open={sizeChartOpen} onClose={() => setSizeChartOpen(false)} category={product.category} chart={product.size_chart} />
     </div>
   );
 }

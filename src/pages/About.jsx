@@ -1,45 +1,56 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
+import { imgUrl } from '@/lib/storage';
+import { fetchAboutBlocks } from '@/admin/lib/about.js';
 import attentionImage from '@/assets/attention.jpeg';
 
+// The built-in page, used until the first block is added in Admin → About us.
+const DEFAULT_BLOCKS = [
+  {
+    id: 'default',
+    image_url: attentionImage,
+    heading: 'About SUNDAY',
+    description:
+      "SUNDAY is a men's fashion brand from Bangladesh, making shirts, polos, cargo and formal trousers for everyday wear.\n\nWe deliver all over Bangladesh, with cash on delivery inside Dhaka.",
+  },
+];
+
+// A stack of photo + words blocks, rewritten and reshot from the admin panel
+// without a deploy.
 export default function About() {
+  const [blocks, setBlocks] = useState(null);
+
+  useEffect(() => {
+    fetchAboutBlocks().then(({ blocks: rows }) => setBlocks(rows?.length ? rows : DEFAULT_BLOCKS));
+  }, []);
+
+  if (!blocks) return <div className="min-h-[60vh]" />;
+
   return (
-    <div className="min-h-screen">
-      {/* Hero image */}
-      <section
-        className="relative h-[45vh] min-h-[320px] md:h-[60vh] md:min-h-[560px] overflow-hidden"
-        style={{
-          backgroundImage: `url(${attentionImage})`,
-          backgroundSize: 'cover',
-          backgroundPosition: 'center',
-          backgroundRepeat: 'no-repeat',
-        }}
-      />
-
-      {/* Description */}
-      <div className="max-w-2xl mx-auto px-5 md:px-10 py-16 md:py-24">
-        <p className="text-sm text-charcoal/70 leading-relaxed mb-6">
-          SUNDAY is a premium men's fashion brand based in Bangladesh, crafting shirts, polos,
-          cargo pants, and formal wear for the modern man who values quality and timeless style.
-        </p>
-        <p className="text-sm text-charcoal/70 leading-relaxed">
-          We believe in Cash on Delivery convenience, honest pricing, and fabrics that last —
-          delivered anywhere in Bangladesh.
-        </p>
-      </div>
-
-      {/* Sliding quote */}
-      <div className="border-y border-obsidian/10 bg-obsidian py-8 overflow-hidden">
-        <div className="flex whitespace-nowrap animate-marquee">
-          {Array.from({ length: 8 }).map((_, i) => (
-            <span
-              key={i}
-              className="mx-8 text-xl md:text-3xl font-light tracking-[0.15em] uppercase text-white/90"
-            >
-              Every day feels like SUNDAY
-            </span>
-          ))}
-        </div>
-      </div>
+    <div className="px-4 md:px-6 pt-8 md:pt-12 pb-20 space-y-16 md:space-y-24">
+      {blocks.map((b, i) => (
+        <section key={b.id} className={`md:grid md:grid-cols-12 md:gap-8 md:items-end ${i % 2 ? 'md:[&>div:first-child]:order-2' : ''}`}>
+          <div className="md:col-span-7 bg-stone overflow-hidden">
+            <img
+              src={b.id === 'default' ? b.image_url : imgUrl(b.image_url, 1400)}
+              alt=""
+              loading={i === 0 ? 'eager' : 'lazy'}
+              className="w-full h-auto"
+            />
+          </div>
+          <div className="md:col-span-5 pt-6 md:pt-0 max-w-md">
+            {b.heading && (
+              i === 0
+                ? <h1 className="font-heading text-[30px] md:text-[40px] leading-tight mb-4">{b.heading}</h1>
+                : <h2 className="font-heading text-[26px] md:text-[32px] leading-tight mb-4">{b.heading}</h2>
+            )}
+            {b.description && (
+              <div className="text-[15px] leading-relaxed text-graphite space-y-4">
+                {b.description.split(/\n{2,}/).map((para) => <p key={para}>{para}</p>)}
+              </div>
+            )}
+          </div>
+        </section>
+      ))}
     </div>
   );
 }

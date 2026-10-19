@@ -12,7 +12,9 @@ const COLUMNS = [
     title: 'Help',
     links: [
       { to: '/order-tracking', label: 'Track an order' },
-      { to: '/size-guide', label: 'Size guide' },
+      { to: '/support/portal', label: 'Returns and exchanges' },
+      { to: '/support/delivery', label: 'Delivery' },
+      { to: '/support/size-guide', label: 'Size guide' },
       { to: '/faq', label: 'FAQ' },
       { to: '/contact', label: 'Contact' },
     ],
@@ -21,9 +23,9 @@ const COLUMNS = [
     title: 'Company',
     links: [
       { to: '/about', label: 'About' },
-      { to: '/refund-policy', label: 'Refund policy' },
-      { to: '/privacy', label: 'Privacy' },
-      { to: '/terms', label: 'Terms' },
+      { to: '/support/refunds', label: 'Refund policy' },
+      { to: '/support/privacy', label: 'Privacy' },
+      { to: '/support/terms', label: 'Terms' },
     ],
   },
 ];

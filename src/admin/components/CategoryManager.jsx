@@ -28,7 +28,7 @@ const MENUS = {
   },
   drops: {
     navLabel: 'DROPS',
-    productField: 'drop',
+    productField: 'drop_name',
     noun: 'drop',
     placeholder: 'Drop name, e.g. DROP 03',
     intro:

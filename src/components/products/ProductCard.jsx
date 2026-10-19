@@ -3,14 +3,16 @@ import { Link } from 'react-router-dom';
 import { imgUrl } from '@/lib/storage';
 import { addToCart, openCartDrawer } from '@/lib/cartStore';
 import { isSizeAvailable, isSoldOut, formatPrice } from '@/lib/catalog';
+import { useLiveSales, withSale } from '@/lib/pricing';
 
 // Grid tile: photo on a quiet ground, name and price underneath. Hovering
 // shows the second photo and a row of sizes that add straight to the bag.
-export default function ProductCard({ product }) {
+export default function ProductCard({ product: raw }) {
+  const product = withSale(raw, useLiveSales());
   const [added, setAdded] = useState('');
   const images = (product.images || []).filter(Boolean);
   const soldOut = isSoldOut(product);
-  const onSale = product.discount_percentage > 0 && product.original_price > product.price;
+  const onSale = !!product.compare_at;
   const colorCount = product.colors?.length || 0;
 
   const quickAdd = (e, size) => {
@@ -45,7 +47,9 @@ export default function ProductCard({ product }) {
           )}
         </Link>
 
-        {product.is_new_arrival && !soldOut && (
+        {product.sale ? (
+          <span className="pointer-events-none absolute top-2 left-2 text-[11px] bg-coral text-white px-1.5 py-0.5">{product.sale.percent}% off</span>
+        ) : product.is_new_arrival && !soldOut && (
           <span className="pointer-events-none absolute top-2 left-2 text-[11px] bg-white px-1.5 py-0.5">New</span>
         )}
 
@@ -76,7 +80,7 @@ export default function ProductCard({ product }) {
       <Link to={`/product/${product.id}`} className="block pt-2.5 pb-1 text-[13px] leading-snug">
         <h3 className="font-body font-normal group-hover:underline underline-offset-2 decoration-1">{product.name}</h3>
         <p className="mt-0.5">
-          {onSale && <span className="text-graphite line-through mr-2">{formatPrice(product.original_price)}</span>}
+          {onSale && <span className="text-graphite line-through mr-2">{formatPrice(product.compare_at)}</span>}
           <span className={onSale ? 'text-coral' : ''}>{formatPrice(product.price)}</span>
         </p>
         {soldOut ? (

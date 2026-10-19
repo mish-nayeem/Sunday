@@ -6,6 +6,7 @@ import { BrowserRouter as Router, Route, Routes, Navigate } from 'react-router-d
 import PageNotFound from './lib/PageNotFound';
 import { AuthProvider, useAuth } from '@/lib/AuthContext';
 import ScrollToTop from './components/ScrollToTop';
+import PageViewTracker from './components/PageViewTracker';
 
 import SiteLayout from '@/components/layout/SiteLayout';
 import Home from '@/pages/Home';
@@ -21,14 +22,12 @@ const Checkout = lazy(() => import('@/pages/Checkout'));
 const Cart = lazy(() => import('@/pages/Cart'));
 const OrderConfirmation = lazy(() => import('@/pages/OrderConfirmation'));
 const About = lazy(() => import('@/pages/About'));
-const SizeGuide = lazy(() => import('@/pages/SizeGuide'));
 const Contact = lazy(() => import('@/pages/Contact'));
 const OrderTracking = lazy(() => import('@/pages/OrderTracking'));
 const FAQ = lazy(() => import('@/pages/FAQ'));
-const Privacy = lazy(() => import('@/pages/Privacy'));
-const Terms = lazy(() => import('@/pages/Terms'));
-const RefundPolicy = lazy(() => import('@/pages/RefundPolicy'));
 const Wishlist = lazy(() => import('@/pages/Wishlist'));
+const Lookbook = lazy(() => import('@/pages/Lookbook'));
+const Support = lazy(() => import('@/pages/Support'));
 const Admin = lazy(() => import('@/admin/pages/Admin'));
 // The previous panel, kept for Expenses, Invoices, Bulk upload and Store
 // settings until those move into the new one.
@@ -69,13 +68,17 @@ const AuthenticatedApp = () => {
           <Route path="/cart" element={<Cart />} />
           <Route path="/order-confirmation/:orderId" element={<OrderConfirmation />} />
           <Route path="/about" element={<About />} />
-          <Route path="/size-guide" element={<SizeGuide />} />
+          <Route path="/size-guide" element={<Navigate to="/support/size-guide" replace />} />
           <Route path="/contact" element={<Contact />} />
           <Route path="/order-tracking" element={<OrderTracking />} />
           <Route path="/faq" element={<FAQ />} />
-          <Route path="/privacy" element={<Privacy />} />
-          <Route path="/terms" element={<Terms />} />
-          <Route path="/refund-policy" element={<RefundPolicy />} />
+          {/* The policy pages live under /support now, editable from the admin panel. */}
+          <Route path="/privacy" element={<Navigate to="/support/privacy" replace />} />
+          <Route path="/terms" element={<Navigate to="/support/terms" replace />} />
+          <Route path="/refund-policy" element={<Navigate to="/support/refunds" replace />} />
+          <Route path="/support" element={<Support />} />
+          <Route path="/support/:slug" element={<Support />} />
+          <Route path="/lookbook/:drop" element={<Lookbook />} />
           <Route path="/wishlist" element={<Wishlist />} />
         </Route>
         <Route path="/login" element={<Login />} />
@@ -98,6 +101,7 @@ function App() {
       <QueryClientProvider client={queryClientInstance}>
         <Router>
           <ScrollToTop />
+          <PageViewTracker />
           <AuthenticatedApp />
         </Router>
         <Toaster />

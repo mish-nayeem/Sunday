@@ -3,9 +3,12 @@ import { Link, useSearchParams } from 'react-router-dom';
 import { X } from 'lucide-react';
 import { supabase } from '@/lib/supabaseClient';
 import ProductCard from '@/components/products/ProductCard';
-import { SECTIONS, COLLECTIONS, SIZE_ORDER, isSizeAvailable, isSoldOut } from '@/lib/catalog';
+import { SECTIONS, COLLECTIONS, SIZE_ORDER, CATEGORY_LABELS, isSizeAvailable, isSoldOut } from '@/lib/catalog';
 
 const SORTS = [
+  // The order set in Admin → Products → Product catalog (drag to reorder);
+  // products never placed there come first, newest first.
+  { value: 'featured', label: 'Featured', column: 'shop_position', ascending: true },
   { value: 'newest', label: 'Newest', column: 'created_at', ascending: false },
   { value: 'price_asc', label: 'Price, low to high', column: 'price', ascending: true },
   { value: 'price_desc', label: 'Price, high to low', column: 'price', ascending: false },
@@ -19,7 +22,9 @@ export default function Shop() {
   const category = params.get('category') || 'all';
   const filter = params.get('filter') || '';
   const search = params.get('search') || '';
-  const sort = params.get('sort') || 'newest';
+  const type = params.get('type') || '';
+  const drop = params.get('drop') || '';
+  const sort = params.get('sort') || 'featured';
   const sizes = (params.get('size') || '').split(',').filter(Boolean);
   const inStockOnly = params.get('instock') === '1';
 
@@ -38,15 +43,30 @@ export default function Shop() {
     const load = async () => {
       setLoading(true);
       const sortDef = SORTS.find((s) => s.value === sort) || SORTS[0];
-      let query = supabase.from('products').select('*');
-      const section = SECTIONS.find((s) => s.key === category);
-      if (section) query = query.in('category', section.categories);
-      const collection = COLLECTIONS.find((c) => c.key === filter);
-      if (collection) query = query.eq(collection.column, true);
-      // Characters PostgREST reads as filter syntax are dropped from the term.
-      const term = search.replace(/[,()%*\\]/g, ' ').trim();
-      if (term) query = query.or(`name.ilike.%${term}%,description.ilike.%${term}%`);
-      const { data } = await query.order(sortDef.column, { ascending: sortDef.ascending }).limit(200);
+      // A fresh builder each time: supabase-js builders change in place, so
+      // the fallback below can't reuse one that already carries an order.
+      const filtered = () => {
+        let query = supabase.from('products').select('*');
+        const section = SECTIONS.find((s) => s.key === category);
+        if (section) query = query.in('category', section.categories);
+        if (type) query = query.eq('category', type);
+        if (drop) query = query.eq('drop_name', drop);
+        const collection = COLLECTIONS.find((c) => c.key === filter);
+        if (collection) query = query.eq(collection.column, true);
+        // Characters PostgREST reads as filter syntax are dropped from the term.
+        const term = search.replace(/[,()%*\\]/g, ' ').trim();
+        if (term) query = query.or(`name.ilike.%${term}%,description.ilike.%${term}%`);
+        return query;
+      };
+      const ordered = sortDef.value === 'featured'
+        ? filtered().order('shop_position', { ascending: true, nullsFirst: true }).order('created_at', { ascending: false })
+        : filtered().order(sortDef.column, { ascending: sortDef.ascending });
+      let { data, error } = await ordered.limit(200);
+      // Before the admin-panel migration has run there is no shop_position;
+      // fall back to newest first rather than an empty shop.
+      if (error && sortDef.value === 'featured') {
+        ({ data } = await filtered().order('created_at', { ascending: false }).limit(200));
+      }
       if (!cancelled) {
         setProducts(data || []);
         setLoading(false);
@@ -54,7 +74,7 @@ export default function Shop() {
     };
     load();
     return () => { cancelled = true; };
-  }, [category, filter, search, sort]);
+  }, [category, type, drop, filter, search, sort]);
 
   const visible = useMemo(() => products.filter((p) => {
     if (inStockOnly && isSoldOut(p)) return false;
@@ -70,8 +90,8 @@ export default function Shop() {
 
   const section = SECTIONS.find((s) => s.key === category);
   const collection = COLLECTIONS.find((c) => c.key === filter);
-  const title = search ? `Results for “${search}”` : collection?.label || section?.label || 'Shop all';
-  const activeCount = sizes.length + (inStockOnly ? 1 : 0) + (sort !== 'newest' ? 1 : 0);
+  const title = search ? `Results for “${search}”` : drop || (type && (CATEGORY_LABELS[type] || type)) || collection?.label || section?.label || 'Shop all';
+  const activeCount = sizes.length + (inStockOnly ? 1 : 0) + (sort !== 'featured' ? 1 : 0);
 
   const tabClass = (active) =>
     `shrink-0 text-[13px] pb-1 border-b ${active ? 'border-ink text-ink' : 'border-transparent text-graphite hover:text-ink'}`;
@@ -80,12 +100,15 @@ export default function Shop() {
     <div className="px-4 md:px-6 pb-20">
       <div className="pt-8 md:pt-12 pb-6 flex items-end justify-between gap-4">
         <h1 className="font-heading text-[32px] md:text-[44px] leading-none">{title}</h1>
-        <p className="text-[13px] text-graphite shrink-0">{loading ? '' : `${visible.length} ${visible.length === 1 ? 'item' : 'items'}`}</p>
+        <div className="flex items-baseline gap-5 shrink-0 text-[13px]">
+          {drop && <Link to={`/lookbook/${encodeURIComponent(drop)}`} className="underline underline-offset-4">Lookbook</Link>}
+          <p className="text-graphite">{loading ? '' : `${visible.length} ${visible.length === 1 ? 'item' : 'items'}`}</p>
+        </div>
       </div>
 
       <div className="sticky top-14 md:top-16 z-30 bg-white -mx-4 md:-mx-6 px-4 md:px-6 py-3 border-b border-rule flex items-center gap-6">
         <nav className="flex-1 min-w-0 flex gap-5 overflow-x-auto hide-scrollbar" aria-label="Categories">
-          <Link to="/shop" className={tabClass(category === 'all' && !filter && !search)}>All</Link>
+          <Link to="/shop" className={tabClass(category === 'all' && !filter && !search && !type && !drop)}>All</Link>
           {SECTIONS.map((s) => (
             <Link key={s.key} to={`/shop?category=${s.key}`} className={tabClass(category === s.key)}>{s.label}</Link>
           ))}
@@ -138,7 +161,7 @@ export default function Shop() {
                   {SORTS.map((s) => (
                     <label key={s.value} className="flex items-center gap-3 text-[14px] cursor-pointer">
                       <input type="radio" name="sort" className="accent-black" checked={sort === s.value}
-                        onChange={() => setParam('sort', s.value === 'newest' ? '' : s.value)} />
+                        onChange={() => setParam('sort', s.value === 'featured' ? '' : s.value)} />
                       {s.label}
                     </label>
                   ))}

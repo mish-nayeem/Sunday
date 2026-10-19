@@ -5,6 +5,59 @@ import { imgUrl } from '@/lib/storage';
 import { SECTIONS } from '@/lib/catalog';
 import ProductCard from '@/components/products/ProductCard';
 import heroImage from '@/assets/hero.jpeg';
+import { fetchHeroSlides, slidesFor, PHONE_QUERY } from '@/admin/lib/hero.js';
+import { fetchHeroExtras, DEFAULT_HERO_BUTTON } from '@/admin/lib/siteSettings.js';
+import { useCountdown } from '@/admin/components/DropCountdown.jsx';
+
+// The panel saves labels in capitals; the storefront writes in sentence case.
+const sentence = (text) => (text ? text[0].toUpperCase() + text.slice(1).toLowerCase() : '');
+
+// The photos set in Admin → Homepage, one at a time, with its button and
+// optional drop countdown. Phones get the slides made for phones.
+function HeroSlides({ slides, button, countdown }) {
+  const [isPhone, setIsPhone] = useState(() => window.matchMedia(PHONE_QUERY).matches);
+  const [at, setAt] = useState(0);
+  const left = useCountdown(countdown?.at);
+  const shown = slidesFor(slides, isPhone);
+
+  useEffect(() => {
+    const mq = window.matchMedia(PHONE_QUERY);
+    const onChange = () => setIsPhone(mq.matches);
+    mq.addEventListener('change', onChange);
+    return () => mq.removeEventListener('change', onChange);
+  }, []);
+
+  useEffect(() => {
+    if (shown.length < 2 || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    const t = setInterval(() => setAt((n) => (n + 1) % shown.length), 5000);
+    return () => clearInterval(t);
+  }, [shown.length]);
+
+  return (
+    <section className="relative">
+      <div className="relative aspect-[4/5] md:aspect-auto md:h-[calc(100vh-6rem)] md:min-h-[560px] bg-stone overflow-hidden">
+        {shown.map((s, i) => (
+          <img
+            key={s.id}
+            src={imgUrl(s.image_url, isPhone ? 900 : 2000)}
+            alt={s.label || ''}
+            fetchpriority={i === 0 ? 'high' : undefined}
+            loading={i === 0 ? 'eager' : 'lazy'}
+            className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-700 ${i === at % shown.length ? 'opacity-100' : 'opacity-0'}`}
+            style={{ objectPosition: s.focus || 'center' }}
+          />
+        ))}
+      </div>
+      <div className="px-4 md:px-6 pt-4 flex flex-wrap items-baseline justify-between gap-x-6 gap-y-1">
+        <h1 className="font-heading text-[30px] md:text-[40px] leading-tight">Everyday feels like Sunday</h1>
+        <div className="flex items-baseline gap-5 text-[13px]">
+          {left && <span className="tabular-nums">{sentence(countdown.label || 'Next drop')} in {left.toLowerCase()}</span>}
+          <Link to={button.link} className="underline underline-offset-4">{sentence(button.label)}</Link>
+        </div>
+      </div>
+    </section>
+  );
+}
 import editorialImage from '@/assets/attention.jpeg';
 
 function ProductRow({ title, to, products }) {
@@ -24,6 +77,13 @@ function ProductRow({ title, to, products }) {
 
 export default function Home() {
   const [products, setProducts] = useState([]);
+  const [slides, setSlides] = useState([]);
+  const [extras, setExtras] = useState({ button: DEFAULT_HERO_BUTTON, countdown: null });
+
+  useEffect(() => {
+    fetchHeroSlides().then(({ slides: s }) => setSlides(s || []));
+    fetchHeroExtras().then((x) => setExtras(x)).catch(() => {});
+  }, []);
 
   useEffect(() => {
     supabase
@@ -58,6 +118,10 @@ export default function Home() {
         },
       }) }} />
 
+      {slides.length > 0 ? (
+        <HeroSlides slides={slides} button={extras.button} countdown={extras.countdown} />
+      ) : (
+      <>
       {/* Opening spread: campaign photo beside the newest piece */}
       <section className="grid md:grid-cols-2 gap-1">
         <Link to="/shop?filter=new_arrival" className="group block">
@@ -77,6 +141,8 @@ export default function Home() {
         <h1 className="font-heading text-[30px] md:text-[40px] leading-tight">Everyday feels like Sunday</h1>
         <Link to="/shop?filter=new_arrival" className="text-[13px] underline underline-offset-4">Shop new arrivals</Link>
       </div>
+      </>
+      )}
 
       <ProductRow title="New arrivals" to="/shop?filter=new_arrival" products={newArrivals} />
 
