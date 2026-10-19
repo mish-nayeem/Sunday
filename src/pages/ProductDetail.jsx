@@ -1,32 +1,27 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { supabase } from '@/lib/supabaseClient';
 import { imgUrl } from '@/lib/storage';
-import { motion } from 'framer-motion';
-import { Heart, Truck, Share2, HelpCircle } from 'lucide-react';
-import { addToCart, openCartDrawer } from '@/lib/cartStore';
-import { addRecentlyViewed, isInWishlist, toggleWishlist } from '@/lib/cartStore';
+import { addToCart, openCartDrawer, addRecentlyViewed, isInWishlist, toggleWishlist } from '@/lib/cartStore';
+import { CATEGORY_LABELS, DELIVERY, sectionFor, isSizeAvailable, isSoldOut, formatPrice } from '@/lib/catalog';
 import ProductCard from '@/components/products/ProductCard';
 import SizeChartPopup from '@/components/products/SizeChartPopup';
 
-// Collapsible row used for Size recommends / Details / Care / Shipping policy
-function AccordionRow({ title, children }) {
+function Disclosure({ title, children }) {
   const [open, setOpen] = useState(false);
   if (!children) return null;
   return (
-    <div className="bg-[#FFFBEA] rounded-xl px-4 mb-2">
+    <div className="border-t border-rule">
       <button
+        type="button"
         onClick={() => setOpen(!open)}
-        className="w-full flex items-center justify-between py-4 text-left"
+        aria-expanded={open}
+        className="w-full flex items-center justify-between py-4 text-left text-[13px]"
       >
-        <span className="text-[11px] tracking-wide uppercase font-medium text-black">{title}</span>
-        <span className="text-lg leading-none text-black">{open ? '−' : '+'}</span>
+        {title}
+        <span aria-hidden="true" className="text-[16px] leading-none">{open ? '−' : '+'}</span>
       </button>
-      {open && (
-        <div className="pb-4 text-sm text-black/60 leading-relaxed whitespace-pre-line">
-          {children}
-        </div>
-      )}
+      {open && <div className="pb-5 text-[13px] leading-relaxed text-graphite whitespace-pre-line">{children}</div>}
     </div>
   );
 }
@@ -37,303 +32,273 @@ export default function ProductDetail() {
   const [product, setProduct] = useState(null);
   const [related, setRelated] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [selectedSize, setSelectedSize] = useState('');
-  const [selectedColor, setSelectedColor] = useState('');
+  const [size, setSize] = useState('');
+  const [color, setColor] = useState('');
+  const [sizeError, setSizeError] = useState(false);
   const [wishlisted, setWishlisted] = useState(false);
   const [sizeChartOpen, setSizeChartOpen] = useState(false);
-  const [shareCopied, setShareCopied] = useState(false);
+  const [slide, setSlide] = useState(0);
+  const railRef = useRef(null);
 
   useEffect(() => {
+    let cancelled = false;
     const load = async () => {
       setLoading(true);
+      setSize('');
+      setSizeError(false);
+      setSlide(0);
       const { data: p } = await supabase.from('products').select('*').eq('id', id).single();
-      if (!p) { setLoading(false); return; }
+      if (cancelled) return;
+      if (!p) { setProduct(null); setLoading(false); return; }
       setProduct(p);
       setWishlisted(isInWishlist(p.id));
-      setSelectedSize(p.sizes?.[0] || '');
-      setSelectedColor(p.colors?.[0] || '');
+      setColor(p.colors?.[0] || '');
+      // A single-size product needs no choice.
+      if (p.sizes?.length === 1 && isSizeAvailable(p, p.sizes[0])) setSize(p.sizes[0]);
       addRecentlyViewed(p.id);
-      const { data: rel } = await supabase
-        .from('products')
-        .select('*')
-        .order('created_at', { ascending: false })
-        .limit(9);
-      setRelated((rel || []).filter(r => r.id !== p.id).slice(0, 8));
-      setLoading(false);
+
+      // Same section first, then anything newest, to fill four slots.
+      const section = sectionFor(p.category);
+      const { data: same } = await supabase.from('products').select('*')
+        .in('category', section?.categories || [p.category]).neq('id', p.id).limit(4);
+      let picks = same || [];
+      if (picks.length < 4) {
+        const { data: more } = await supabase.from('products').select('*')
+          .neq('id', p.id).order('created_at', { ascending: false }).limit(8);
+        const seen = new Set(picks.map((r) => r.id));
+        picks = [...picks, ...(more || []).filter((r) => !seen.has(r.id))].slice(0, 4);
+      }
+      if (!cancelled) {
+        setRelated(picks);
+        setLoading(false);
+      }
     };
     load();
     window.scrollTo(0, 0);
+    return () => { cancelled = true; };
   }, [id]);
 
-  const handleAddToCart = () => {
-    if (!selectedSize) return;
-    addToCart(product, selectedSize, 1);
+  const requireSize = () => {
+    if (size) return true;
+    setSizeError(true);
+    return false;
+  };
+
+  const handleAdd = () => {
+    if (!requireSize()) return;
+    addToCart(product, size, 1);
     openCartDrawer();
   };
 
   const handleBuyNow = () => {
-    if (!selectedSize) return;
-    addToCart(product, selectedSize, 1);
+    if (!requireSize()) return;
+    addToCart(product, size, 1);
     navigate('/checkout');
   };
 
-  const handleShare = async () => {
-    const url = window.location.href;
-    try {
-      if (navigator.share) {
-        await navigator.share({ title: product.name, url });
-      } else {
-        await navigator.clipboard.writeText(url);
-        setShareCopied(true);
-        setTimeout(() => setShareCopied(false), 2000);
-      }
-    } catch (e) { /* share cancelled or clipboard unavailable */ }
+  const onRailScroll = () => {
+    const el = railRef.current;
+    if (el) setSlide(Math.round(el.scrollLeft / el.clientWidth));
   };
 
   if (loading) {
     return (
-      <div className="flex justify-center items-center min-h-screen">
-        <div className="w-8 h-8 border-2 border-sand border-t-transparent rounded-full animate-spin" />
+      <div className="md:grid md:grid-cols-[minmax(0,1fr)_420px]">
+        <div className="aspect-[4/5] bg-stone animate-pulse" />
       </div>
     );
   }
 
   if (!product) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-screen">
-        <p className="text-obsidian/40 mb-4">Product not found</p>
-        <Link to="/shop" className="text-sm underline">Back to shop</Link>
+      <div className="py-32 text-center px-4">
+        <p className="text-[15px] mb-3">This product isn’t available any more.</p>
+        <Link to="/shop" className="text-[13px] underline underline-offset-4">Continue shopping</Link>
       </div>
     );
   }
 
-  const discount = product.discount_percentage > 0;
-  const categoryLabels = { full_sleeve_shirts: 'Full Sleeve Shirts', half_sleeve_shirts: 'Half Sleeve Shirts', formal_shirts: 'Formal Shirts', polo: 'Polo', t_shirts: 'T-Shirts', cargo: 'Cargo', formal_pants: 'Formal Pants' };
-  const images = product.images?.length ? product.images : [null];
+  const images = (product.images || []).filter(Boolean);
+  const soldOut = isSoldOut(product);
+  const onSale = product.discount_percentage > 0 && product.original_price > product.price;
+  const section = sectionFor(product.category);
 
   return (
     <div>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify({
-        "@context": "https://schema.org",
-        "@type": "Product",
-        "name": product.name,
-        "description": product.description,
-        "image": product.images,
-        "brand": { "@type": "Brand", "name": "SUNDAY" },
-        "offers": {
-          "@type": "Offer",
-          "price": product.price,
-          "priceCurrency": "BDT",
-          "availability": product.stock_status === 'out_of_stock' ? "https://schema.org/OutOfStock" : "https://schema.org/InStock"
-        }
+        '@context': 'https://schema.org',
+        '@type': 'Product',
+        name: product.name,
+        description: product.description,
+        image: product.images,
+        brand: { '@type': 'Brand', name: 'SUNDAY' },
+        offers: {
+          '@type': 'Offer',
+          price: product.price,
+          priceCurrency: 'BDT',
+          availability: soldOut ? 'https://schema.org/OutOfStock' : 'https://schema.org/InStock',
+        },
       }) }} />
-      {/* Breadcrumb */}
-      <div className="max-w-[1440px] mx-auto px-5 md:px-10 py-4">
-        <div className="flex items-center gap-2 text-[11px] tracking-wider text-obsidian/40">
-          <Link to="/" className="hover:text-obsidian transition-colors">Home</Link>
-          <span>/</span>
-          <Link to="/shop" className="hover:text-obsidian transition-colors">Shop</Link>
-          <span>/</span>
-          <Link to={`/shop?category=${product.category}`} className="hover:text-obsidian transition-colors">
-            {categoryLabels[product.category]}
-          </Link>
-          <span>/</span>
-          <span className="text-obsidian">{product.name}</span>
-        </div>
-      </div>
 
-      {/* Product */}
-      <div className="max-w-[1600px] mx-auto px-5 md:px-10 pb-20 md:pb-32">
-        <div className="grid grid-cols-1 lg:grid-cols-[1fr_420px] gap-8 lg:gap-16 items-start">
-          {/* Left column — gallery + thumbnails */}
-          <div>
-            <div className={`grid gap-2 auto-rows-max ${images.length > 1 ? 'grid-cols-2' : 'grid-cols-1'}`}>
-              {images.map((img, i) => (
-                <div key={i} className="relative aspect-[3/4] overflow-hidden bg-mist">
+      <div className="md:grid md:grid-cols-[minmax(0,1fr)_minmax(360px,440px)]">
+        {/* Gallery: swipe rail on mobile, stacked photos on desktop */}
+        <div className="relative">
+          <div
+            ref={railRef}
+            onScroll={onRailScroll}
+            className="flex md:block overflow-x-auto md:overflow-visible snap-x snap-mandatory hide-scrollbar"
+          >
+            {(images.length ? images : [null]).map((img, i) => (
+              <div key={i} className="shrink-0 w-full snap-center aspect-[4/5] bg-stone md:mb-1">
+                {img && (
                   <img
-                    src={imgUrl(img, 900)}
-                    alt={`${product.name} ${i + 1}`}
+                    src={imgUrl(img, 1200)}
+                    alt={`${product.name}, photo ${i + 1}`}
                     loading={i === 0 ? 'eager' : 'lazy'}
                     decoding="async"
                     className="w-full h-full object-cover"
                   />
-                  {i === 0 && discount && (
-                    <span className="absolute top-4 left-4 bg-burgundy text-white text-[10px] tracking-[0.15em] uppercase px-3 py-1.5 font-mono font-bold">
-                      -{product.discount_percentage}%
-                    </span>
-                  )}
-                </div>
-              ))}
-            </div>
+                )}
+              </div>
+            ))}
+          </div>
+          {images.length > 1 && (
+            <p className="md:hidden absolute bottom-3 right-3 bg-white text-[11px] px-1.5 py-0.5">
+              {slide + 1} / {images.length}
+            </p>
+          )}
+        </div>
 
-            {/* Small thumbnails of the same gallery images, below the main gallery */}
-            {images.length > 1 && (
-              <div className="flex gap-2 mt-2">
-                {images.map((img, i) => (
-                  <div key={i} className="w-12 h-14 overflow-hidden bg-mist border border-obsidian/10">
-                    <img src={imgUrl(img, 100)} alt="" loading="lazy" decoding="async" className="w-full h-full object-cover" />
-                  </div>
-                ))}
+        {/* Details */}
+        <div className="px-4 md:px-8 lg:px-10 pt-6 md:pt-10 pb-12">
+          <div className="md:sticky md:top-24">
+            <nav className="text-[12px] text-graphite mb-4" aria-label="Breadcrumb">
+              <Link to="/shop" className="hover:text-ink">Shop</Link>
+              {section && (
+                <>
+                  <span className="mx-1.5">/</span>
+                  <Link to={`/shop?category=${section.key}`} className="hover:text-ink">{section.label}</Link>
+                </>
+              )}
+            </nav>
+
+            <h1 className="font-heading text-[28px] md:text-[32px] leading-tight">{product.name}</h1>
+            <p className="mt-2 text-[15px]">
+              {onSale && <span className="text-graphite line-through mr-2">{formatPrice(product.original_price)}</span>}
+              <span className={onSale ? 'text-coral' : ''}>{formatPrice(product.price)}</span>
+            </p>
+
+            {product.colors?.length > 0 && (
+              <div className="mt-7">
+                <p className="text-[13px] mb-2">Colour: <span className="text-graphite">{color}</span></p>
+                <div className="flex flex-wrap gap-2">
+                  {product.colors.map((c) => (
+                    <button
+                      key={c}
+                      type="button"
+                      onClick={() => setColor(c)}
+                      aria-pressed={color === c}
+                      className={`h-10 px-4 text-[13px] border ${color === c ? 'border-ink' : 'border-rule hover:border-graphite'}`}
+                    >
+                      {c}
+                    </button>
+                  ))}
+                </div>
               </div>
             )}
-          </div>
 
-          {/* Info */}
-          <div className="lg:sticky lg:top-28 lg:self-start">
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6 }}
-            >
-              <div className="flex items-start justify-between gap-4 mb-2">
-                <h1 className="text-lg md:text-xl font-bold tracking-wide uppercase font-body">{product.name}</h1>
-                <button
-                  onClick={handleShare}
-                  className="flex items-center gap-1.5 text-xs text-black/60 hover:text-black underline shrink-0 mt-1"
-                >
-                  <Share2 size={13} /> {shareCopied ? 'Copied!' : 'Share'}
-                </button>
-              </div>
-
-              <div className="text-xs text-black/50 space-y-0.5 mb-4">
-                {product.sku && <p>SKU: <span className="text-black/70">{product.sku}</span></p>}
-                <p>Product Type: <span className="text-black/70">{categoryLabels[product.category]}</span></p>
-              </div>
-
-              <div className="flex items-center gap-3 mb-6">
-                <span className="text-base font-mono font-semibold">Tk {product.price?.toLocaleString()}.00</span>
-                <span className="text-xs text-black/40">+ VAT</span>
-                {discount && product.original_price && (
-                  <span className="text-sm font-mono text-black/40 line-through">
-                    ৳{product.original_price?.toLocaleString()}
-                  </span>
-                )}
-                {product.stock_status === 'low_stock' && (
-                  <span className="text-[10px] tracking-wider uppercase text-red-500 border border-red-200 px-2 py-0.5 rounded-full">Low Stock</span>
-                )}
-                {product.stock_status === 'out_of_stock' && (
-                  <span className="text-[10px] tracking-wider uppercase text-black/40 border border-black/20 px-2 py-0.5 rounded-full">Sold Out</span>
-                )}
-              </div>
-
-              {/* Color */}
-              {product.colors?.length > 0 && (
-                <div className="mb-6">
-                  <span className="text-[11px] tracking-wide uppercase font-medium block mb-3 text-black">
-                    Color{selectedColor ? ` - ${selectedColor}` : ''}
-                  </span>
-                  <div className="flex flex-wrap gap-2">
-                    {product.colors.map(color => (
-                      <button
-                        key={color}
-                        onClick={() => setSelectedColor(color)}
-                        className={`px-3 h-9 rounded-xl border text-xs transition-all ${
-                          selectedColor === color
-                            ? 'bg-black text-white border-black'
-                            : 'border-black/20 bg-[#FFFBEA] hover:border-black text-black'
-                        }`}
-                      >
-                        {color}
-                      </button>
-                    ))}
-                  </div>
+            {product.sizes?.length > 0 && (
+              <div className="mt-6">
+                <div className="flex items-center justify-between mb-2">
+                  <p className={`text-[13px] ${sizeError ? 'text-coral' : ''}`}>
+                    {sizeError ? 'Choose a size to continue' : <>Size{size && <span className="text-graphite">: {size}</span>}</>}
+                  </p>
+                  <button type="button" onClick={() => setSizeChartOpen(true)} className="text-[13px] underline underline-offset-4">
+                    Size guide
+                  </button>
                 </div>
-              )}
-
-              {/* Size */}
-              <div className="mb-3">
-                <span className="text-[11px] tracking-wide uppercase font-medium block mb-3 text-black">Size</span>
-                <div className="flex flex-wrap gap-2">
-                  {product.sizes?.map(size => {
-                    const sizeStock = product.size_stock?.[size];
-                    const hasSizeStockData = product.size_stock && Object.keys(product.size_stock).length > 0;
-                    const available = hasSizeStockData
-                      ? (sizeStock || 0) > 0
-                      : (product.quantity || 0) > 0;
+                <div className="grid grid-cols-5 gap-1.5">
+                  {product.sizes.map((s) => {
+                    const ok = isSizeAvailable(product, s);
                     return (
                       <button
-                        key={size}
-                        onClick={() => available && setSelectedSize(size)}
-                        disabled={!available}
-                        className={`w-11 h-11 rounded-full border text-xs tracking-wider transition-all duration-300 ${
-                          !available
-                            ? 'border-black/10 text-black/20 cursor-not-allowed line-through'
-                            : selectedSize === size
-                              ? 'bg-black text-white border-black'
-                              : 'border-black/30 bg-[#FFFBEA] hover:border-black text-black'
+                        key={s}
+                        type="button"
+                        disabled={!ok}
+                        aria-pressed={size === s}
+                        onClick={() => { setSize(s); setSizeError(false); }}
+                        className={`h-11 text-[13px] border ${
+                          !ok ? 'border-rule text-graphite/50 line-through cursor-not-allowed'
+                            : size === s ? 'border-ink bg-ink text-white'
+                              : 'border-rule hover:border-ink'
                         }`}
                       >
-                        {size}
+                        {s}
                       </button>
                     );
                   })}
                 </div>
               </div>
+            )}
 
-              {/* Accordion sections */}
-              <div className="mt-6 mb-6">
-                <button
-                  onClick={() => setSizeChartOpen(true)}
-                  className="w-full flex items-center justify-between py-4 text-left border-t border-black/10"
-                >
-                  <span className="text-[11px] tracking-wide uppercase font-medium text-black">Size Guide</span>
-                  <span className="text-lg leading-none text-black">+</span>
-                </button>
-                <AccordionRow title="Description">
-                  {[product.description, product.details, product.care_instructions].filter(Boolean).join('\n\n')}
-                </AccordionRow>
-              </div>
-
-              {/* Free shipping note */}
-              <div className="flex items-center gap-2 mb-6 text-xs text-black/70">
-                <Truck size={16} className="text-black/60" />
-                <span>Free shipping on orders over ৳3,500</span>
-                <span title="Cash on Delivery available across Bangladesh. Advance bKash payment required outside Dhaka.">
-                  <HelpCircle size={13} className="text-black/40 cursor-help" />
-                </span>
-              </div>
-
-              {/* Actions */}
-              <div className="flex gap-2 mb-3">
-                <button
-                  onClick={handleAddToCart}
-                  disabled={product.stock_status === 'out_of_stock'}
-                  className="flex-1 bg-[#FFFBEA] text-black text-[11px] tracking-wide uppercase py-4 rounded-xl border border-black/10 shadow-sm flex items-center justify-center gap-2 hover:bg-[#FFF3D0] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-                >
-                  Add to Cart · Tk {product.price?.toLocaleString()}.00
-                </button>
-                <button
-                  onClick={() => {
-                    toggleWishlist(product.id);
-                    setWishlisted(!wishlisted);
-                  }}
-                  className="w-12 h-12 flex-shrink-0 border border-black/20 rounded-xl bg-[#FFFBEA] flex items-center justify-center hover:border-black transition-colors"
-                >
-                  <Heart size={18} strokeWidth={1.5} className="text-black" fill={wishlisted ? '#111' : 'none'} />
-                </button>
-              </div>
-
+            <div className="mt-6 space-y-2">
               <button
-                onClick={handleBuyNow}
-                disabled={product.stock_status === 'out_of_stock'}
-                className="w-full bg-[#FF7254] text-white text-[11px] tracking-wide uppercase py-4 rounded-xl hover:bg-[#FF7254]/90 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                type="button"
+                onClick={handleAdd}
+                disabled={soldOut}
+                className="w-full h-12 bg-ink text-white text-[13px] hover:bg-ink/85 disabled:bg-stone disabled:text-graphite disabled:cursor-not-allowed"
               >
-                Buy It Now
+                {soldOut ? 'Sold out' : 'Add to bag'}
               </button>
-            </motion.div>
-          </div>
-        </div>
+              {!soldOut && (
+                <button
+                  type="button"
+                  onClick={handleBuyNow}
+                  className="w-full h-12 border border-ink text-[13px] hover:bg-stone"
+                >
+                  Buy now
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={() => setWishlisted(toggleWishlist(product.id))}
+                className="w-full pt-2 text-[13px] underline underline-offset-4"
+              >
+                {wishlisted ? 'Saved to wishlist' : 'Save to wishlist'}
+              </button>
+            </div>
 
-        {/* Related */}
-        {related.length > 0 && (
-          <div className="mt-20 md:mt-32 border-t border-sand/30 pt-16">
-            <h2 className="text-2xl md:text-3xl font-light tracking-wide text-center mb-12">You May Also Like</h2>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
-              {related.map((p, i) => <ProductCard key={p.id} product={p} index={i} />)}
+            <div className="mt-8 border-b border-rule">
+              <Disclosure title="Description">{product.description}</Disclosure>
+              <Disclosure title="Details">
+                {[product.details, product.sku && `Style no. ${product.sku}`, CATEGORY_LABELS[product.category]].filter(Boolean).join('\n')}
+              </Disclosure>
+              <Disclosure title="Care">{product.care_instructions}</Disclosure>
+              <Disclosure title="Delivery and returns">
+                {`Inside Dhaka: ${formatPrice(DELIVERY.insideDhaka)}, cash on delivery.\nOutside Dhaka: ${formatPrice(DELIVERY.outsideDhaka)}, paid in advance by bKash.\n\nSee the refund policy for returns and exchanges.`}
+              </Disclosure>
             </div>
           </div>
-        )}
+        </div>
       </div>
+
+      {related.length > 0 && (
+        <section className="px-4 md:px-6 pt-16 pb-28 md:py-24">
+          <h2 className="font-heading text-[24px] md:text-[28px] mb-6">You may also like</h2>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-x-2 md:gap-x-3 gap-y-8">
+            {related.map((p) => <ProductCard key={p.id} product={p} />)}
+          </div>
+        </section>
+      )}
+
+      {/* Phone: keep the main action in reach while reading or scrolling photos */}
+      {!soldOut && (
+        <div className="md:hidden fixed inset-x-0 bottom-0 z-40 bg-white border-t border-rule p-3">
+          <button type="button" onClick={handleAdd} className="w-full h-12 bg-ink text-white text-[13px]">
+            {size ? `Add size ${size} to bag` : 'Add to bag'}, {formatPrice(product.price)}
+          </button>
+        </div>
+      )}
 
       <SizeChartPopup open={sizeChartOpen} onClose={() => setSizeChartOpen(false)} category={product.category} />
     </div>

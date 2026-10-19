@@ -1,118 +1,102 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { supabase } from '@/lib/supabaseClient';
-import { Facebook, Instagram } from 'lucide-react';
+import { SECTIONS } from '@/lib/catalog';
 
-// Simple inline icons for platforms lucide-react doesn't ship (TikTok, Pinterest)
-const TikTokIcon = (props) => (
-  <svg viewBox="0 0 24 24" fill="currentColor" width={18} height={18} {...props}>
-    <path d="M16.6 5.82c-1.1-1.02-1.72-2.46-1.72-4.02h-3.14v13.44c0 1.6-1.3 2.9-2.9 2.9a2.9 2.9 0 0 1 0-5.8c.27 0 .53.04.78.1V9.4a6.06 6.06 0 0 0-.78-.05A6.06 6.06 0 1 0 14.9 15.4V9.03a7.24 7.24 0 0 0 4.24 1.36V7.26c-1.13 0-2.18-.36-3.04-.98l-.5-.46z" />
-  </svg>
-);
+const COLUMNS = [
+  {
+    title: 'Shop',
+    links: [{ to: '/shop', label: 'Shop all' }, ...SECTIONS.map((s) => ({ to: `/shop?category=${s.key}`, label: s.label }))],
+  },
+  {
+    title: 'Help',
+    links: [
+      { to: '/order-tracking', label: 'Track an order' },
+      { to: '/size-guide', label: 'Size guide' },
+      { to: '/faq', label: 'FAQ' },
+      { to: '/contact', label: 'Contact' },
+    ],
+  },
+  {
+    title: 'Company',
+    links: [
+      { to: '/about', label: 'About' },
+      { to: '/refund-policy', label: 'Refund policy' },
+      { to: '/privacy', label: 'Privacy' },
+      { to: '/terms', label: 'Terms' },
+    ],
+  },
+];
 
-const PinterestIcon = (props) => (
-  <svg viewBox="0 0 24 24" fill="currentColor" width={18} height={18} {...props}>
-    <path d="M12 0C5.37 0 0 5.37 0 12c0 5.08 3.16 9.43 7.63 11.17-.1-.95-.2-2.4.04-3.44.22-.94 1.41-5.97 1.41-5.97s-.36-.72-.36-1.78c0-1.67.97-2.91 2.17-2.91 1.02 0 1.52.77 1.52 1.69 0 1.03-.66 2.57-.99 4-.29 1.19.6 2.17 1.78 2.17 2.13 0 3.77-2.25 3.77-5.5 0-2.87-2.06-4.88-5.01-4.88-3.42 0-5.42 2.56-5.42 5.21 0 1.03.4 2.14.9 2.74.1.12.11.22.08.34l-.33 1.36c-.05.22-.17.27-.4.16-1.5-.7-2.44-2.89-2.44-4.65 0-3.78 2.75-7.26 7.93-7.26 4.16 0 7.4 2.97 7.4 6.93 0 4.14-2.61 7.47-6.23 7.47-1.22 0-2.36-.63-2.75-1.38l-.75 2.85c-.27 1.04-1 2.35-1.49 3.15A12 12 0 1 0 24 12c0-6.63-5.37-12-12-12z" />
-  </svg>
-);
+const SOCIAL = [
+  { href: 'https://www.instagram.com/sunday.clothin?igsh=MWhyZzNpZzNod2xsZQ==', label: 'Instagram' },
+  { href: 'https://www.facebook.com/share/19U1FfCwMY/', label: 'Facebook' },
+];
 
 export default function Footer() {
   const [email, setEmail] = useState('');
-  const [subscribed, setSubscribed] = useState(false);
+  const [status, setStatus] = useState('idle'); // idle | sending | done | error
 
   const handleSubscribe = async (e) => {
     e.preventDefault();
     if (!email.trim()) return;
-    await supabase.from('newsletter_subscribers').insert({ email: email.trim() });
-    setSubscribed(true);
-    setEmail('');
+    setStatus('sending');
+    const { error } = await supabase.from('newsletter_subscribers').insert({ email: email.trim() });
+    setStatus(error ? 'error' : 'done');
+    if (!error) setEmail('');
   };
 
   return (
-    <footer className="bg-cream text-obsidian font-heading pt-14 pb-6 px-5 md:px-10">
-      <div className="max-w-[1440px] mx-auto">
-
-        {/* Newsletter */}
-        <p className="text-sm md:text-base font-bold tracking-[0.1em] uppercase mb-4">
-          Join Sunday Fam
-        </p>
-        {subscribed ? (
-          <p className="text-sm text-obsidian/60 mb-12">Thanks for subscribing!</p>
-        ) : (
-          <form onSubmit={handleSubscribe} className="flex flex-col sm:flex-row border border-obsidian/30 mb-12 max-w-2xl">
-            <input
-              type="email" required value={email} onChange={e => setEmail(e.target.value)}
-              placeholder="Email address"
-              className="flex-1 min-w-0 w-full bg-transparent px-4 py-3 text-sm outline-none placeholder-obsidian/50 text-obsidian"
-            />
-            <button type="submit" className="bg-obsidian text-cream px-6 py-3 sm:py-0 text-xs uppercase tracking-[0.15em] font-semibold whitespace-nowrap shrink-0">
-              Join Sunday Fam
-            </button>
-          </form>
-        )}
-
-        {/* Statement + Link columns */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-10 mb-16">
-          <div>
-            <p className="text-[11px] tracking-[0.15em] uppercase text-obsidian/60 mb-3">Premium Menswear</p>
-            <p className="text-sm text-obsidian/70 leading-relaxed max-w-sm">
-              Have the courage to be exactly who you are. Every day feels like SUNDAY —
-              premium men's fashion crafted for Bangladesh.
-            </p>
-          </div>
-
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-8">
-            <div>
-              <p className="text-[11px] tracking-[0.15em] uppercase mb-4 text-obsidian/80">Shop</p>
-              <div className="space-y-2 text-sm text-obsidian/60">
-                <Link to="/shop" className="block hover:text-obsidian">All Products</Link>
-                <Link to="/wishlist" className="block hover:text-obsidian">Wishlist</Link>
-                <Link to="/order-tracking" className="block hover:text-obsidian">Track Order</Link>
-              </div>
-            </div>
-            <div>
-              <p className="text-[11px] tracking-[0.15em] uppercase mb-4 text-obsidian/80">Support</p>
-              <div className="space-y-2 text-sm text-obsidian/60">
-                <Link to="/contact" className="block hover:text-obsidian">Contact Us</Link>
-                <Link to="/faq" className="block hover:text-obsidian">FAQ</Link>
-                <Link to="/size-guide" className="block hover:text-obsidian">Size Guide</Link>
-              </div>
-            </div>
-            <div>
-              <p className="text-[11px] tracking-[0.15em] uppercase mb-4 text-obsidian/80">Legal</p>
-              <div className="space-y-2 text-sm text-obsidian/60">
-                <Link to="/privacy" className="block hover:text-obsidian">Privacy Policy</Link>
-                <Link to="/terms" className="block hover:text-obsidian">Terms</Link>
-                <Link to="/refund-policy" className="block hover:text-obsidian">Refund Policy</Link>
-              </div>
-            </div>
-          </div>
+    <footer className="border-t border-rule mt-auto px-4 md:px-6 pt-12 pb-8 text-[13px]">
+      <div className="grid gap-12 md:grid-cols-[minmax(0,1.2fr)_minmax(0,2fr)]">
+        <div className="max-w-sm">
+          <p className="font-heading text-[22px] leading-tight mb-2">New pieces, first</p>
+          <p className="text-graphite mb-4">Get an email when new arrivals land. No more than a few a month.</p>
+          {status === 'done' ? (
+            <p>You’re on the list.</p>
+          ) : (
+            <form onSubmit={handleSubscribe} className="flex border-b border-ink">
+              <label htmlFor="footer-email" className="sr-only">Email address</label>
+              <input
+                id="footer-email"
+                type="email"
+                required
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="Email address"
+                className="flex-1 min-w-0 bg-transparent py-2 outline-none placeholder:text-graphite"
+              />
+              <button type="submit" disabled={status === 'sending'} className="pl-4 py-2 hover:underline underline-offset-4">
+                Sign up
+              </button>
+            </form>
+          )}
+          {status === 'error' && <p className="mt-2 text-coral">That didn’t go through. Check the address and try again.</p>}
         </div>
 
-        {/* Social icons — icons only, no labels */}
-        <div className="flex items-center gap-5 mb-8">
-          <a href="https://www.instagram.com/sunday.clothin?igsh=MWhyZzNpZzNod2xsZQ==" target="_blank" rel="noopener noreferrer" aria-label="Instagram" className="text-obsidian/70 hover:text-obsidian transition-colors">
-            <Instagram size={18} />
-          </a>
-          <a href="https://www.facebook.com/share/19U1FfCwMY/" target="_blank" rel="noopener noreferrer" aria-label="Facebook" className="text-obsidian/70 hover:text-obsidian transition-colors">
-            <Facebook size={18} />
-          </a>
-          <a href="https://tiktok.com" target="_blank" rel="noopener noreferrer" aria-label="TikTok" className="text-obsidian/70 hover:text-obsidian transition-colors">
-            <TikTokIcon />
-          </a>
-          <a href="https://pinterest.com" target="_blank" rel="noopener noreferrer" aria-label="Pinterest" className="text-obsidian/70 hover:text-obsidian transition-colors">
-            <PinterestIcon />
-          </a>
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-8">
+          {COLUMNS.map((col) => (
+            <div key={col.title}>
+              <p className="text-graphite mb-3">{col.title}</p>
+              <ul className="space-y-2">
+                {col.links.map((l) => (
+                  <li key={l.to}><Link to={l.to} className="hover:underline underline-offset-4">{l.label}</Link></li>
+                ))}
+              </ul>
+            </div>
+          ))}
         </div>
+      </div>
 
-        {/* Big wordmark */}
-        <p className="text-[18vw] md:text-[10vw] leading-[0.85] font-black tracking-[0.04em] select-none overflow-hidden whitespace-nowrap -mx-1 text-obsidian">
-          SUNDAY
-        </p>
-
-        <div className="border-t border-obsidian/10 mt-6 pt-6 text-center text-xs text-obsidian/50">
-          © {new Date().getFullYear()} SUNDAY. All rights reserved.
-        </div>
+      <div className="mt-14 pt-5 border-t border-rule flex flex-col sm:flex-row gap-3 sm:items-center justify-between text-graphite">
+        <p>© {new Date().getFullYear()} SUNDAY, Bangladesh</p>
+        <ul className="flex gap-5">
+          {SOCIAL.map((s) => (
+            <li key={s.label}>
+              <a href={s.href} target="_blank" rel="noopener noreferrer" className="hover:text-ink hover:underline underline-offset-4">{s.label}</a>
+            </li>
+          ))}
+        </ul>
       </div>
     </footer>
   );

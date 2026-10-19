@@ -153,7 +153,7 @@ export default function OrderTrackPopup() {
                   </div>
                   <div className="text-right">
                     <p className="text-[10px] text-black/50 mb-0.5">Total</p>
-                    <p className="font-mono text-sm font-medium text-black">৳{order.total?.toLocaleString()}</p>
+                    <p className="font-mono text-sm font-medium text-black">Tk {order.total?.toLocaleString()}</p>
                   </div>
                 </div>
 

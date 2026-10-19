@@ -1,83 +1,68 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Minus, Plus, X, ShoppingBag } from 'lucide-react';
 import { getCart, updateCartItem, removeFromCart, subscribeCart } from '@/lib/cartStore';
+import { imgUrl } from '@/lib/storage';
+import { DELIVERY, formatPrice } from '@/lib/catalog';
 
 export default function Cart() {
   const [cart, setCart] = useState(getCart());
 
-  useEffect(() => {
-    const unsub = subscribeCart(() => setCart(getCart()));
-    return unsub;
-  }, []);
+  useEffect(() => subscribeCart(() => setCart(getCart())), []);
 
   const subtotal = cart.reduce((s, i) => s + i.price * i.quantity, 0);
 
   if (cart.length === 0) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center text-center px-5">
-        <ShoppingBag size={40} strokeWidth={1} className="text-charcoal/20 mb-4" />
-        <p className="text-charcoal/40 tracking-wider text-sm mb-6">Your bag is empty</p>
-        <Link
-          to="/shop"
-          className="inline-block border border-obsidian text-obsidian text-[11px] tracking-[0.2em] uppercase px-10 py-4 hover:bg-obsidian hover:text-white transition-all duration-500"
-        >
-          Continue Shopping
-        </Link>
+      <div className="py-32 px-4 text-center">
+        <h1 className="font-heading text-[32px] mb-3">Your bag is empty</h1>
+        <Link to="/shop" className="inline-flex items-center h-12 px-8 bg-ink text-white text-[13px]">Shop all</Link>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen">
-      <div className="max-w-[1000px] mx-auto px-5 md:px-10 py-10 md:py-16">
-        <h1 className="text-2xl md:text-3xl font-light tracking-wide mb-10">Your Bag</h1>
-
-        <div className="space-y-6 mb-10">
-          {cart.map(item => (
-            <div key={`${item.productId}-${item.size}`} className="flex gap-4 border-b border-sand/20 pb-6">
-              <img src={item.image} alt={item.name} className="w-20 h-24 object-cover bg-mist" />
-              <div className="flex-1">
-                <p className="text-sm font-medium mb-1">{item.name}</p>
-                <p className="text-xs text-charcoal/50 mb-3">Size: {item.size}</p>
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center border border-charcoal/20">
-                    <button
-                      onClick={() => updateCartItem(item.productId, item.size, item.quantity - 1)}
-                      className="w-8 h-8 flex items-center justify-center"
-                    >
-                      <Minus size={12} />
-                    </button>
-                    <span className="w-8 text-center text-sm font-mono">{item.quantity}</span>
-                    <button
-                      onClick={() => updateCartItem(item.productId, item.size, item.quantity + 1)}
-                      className="w-8 h-8 flex items-center justify-center"
-                    >
-                      <Plus size={12} />
-                    </button>
+    <div className="px-4 md:px-6 pt-8 md:pt-12 pb-20 md:grid md:grid-cols-[minmax(0,1fr)_360px] md:gap-12">
+      <div>
+        <h1 className="font-heading text-[32px] md:text-[44px] leading-none mb-8">Bag</h1>
+        <ul className="border-t border-rule divide-y divide-rule">
+          {cart.map((item) => (
+            <li key={`${item.productId}-${item.size}`} className="flex gap-4 md:gap-6 py-5 text-[13px]">
+              <Link to={`/product/${item.productId}`} className="w-24 md:w-32 shrink-0 aspect-[4/5] bg-stone">
+                {item.image && <img src={imgUrl(item.image, 300)} alt="" className="w-full h-full object-cover" />}
+              </Link>
+              <div className="flex-1 min-w-0 flex flex-col">
+                <div className="flex justify-between gap-4">
+                  <Link to={`/product/${item.productId}`} className="hover:underline underline-offset-2">{item.name}</Link>
+                  <span className="shrink-0">{formatPrice(item.price * item.quantity)}</span>
+                </div>
+                <p className="text-graphite mt-0.5">Size {item.size}</p>
+                <div className="mt-auto pt-3 flex items-center justify-between">
+                  <div className="flex items-center border border-rule">
+                    <button type="button" onClick={() => updateCartItem(item.productId, item.size, item.quantity - 1)} className="w-9 h-9" aria-label="Decrease quantity">−</button>
+                    <span className="w-6 text-center">{item.quantity}</span>
+                    <button type="button" onClick={() => updateCartItem(item.productId, item.size, item.quantity + 1)} className="w-9 h-9" aria-label="Increase quantity">+</button>
                   </div>
-                  <span className="text-sm font-mono font-medium">৳{(item.price * item.quantity).toLocaleString()}</span>
+                  <button type="button" onClick={() => removeFromCart(item.productId, item.size)} className="text-graphite underline underline-offset-2 hover:text-ink">
+                    Remove
+                  </button>
                 </div>
               </div>
-              <button onClick={() => removeFromCart(item.productId, item.size)} className="text-charcoal/30 hover:text-red-500">
-                <X size={16} />
-              </button>
-            </div>
+            </li>
           ))}
-        </div>
-
-        <div className="flex justify-between items-center mb-8">
-          <span className="text-lg font-medium">Subtotal</span>
-          <span className="text-xl font-mono font-medium">৳{subtotal.toLocaleString()}</span>
-        </div>
-
-        <Link
-          to="/checkout"
-          className="block text-center bg-[#FFFBEA] text-black text-[11px] tracking-wide uppercase py-4 rounded-xl shadow-sm border border-black/10 hover:bg-[#FFF3D0] transition-colors"
-        >
-          Proceed to Checkout
-        </Link>
+        </ul>
       </div>
+
+      <aside className="mt-10 md:mt-[76px] md:sticky md:top-24 md:self-start border-t border-rule pt-5 text-[14px]">
+        <div className="flex justify-between mb-1">
+          <span>Subtotal</span>
+          <span>{formatPrice(subtotal)}</span>
+        </div>
+        <p className="text-[12px] text-graphite mb-5">Delivery is added at checkout: {formatPrice(DELIVERY.insideDhaka)} inside Dhaka, {formatPrice(DELIVERY.outsideDhaka)} outside.</p>
+        <Link to="/checkout" className="h-12 w-full bg-ink text-white text-[13px] flex items-center justify-center hover:bg-ink/85">
+          Checkout
+        </Link>
+        <Link to="/shop" className="block text-center mt-3 text-[13px] underline underline-offset-4">Continue shopping</Link>
+      </aside>
     </div>
   );
 }

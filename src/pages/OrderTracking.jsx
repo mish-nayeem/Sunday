@@ -85,7 +85,7 @@ export default function OrderTracking() {
               </div>
               <div className="text-right">
                 <p className="text-xs text-charcoal/40 mb-1">Total</p>
-                <p className="font-mono font-medium">৳{order.total?.toLocaleString()}</p>
+                <p className="font-mono font-medium">Tk {order.total?.toLocaleString()}</p>
               </div>
             </div>
 
@@ -119,7 +119,7 @@ export default function OrderTracking() {
               {order.items?.map((item, i) => (
                 <div key={i} className="flex justify-between text-sm py-1.5 border-b border-gold/10 last:border-0">
                   <span>{item.name} (Size: {item.size}) × {item.quantity}</span>
-                  <span className="font-mono">৳{(item.price * item.quantity).toLocaleString()}</span>
+                  <span className="font-mono">Tk {(item.price * item.quantity).toLocaleString()}</span>
                 </div>
               ))}
             </div>

@@ -1,308 +1,181 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { Link, NavLink, useNavigate } from 'react-router-dom';
-import { Menu, X, Heart, ShoppingBag, Search, UserCog, User, ChevronDown } from 'lucide-react';
-import { getCartCount, subscribeCart } from '@/lib/cartStore';
+import React, { useState, useEffect } from 'react';
+import { Link, useLocation } from 'react-router-dom';
+import { Menu, X, Search, ShoppingBag } from 'lucide-react';
+import { getCartCount, subscribeCart, openCartDrawer } from '@/lib/cartStore';
 import { useAuth } from '@/lib/AuthContext';
-import logo from '@/assets/logonayemsend.png';
+import { SECTIONS, COLLECTIONS } from '@/lib/catalog';
+import SearchOverlay from './SearchOverlay';
+import logo from '@/assets/logo.png';
 
-const CATEGORY_LINKS = [
-  { key: 'shirt', label: 'Shirt' },
-  { key: 't_shirts', label: 'T-Shirt' },
-  { key: 'polo', label: 'Polo' },
-  { key: 'pant', label: 'Pant' },
-];
-
-const SHOP_LINKS = [
-  { key: 'new_arrival', label: 'New Arrival' },
-  { key: 'best_seller', label: 'Best Seller' },
-];
-
+// Text-led navigation: section links on the left, the wordmark in the
+// centre, utility links (search, account, bag) on the right. "Shop" opens a
+// full-width menu panel on desktop and an accordion in the mobile sheet.
 export default function Header() {
   const [cartCount, setCartCount] = useState(0);
+  const [menuOpen, setMenuOpen] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [shopOpen, setShopOpen] = useState(false);
-  const [categoryOpen, setCategoryOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
-  const [searchValue, setSearchValue] = useState('');
-  const [scrolled, setScrolled] = useState(false);
-  const searchInputRef = useRef(null);
   const { isAuthenticated, isAdmin, logout } = useAuth();
-
-  const navigate = useNavigate();
+  const location = useLocation();
 
   useEffect(() => {
     const update = () => setCartCount(getCartCount());
     update();
-    const unsubscribe = subscribeCart(update);
-    return unsubscribe;
+    return subscribeCart(update);
   }, []);
 
+  // Any navigation closes every panel.
   useEffect(() => {
-    if (searchOpen && searchInputRef.current) searchInputRef.current.focus();
-  }, [searchOpen]);
-
-  useEffect(() => {
-    const handleScroll = () => setScrolled(window.scrollY > 40);
-    handleScroll();
-    window.addEventListener('scroll', handleScroll, { passive: true });
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
-
-  const handleSearchSubmit = (e) => {
-    e.preventDefault();
-    if (!searchValue.trim()) return;
-    navigate(`/shop?search=${encodeURIComponent(searchValue.trim())}`);
+    setMenuOpen(false);
+    setMobileOpen(false);
     setSearchOpen(false);
-    setSearchValue('');
-  };
+  }, [location.pathname, location.search]);
 
-  // Navbar starts solid white at the top of the page, then becomes
-  // transparent once the user scrolls down.
-  const linkColor = 'text-obsidian';
-  const linkHover = 'hover:text-sand';
+  useEffect(() => {
+    document.body.style.overflow = mobileOpen ? 'hidden' : '';
+    return () => { document.body.style.overflow = ''; };
+  }, [mobileOpen]);
 
-  const navLinkClass = () =>
-    `font-heading uppercase tracking-[0.2em] text-xs transition-colors duration-300 ${linkColor} ${linkHover}`;
+  const link = 'text-[13px] text-ink hover:underline underline-offset-4 decoration-1';
 
   return (
-    <header
-      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
-        scrolled ? 'bg-transparent shadow-none' : 'bg-white shadow-sm'
-      }`}
-    >
-     <div className="relative max-w-[1440px] mx-auto px-6 md:px-12 h-[54px] md:h-[68px] flex items-center justify-between overflow-visible">
-     
-        {/* Left — Shop / Category / About */}
-        <nav className="hidden md:flex items-center gap-12 lg:gap-16">
-          <div
-            className="relative"
-            onMouseEnter={() => setShopOpen(true)}
-            onMouseLeave={() => setShopOpen(false)}
-          >
-            <NavLink to="/shop" className={navLinkClass}>
-              Shop
-            </NavLink>
-            {shopOpen && (
-              <div className="absolute top-full left-0 pt-3 w-56">
-                <div className="bg-white shadow-lg border border-obsidian/10 py-2">
-                  {SHOP_LINKS.map((s) => (
-                    <Link
-                      key={s.key}
-                      to={`/shop?filter=${s.key}`}
-                      className="block px-4 py-2 text-xs uppercase tracking-wider text-obsidian hover:bg-mist hover:text-sand transition-colors duration-200"
-                      onClick={() => setShopOpen(false)}
-                    >
-                      {s.label}
-                    </Link>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-
-          <div
-            className="relative"
-            onMouseEnter={() => setCategoryOpen(true)}
-            onMouseLeave={() => setCategoryOpen(false)}
-          >
-            <button
-              className={`font-heading flex items-center gap-1 uppercase tracking-[0.2em] text-xs transition-colors duration-300 ${linkColor} ${linkHover}`}
-            >
-              Category
-              <ChevronDown size={13} />
-            </button>
-            {categoryOpen && (
-              <div className="absolute top-full left-0 pt-3 w-52">
-                <div className="bg-white shadow-lg border border-obsidian/10 py-2">
-                  {CATEGORY_LINKS.map((c) => (
-                    <Link
-                      key={c.key}
-                      to={`/shop?category=${c.key}`}
-                      className="block px-4 py-2 text-xs uppercase tracking-wider text-obsidian hover:bg-mist hover:text-sand transition-colors duration-200"
-                      onClick={() => setCategoryOpen(false)}
-                    >
-                      {c.label}
-                    </Link>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-
-          <NavLink to="/about" className={navLinkClass}>
-            About
-          </NavLink>
-        </nav>
-
-        {/* Mobile menu toggle (left slot on mobile) */}
-        <button
-          className={`md:hidden ${linkColor}`}
-          onClick={() => setMobileOpen((v) => !v)}
-          aria-label="Toggle menu"
-        >
-          {mobileOpen ? <X size={22} /> : <Menu size={22} />}
-        </button>
-
-        {/* Center — Logo: absolutely centered, fully independent of navbar height/row */}
-        <Link
-          to="/"
-          className="absolute left-1/2 top-1/2 -translate-x-1/2 translate-y-[-42%] z-10 flex items-center"
-        >
-         <img src={logo} alt="SUNDAY" className="h-16 md:h-[88px] w-auto object-contain shrink-0" />
-        </Link>
-
-        {/* Right — Search / Wishlist / Cart / Admin */}
-        <div className="flex items-center gap-5 md:gap-7">
-          <button
-            aria-label="Search"
-            onClick={() => setSearchOpen((v) => !v)}
-            className={`transition-colors duration-300 ${linkColor} ${linkHover}`}
-          >
-            <Search size={19} strokeWidth={1.5} />
-          </button>
-
-          <Link
-            to="/wishlist"
-            aria-label="Wishlist"
-            className={`hidden sm:inline-flex transition-colors duration-300 ${linkColor} ${linkHover}`}
-          >
-            <Heart size={19} strokeWidth={1.5} />
-          </Link>
-
-          <Link
-            to="/cart"
-            aria-label="Cart"
-            className={`relative transition-colors duration-300 ${linkColor} ${linkHover}`}
-          >
-            <ShoppingBag size={19} strokeWidth={1.5} />
-            {cartCount > 0 && (
-              <span className="absolute -top-2 -right-2 w-4 h-4 rounded-full bg-sand text-white text-[9px] flex items-center justify-center">
-                {cartCount}
-              </span>
-            )}
-          </Link>
-
-          {isAuthenticated ? (
-            <button
-              onClick={logout}
-              aria-label="Log out"
-              title="Log out"
-              className={`hidden sm:inline-flex transition-colors duration-300 ${linkColor} ${linkHover}`}
-            >
-              <User size={19} strokeWidth={1.5} fill="currentColor" />
-            </button>
-          ) : (
-            <Link
-              to="/login"
-              aria-label="Account — Log in or Sign up"
-              title="Log in / Sign up"
-              className={`hidden sm:inline-flex transition-colors duration-300 ${linkColor} ${linkHover}`}
-            >
-              <User size={19} strokeWidth={1.5} />
-            </Link>
-          )}
-
-          {isAdmin && (
-            <Link
-              to="/admin"
-              aria-label="Admin"
-              className={`hidden sm:inline-flex transition-colors duration-300 ${linkColor} ${linkHover}`}
-            >
-              <UserCog size={19} strokeWidth={1.5} />
-            </Link>
-          )}
-        </div>
+    <>
+      <div className="bg-ink text-white text-[12px] text-center py-2 px-4">
+        Delivery all over Bangladesh. Cash on delivery inside Dhaka.
       </div>
 
-      {/* Expandable search bar */}
-      {searchOpen && (
-        <div className="border-t border-obsidian/10 bg-white/95 backdrop-blur-sm">
-          <form
-            onSubmit={handleSearchSubmit}
-            className="max-w-[1440px] mx-auto px-5 md:px-10 py-4 flex items-center gap-3"
-          >
-            <Search size={16} className="text-obsidian/50" />
-            <input
-              ref={searchInputRef}
-              type="text"
-              value={searchValue}
-              onChange={(e) => setSearchValue(e.target.value)}
-              placeholder="Search products..."
-              className="flex-1 bg-transparent outline-none text-sm text-obsidian placeholder-obsidian/40"
-            />
+      <header
+        className="sticky top-0 z-50 bg-white border-b border-rule"
+        onMouseLeave={() => setMenuOpen(false)}
+      >
+        <div className="relative h-14 md:h-16 px-4 md:px-6 flex items-center justify-between">
+          {/* Left */}
+          <nav className="hidden md:flex items-center gap-7" aria-label="Main">
             <button
               type="button"
-              onClick={() => setSearchOpen(false)}
-              className="text-obsidian"
-              aria-label="Close search"
+              className={link}
+              aria-expanded={menuOpen}
+              onMouseEnter={() => setMenuOpen(true)}
+              onClick={() => setMenuOpen((v) => !v)}
             >
-              <X size={18} />
+              Shop
             </button>
-          </form>
+            <Link to="/shop?filter=new_arrival" className={link}>New arrivals</Link>
+            <Link to="/about" className={link}>About</Link>
+          </nav>
+          <button
+            type="button"
+            className="md:hidden -ml-1 p-1 text-ink"
+            onClick={() => setMobileOpen(true)}
+            aria-label="Open menu"
+          >
+            <Menu size={22} strokeWidth={1.5} />
+          </button>
+
+          {/* Centre */}
+          <Link to="/" className="absolute left-1/2 -translate-x-1/2" aria-label="SUNDAY home">
+            <img src={logo} alt="SUNDAY" className="h-6 md:h-7 w-auto" />
+          </Link>
+
+          {/* Right */}
+          <div className="flex items-center gap-4 md:gap-7">
+            <button type="button" className={`hidden md:inline ${link}`} onClick={() => setSearchOpen(true)}>
+              Search
+            </button>
+            <button type="button" className="md:hidden p-1 text-ink" onClick={() => setSearchOpen(true)} aria-label="Search">
+              <Search size={20} strokeWidth={1.5} />
+            </button>
+            {isAdmin && <Link to="/admin" className={`hidden md:inline ${link}`}>Admin</Link>}
+            <Link to="/wishlist" className={`hidden md:inline ${link}`}>Wishlist</Link>
+            {isAuthenticated ? (
+              <button type="button" onClick={logout} className={`hidden md:inline ${link}`}>Log out</button>
+            ) : (
+              <Link to="/login" className={`hidden md:inline ${link}`}>Log in</Link>
+            )}
+            <button type="button" className={`hidden md:inline ${link}`} onClick={openCartDrawer}>
+              Bag ({cartCount})
+            </button>
+            <button type="button" className="md:hidden relative p-1 text-ink" onClick={openCartDrawer} aria-label={`Bag, ${cartCount} items`}>
+              <ShoppingBag size={20} strokeWidth={1.5} />
+              {cartCount > 0 && (
+                <span className="absolute -top-0.5 -right-1 min-w-4 h-4 px-1 rounded-full bg-coral text-white text-[10px] leading-4 text-center">
+                  {cartCount}
+                </span>
+              )}
+            </button>
+          </div>
+        </div>
+
+        {/* Desktop shop menu */}
+        {menuOpen && (
+          <div className="hidden md:block absolute inset-x-0 top-full bg-white border-b border-rule">
+            <div className="px-6 py-8 grid grid-cols-[repeat(3,minmax(0,200px))] gap-10">
+              <div>
+                <p className="text-[12px] text-graphite mb-3">Clothing</p>
+                <ul className="space-y-2">
+                  <li><Link to="/shop" className={link}>View all</Link></li>
+                  {SECTIONS.map((s) => (
+                    <li key={s.key}><Link to={`/shop?category=${s.key}`} className={link}>{s.label}</Link></li>
+                  ))}
+                </ul>
+              </div>
+              <div>
+                <p className="text-[12px] text-graphite mb-3">Collections</p>
+                <ul className="space-y-2">
+                  {COLLECTIONS.map((c) => (
+                    <li key={c.key}><Link to={`/shop?filter=${c.key}`} className={link}>{c.label}</Link></li>
+                  ))}
+                </ul>
+              </div>
+              <div>
+                <p className="text-[12px] text-graphite mb-3">Help</p>
+                <ul className="space-y-2">
+                  <li><Link to="/size-guide" className={link}>Size guide</Link></li>
+                  <li><Link to="/order-tracking" className={link}>Track an order</Link></li>
+                  <li><Link to="/contact" className={link}>Contact</Link></li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        )}
+      </header>
+
+      {/* Mobile sheet */}
+      {mobileOpen && (
+        <div className="md:hidden fixed inset-0 z-[90] bg-white flex flex-col">
+          <div className="h-14 px-4 flex items-center justify-between border-b border-rule">
+            <img src={logo} alt="SUNDAY" className="h-6 w-auto" />
+            <button type="button" onClick={() => setMobileOpen(false)} aria-label="Close menu" className="p-1">
+              <X size={22} strokeWidth={1.5} />
+            </button>
+          </div>
+          <nav className="flex-1 overflow-y-auto px-4 py-6" aria-label="Mobile">
+            <ul className="space-y-4 font-heading text-[26px] leading-tight">
+              <li><Link to="/shop">Shop all</Link></li>
+              {SECTIONS.map((s) => (
+                <li key={s.key}><Link to={`/shop?category=${s.key}`}>{s.label}</Link></li>
+              ))}
+              {COLLECTIONS.map((c) => (
+                <li key={c.key}><Link to={`/shop?filter=${c.key}`}>{c.label}</Link></li>
+              ))}
+              <li><Link to="/about">About</Link></li>
+            </ul>
+            <ul className="mt-10 space-y-3 text-[14px]">
+              <li><Link to="/wishlist">Wishlist</Link></li>
+              <li><Link to="/order-tracking">Track an order</Link></li>
+              <li><Link to="/contact">Contact</Link></li>
+              {isAdmin && <li><Link to="/admin">Admin</Link></li>}
+              <li>
+                {isAuthenticated
+                  ? <button type="button" onClick={() => { setMobileOpen(false); logout(); }}>Log out</button>
+                  : <Link to="/login">Log in</Link>}
+              </li>
+            </ul>
+          </nav>
         </div>
       )}
 
-      {/* Mobile Nav */}
-      {mobileOpen && (
-        <div className="md:hidden border-t border-obsidian/10 bg-white px-5 py-6 flex flex-col gap-5">
-          <div>
-            <NavLink to="/shop" className="font-heading uppercase tracking-[0.2em] text-xs text-obsidian" onClick={() => setMobileOpen(false)}>
-              Shop
-            </NavLink>
-            <div className="flex flex-col gap-3 pl-3 mt-3">
-              {SHOP_LINKS.map((s) => (
-                <Link
-                  key={s.key}
-                  to={`/shop?filter=${s.key}`}
-                  className="text-xs uppercase tracking-wider text-obsidian/70"
-                  onClick={() => setMobileOpen(false)}
-                >
-                  {s.label}
-                </Link>
-              ))}
-            </div>
-          </div>
-          <div>
-            <p className="font-heading uppercase tracking-[0.2em] text-xs text-obsidian mb-3">Category</p>
-            <div className="flex flex-col gap-3 pl-3">
-              {CATEGORY_LINKS.map((c) => (
-                <Link
-                  key={c.key}
-                  to={`/shop?category=${c.key}`}
-                  className="text-xs uppercase tracking-wider text-obsidian/70"
-                  onClick={() => setMobileOpen(false)}
-                >
-                  {c.label}
-                </Link>
-              ))}
-            </div>
-          </div>
-          <NavLink to="/about" className="font-heading uppercase tracking-[0.2em] text-xs text-obsidian" onClick={() => setMobileOpen(false)}>
-            About
-          </NavLink>
-          <div className="h-px bg-obsidian/10" />
-          <Link to="/wishlist" className="uppercase tracking-[0.2em] text-xs text-obsidian" onClick={() => setMobileOpen(false)}>
-            Wishlist
-          </Link>
-          {isAuthenticated ? (
-            <button
-              onClick={() => { setMobileOpen(false); logout(); }}
-              className="text-left uppercase tracking-[0.2em] text-xs text-obsidian"
-            >
-              Log Out
-            </button>
-          ) : (
-            <Link to="/login" className="uppercase tracking-[0.2em] text-xs text-obsidian" onClick={() => setMobileOpen(false)}>
-              Log In / Sign Up
-            </Link>
-          )}
-          {isAdmin && (
-            <Link to="/admin" className="uppercase tracking-[0.2em] text-xs text-obsidian" onClick={() => setMobileOpen(false)}>
-              Admin
-            </Link>
-          )}
-        </div>
-      )}
-    </header>
+      <SearchOverlay open={searchOpen} onClose={() => setSearchOpen(false)} />
+    </>
   );
 }

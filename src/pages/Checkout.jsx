@@ -131,24 +131,24 @@ export default function Checkout() {
   return (
     <div className="min-h-screen">
       <div className="max-w-[1440px] mx-auto px-5 md:px-10 py-10 md:py-16">
-        <Link to="/cart" className="inline-flex items-center gap-2 text-[11px] tracking-wide uppercase text-charcoal/50 hover:text-charcoal mb-8 transition-colors">
+        <Link to="/cart" className="inline-flex items-center gap-2 text-[13px] text-graphite hover:text-charcoal mb-8 transition-colors">
           <ArrowLeft size={14} /> Back to Bag
         </Link>
 
         {/* Brand mark — replaces express checkout */}
         <div className="text-center mb-10">
-          <p className="text-xl md:text-2xl font-bold tracking-wide">SUNDAY</p>
+          <h1 className="font-heading text-[32px] md:text-[40px] leading-none">Checkout</h1>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-10 lg:gap-16">
           {/* Form */}
           <div className="lg:col-span-2">
             <div className="flex items-center justify-between mb-6">
-              <p className="text-[11px] tracking-wide uppercase font-medium">Billing Information</p>
+              <p className="text-[13px]">Delivery details</p>
               {!isAuthenticated && (
                 <p className="text-xs text-charcoal/60">
                   Returning customer?{' '}
-                  <Link to="/login" className="text-obsidian underline hover:text-sand transition-colors">
+                  <Link to="/login" className="text-obsidian underline hover:text-graphite transition-colors">
                     Login
                   </Link>
                 </p>
@@ -156,91 +156,91 @@ export default function Checkout() {
             </div>
             <form onSubmit={handleSubmit} className="space-y-6">
               <div>
-                <label className="text-[11px] tracking-wide uppercase font-medium block mb-2">Full Name *</label>
+                <label className="text-[13px] block mb-2">Full Name *</label>
                 <input
                   type="text" required value={form.full_name}
                   onChange={e => setForm({ ...form, full_name: e.target.value })}
-                  className="w-full border border-charcoal/20 px-4 py-3 text-sm bg-white outline-none focus:border-[#FF7254] focus:ring-2 focus:ring-[#FF7254]/20 transition-colors rounded-xl shadow-sm"
+                  className="w-full border border-rule px-4 py-3 text-sm bg-white outline-none focus:border-ink transition-colors"
                 />
               </div>
               <div>
-                <label className="text-[11px] tracking-wide uppercase font-medium block mb-2">Mobile Number *</label>
+                <label className="text-[13px] block mb-2">Mobile Number *</label>
                 <input
                   type="tel" required value={form.mobile}
                   onChange={e => setForm({ ...form, mobile: e.target.value })}
                   placeholder="01XXXXXXXXX"
-                  className="w-full border border-charcoal/20 px-4 py-3 text-sm bg-white outline-none focus:border-[#FF7254] focus:ring-2 focus:ring-[#FF7254]/20 transition-colors rounded-xl shadow-sm placeholder:text-charcoal/30"
+                  className="w-full border border-rule px-4 py-3 text-sm bg-white outline-none focus:border-ink transition-colors placeholder:text-charcoal/30"
                 />
               </div>
               <div>
-                <label className="text-[11px] tracking-wide uppercase font-medium block mb-2">Email *</label>
+                <label className="text-[13px] block mb-2">Email *</label>
                 <input
                   type="email" required value={form.email}
                   onChange={e => setForm({ ...form, email: e.target.value })}
                   placeholder="your@email.com"
-                  className="w-full border border-charcoal/20 px-4 py-3 text-sm bg-white outline-none focus:border-[#FF7254] focus:ring-2 focus:ring-[#FF7254]/20 transition-colors rounded-xl shadow-sm placeholder:text-charcoal/30"
+                  className="w-full border border-rule px-4 py-3 text-sm bg-white outline-none focus:border-ink transition-colors placeholder:text-charcoal/30"
                 />
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                 <div>
-                  <label className="text-[11px] tracking-wide uppercase font-medium block mb-2">District *</label>
+                  <label className="text-[13px] block mb-2">District *</label>
                   <select
                     required value={form.district}
                     onChange={e => setForm({ ...form, district: e.target.value })}
-                    className="w-full border border-charcoal/20 px-4 py-3 text-sm bg-white outline-none focus:border-[#FF7254] focus:ring-2 focus:ring-[#FF7254]/20 transition-colors rounded-xl shadow-sm"
+                    className="w-full border border-rule px-4 py-3 text-sm bg-white outline-none focus:border-ink transition-colors"
                   >
                     <option value="">Select District</option>
                     {districts.map(d => <option key={d} value={d}>{d}</option>)}
                   </select>
                 </div>
                 <div>
-                  <label className="text-[11px] tracking-wide uppercase font-medium block mb-2">Area *</label>
+                  <label className="text-[13px] block mb-2">Area *</label>
                   <input
                     type="text" required value={form.area}
                     onChange={e => setForm({ ...form, area: e.target.value })}
-                    className="w-full border border-charcoal/20 px-4 py-3 text-sm bg-white outline-none focus:border-[#FF7254] focus:ring-2 focus:ring-[#FF7254]/20 transition-colors rounded-xl shadow-sm"
+                    className="w-full border border-rule px-4 py-3 text-sm bg-white outline-none focus:border-ink transition-colors"
                   />
                 </div>
               </div>
               <div>
-                <label className="text-[11px] tracking-wide uppercase font-medium block mb-2">Full Address *</label>
+                <label className="text-[13px] block mb-2">Full Address *</label>
                 <textarea
                   required value={form.address}
                   onChange={e => setForm({ ...form, address: e.target.value })}
                   rows={3}
-                  className="w-full border border-charcoal/20 px-4 py-3 text-sm bg-white outline-none focus:border-[#FF7254] focus:ring-2 focus:ring-[#FF7254]/20 transition-colors rounded-xl shadow-sm resize-none"
+                  className="w-full border border-rule px-4 py-3 text-sm bg-white outline-none focus:border-ink transition-colors resize-none"
                 />
               </div>
               <div>
-                <label className="text-[11px] tracking-wide uppercase font-medium block mb-2">Notes (Optional)</label>
+                <label className="text-[13px] block mb-2">Notes (Optional)</label>
                 <textarea
                   value={form.notes}
                   onChange={e => setForm({ ...form, notes: e.target.value })}
                   rows={2}
                   placeholder="Any special instructions..."
-                  className="w-full border border-charcoal/20 px-4 py-3 text-sm bg-white outline-none focus:border-[#FF7254] focus:ring-2 focus:ring-[#FF7254]/20 transition-colors rounded-xl shadow-sm resize-none placeholder:text-charcoal/30"
+                  className="w-full border border-rule px-4 py-3 text-sm bg-white outline-none focus:border-ink transition-colors resize-none placeholder:text-charcoal/30"
                 />
               </div>
 
               {/* Shipping method — auto-determined by district, not manually selectable */}
               {form.district && (
-                <div className="border border-charcoal/20 px-4 py-3 flex items-center justify-between rounded-xl shadow-sm bg-white">
+                <div className="border border-rule px-4 py-3 flex items-center justify-between  bg-white">
                   <div>
-                    <p className="text-[11px] tracking-wide uppercase font-medium">{selectedMethod?.label}</p>
+                    <p className="text-[13px]">{selectedMethod?.label}</p>
                     <p className="text-xs text-charcoal/50 mt-0.5">
                       {isAdvancePay ? 'bKash advance payment required' : 'Cash on delivery'}
                     </p>
                   </div>
-                  <span className="text-sm font-mono">৳{deliveryCharge}.00</span>
+                  <span className="text-sm font-mono">Tk {deliveryCharge}.00</span>
                 </div>
               )}
 
               {/* bKash advance payment section — only for Outside Dhaka */}
               {isAdvancePay && (
-                <div className="border border-charcoal/20 p-5 rounded-xl shadow-sm bg-white">
-                  <p className="text-[11px] tracking-wide uppercase font-medium mb-4">bKash Payment</p>
+                <div className="border border-rule p-5  bg-white">
+                  <p className="text-[13px] mb-4">bKash Payment</p>
 
-                  <div className="flex items-center justify-between border border-charcoal/15 px-4 py-3 mb-4 rounded-xl bg-white">
+                  <div className="flex items-center justify-between border border-rule px-4 py-3 mb-4 bg-white">
                     <span className="text-sm font-medium">bKash Number</span>
                     <div className="flex items-center gap-2">
                       <span className="text-sm font-mono">{BKASH_NUMBER}</span>
@@ -253,16 +253,16 @@ export default function Checkout() {
                   <ul className="text-xs text-charcoal/60 space-y-1.5 mb-4 list-disc list-inside">
                     <li>Dial *247# or open your bKash app</li>
                     <li>Select "Send Money"</li>
-                    <li>Send ৳{deliveryCharge}.00 to the number above</li>
+                    <li>Send Tk {deliveryCharge}.00 to the number above</li>
                     <li>Enter the Transaction ID you receive by SMS below</li>
                   </ul>
 
-                  <label className="text-[11px] tracking-wide uppercase font-medium block mb-2">Transaction ID *</label>
+                  <label className="text-[13px] block mb-2">Transaction ID *</label>
                   <input
                     type="text" required={isAdvancePay} value={bkashTrxId}
                     onChange={e => setBkashTrxId(e.target.value)}
                     placeholder="TRXID (e.g., K8H7G6F5D4)"
-                    className="w-full border border-charcoal/20 px-4 py-3 text-sm bg-white outline-none focus:border-[#FF7254] focus:ring-2 focus:ring-[#FF7254]/20 transition-colors rounded-xl shadow-sm placeholder:text-charcoal/30"
+                    className="w-full border border-rule px-4 py-3 text-sm bg-white outline-none focus:border-ink transition-colors placeholder:text-charcoal/30"
                   />
                 </div>
               )}
@@ -270,7 +270,7 @@ export default function Checkout() {
               <button
                 type="submit"
                 disabled={submitting}
-                className="w-full bg-[#FFFBEA] text-black font-semibold text-base tracking-wide uppercase py-4 rounded-xl shadow-sm border border-black/10 hover:bg-[#FFF3D0] transition-colors disabled:opacity-50"
+                className="w-full h-12 bg-ink text-white text-[13px] hover:bg-ink/85 transition-colors disabled:opacity-50"
               >
                 {submitting ? 'Placing Order...' : 'Confirm Order'}
               </button>
@@ -279,38 +279,38 @@ export default function Checkout() {
 
           {/* Summary */}
           <div className="lg:sticky lg:top-28 lg:self-start">
-            <div className="bg-white rounded-2xl shadow-lg border border-black/5 p-6 md:p-8">
-              <h3 className="text-[11px] tracking-wide uppercase font-semibold mb-6 flex items-center gap-2">
-                <span className="w-1.5 h-1.5 rounded-full bg-[#FF7254]" />
+            <div className="bg-white border border-rule p-6 md:p-8">
+              <h3 className="text-[14px] mb-6 flex items-center gap-2">
+                <span className="w-1.5 h-1.5 rounded-full bg-[#000]" />
                 Order Summary
               </h3>
               <div className="space-y-3 mb-6">
                 {cart.map(item => (
                   <div key={`${item.productId}-${item.size}`} className="flex justify-between items-center text-sm py-1">
                     <span className="text-charcoal/70">{item.name} <span className="text-charcoal/40">× {item.quantity}</span></span>
-                    <span className="font-mono font-medium">৳{(item.price * item.quantity).toLocaleString()}</span>
+                    <span className="font-mono font-medium">Tk {(item.price * item.quantity).toLocaleString()}</span>
                   </div>
                 ))}
               </div>
               <div className="h-px bg-black/10 mb-4" />
               <div className="flex justify-between mb-2.5">
                 <span className="text-sm text-charcoal/60">Subtotal</span>
-                <span className="text-sm font-mono">৳{subtotal.toLocaleString()}</span>
+                <span className="text-sm font-mono">Tk {subtotal.toLocaleString()}</span>
               </div>
               <div className="flex justify-between mb-4">
                 <span className="text-sm text-charcoal/60">Shipping</span>
-                <span className="text-sm font-mono">{deliveryCharge ? `৳${deliveryCharge}` : 'Free'}</span>
+                <span className="text-sm font-mono">{form.district ? `Tk ${deliveryCharge}` : 'Choose a district'}</span>
               </div>
 
-              <div className="flex justify-between items-center bg-[#FFFBEA] rounded-xl px-4 py-4 mb-6">
+              <div className="flex justify-between items-center bg-stone px-4 py-4 mb-6">
                 <span className="font-semibold text-black">Total</span>
-                <span className="text-xl font-mono font-bold text-black">৳{total.toLocaleString()}</span>
+                <span className="text-xl font-mono font-bold text-black">Tk {total.toLocaleString()}</span>
               </div>
 
-              {selectedMethod && (
-                <div className="bg-[#FFF0EB] rounded-xl p-4 flex items-center gap-3 mb-4">
-                  <div className="w-9 h-9 rounded-full bg-[#FF7254]/15 flex items-center justify-center shrink-0">
-                    <Truck size={16} strokeWidth={2} className="text-[#FF7254]" />
+              {selectedMethod && form.district && (
+                <div className="bg-stone p-4 flex items-center gap-3 mb-4">
+                  <div className="w-9 h-9 rounded-full bg-white flex items-center justify-center shrink-0">
+                    <Truck size={16} strokeWidth={2} className="text-[#000]" />
                   </div>
                   <div>
                     <p className="text-sm font-medium text-black">{selectedMethod?.label}</p>

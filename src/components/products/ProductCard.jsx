@@ -1,109 +1,90 @@
-import React, { useState, useRef } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { motion } from 'framer-motion';
-import { Plus } from 'lucide-react';
+import React, { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { imgUrl } from '@/lib/storage';
+import { addToCart, openCartDrawer } from '@/lib/cartStore';
+import { isSizeAvailable, isSoldOut, formatPrice } from '@/lib/catalog';
 
-export default function ProductCard({ product, index = 0 }) {
-  const navigate = useNavigate();
-  const [hovered, setHovered] = useState(false);
-  const [imgIndex, setImgIndex] = useState(0);
-  const imgWrapRef = useRef(null);
+// Grid tile: photo on a quiet ground, name and price underneath. Hovering
+// shows the second photo and a row of sizes that add straight to the bag.
+export default function ProductCard({ product }) {
+  const [added, setAdded] = useState('');
+  const images = (product.images || []).filter(Boolean);
+  const soldOut = isSoldOut(product);
+  const onSale = product.discount_percentage > 0 && product.original_price > product.price;
+  const colorCount = product.colors?.length || 0;
 
-  const images = product.images?.length ? product.images : [null];
-  const hasMultipleImages = images.length > 1;
-
-  // Move across the image (mouse or finger) to switch between photos —
-  // the image area is split into equal segments, one per image.
-  const updateImageFromPosition = (clientX) => {
-    if (!hasMultipleImages || !imgWrapRef.current) return;
-    const rect = imgWrapRef.current.getBoundingClientRect();
-    const ratio = Math.min(Math.max((clientX - rect.left) / rect.width, 0), 0.999);
-    const nextIndex = Math.floor(ratio * images.length);
-    setImgIndex(nextIndex);
-  };
-
-  const handleMouseMove = (e) => updateImageFromPosition(e.clientX);
-  const handleTouchMove = (e) => {
-    if (e.touches && e.touches[0]) updateImageFromPosition(e.touches[0].clientX);
-  };
-
-  const handleQuickAdd = (e) => {
+  const quickAdd = (e, size) => {
     e.preventDefault();
-    e.stopPropagation();
-    navigate(`/product/${product.id}`);
+    addToCart(product, size, 1);
+    setAdded(size);
+    openCartDrawer();
+    setTimeout(() => setAdded(''), 1500);
   };
-
-  const currentImg = images[imgIndex];
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true }}
-      transition={{ duration: 0.5, delay: (index % 4) * 0.08 }}
-      className="group relative"
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => { setHovered(false); setImgIndex(0); }}
-    >
-      <Link to={`/product/${product.id}`}>
-        <div
-          ref={imgWrapRef}
-          className="relative aspect-[3/4] overflow-hidden bg-mist mb-3 p-2 md:p-3"
-          onMouseMove={handleMouseMove}
-          onTouchMove={handleTouchMove}
-          onTouchStart={handleTouchMove}
-        >
-          <img
-            src={imgUrl(currentImg, 600)}
-            alt={product.name}
-            loading="lazy"
-            decoding="async"
-            className="absolute inset-0 w-full h-full object-contain transition-opacity duration-300"
-          />
+    <div className="group">
+      <div className="relative aspect-[4/5] bg-stone overflow-hidden">
+        <Link to={`/product/${product.id}`} className="absolute inset-0" tabIndex={-1} aria-hidden="true">
+          {images[0] && (
+            <img
+              src={imgUrl(images[0], 600)}
+              alt={product.name}
+              loading="lazy"
+              decoding="async"
+              className="absolute inset-0 w-full h-full object-cover"
+            />
+          )}
+          {images[1] && (
+            <img
+              src={imgUrl(images[1], 600)}
+              alt=""
+              loading="lazy"
+              decoding="async"
+              className="absolute inset-0 w-full h-full object-cover opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+            />
+          )}
+        </Link>
 
-          {hasMultipleImages && (
-            <div className="absolute bottom-2 left-1/2 -translate-x-1/2 z-10 flex gap-1">
-              {images.map((_, i) => (
-                <span
-                  key={i}
-                  className={`w-1.5 h-1.5 rounded-full transition-colors duration-300 ${
-                    i === imgIndex ? 'bg-obsidian' : 'bg-obsidian/30'
-                  }`}
-                />
-              ))}
+        {product.is_new_arrival && !soldOut && (
+          <span className="pointer-events-none absolute top-2 left-2 text-[11px] bg-white px-1.5 py-0.5">New</span>
+        )}
+
+        {!soldOut && product.sizes?.length > 0 && (
+          <div className="hidden md:block absolute inset-x-2 bottom-2 bg-white px-3 py-2 opacity-0 translate-y-1 group-hover:opacity-100 group-hover:translate-y-0 focus-within:opacity-100 focus-within:translate-y-0 transition duration-200">
+            <p className="text-[11px] text-graphite mb-1">{added ? `Added ${added} to bag` : 'Quick add'}</p>
+            <div className="flex flex-wrap gap-x-3 gap-y-1">
+              {product.sizes.map((size) => {
+                const ok = isSizeAvailable(product, size);
+                return (
+                  <button
+                    key={size}
+                    type="button"
+                    disabled={!ok}
+                    onClick={(e) => quickAdd(e, size)}
+                    className="text-[12px] hover:underline underline-offset-2 disabled:text-graphite/50 disabled:line-through disabled:no-underline"
+                    aria-label={`Add size ${size} to bag`}
+                  >
+                    {size}
+                  </button>
+                );
+              })}
             </div>
-          )}
+          </div>
+        )}
+      </div>
 
-          {product.stock_status === 'out_of_stock' && (
-            <div className="absolute inset-0 bg-white/60 flex items-center justify-center z-10">
-              <span className="text-[11px] tracking-[0.15em] uppercase text-obsidian border border-obsidian px-3 py-1.5 bg-white">
-                Sold Out
-              </span>
-            </div>
-          )}
-
-          {product.stock_status !== 'out_of_stock' && (
-            <button
-              onClick={handleQuickAdd}
-              title="View product"
-          className="absolute bottom-3 right-3 z-10 flex items-center justify-center text-orange-500 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity duration-300"
-            >
-              <Plus size={22} strokeWidth={1.5} />
-            </button>
-          )}
-        </div>
-
-        <h3 className="text-sm font-medium mb-1 truncate font-body">{product.name}</h3>
-        <div className="flex items-center gap-2">
-          <span className="text-sm font-mono">৳{product.price?.toLocaleString()}</span>
-          {product.discount_percentage > 0 && product.original_price && (
-            <span className="text-xs font-mono text-obsidian/40 line-through">
-              ৳{product.original_price?.toLocaleString()}
-            </span>
-          )}
-        </div>
+      <Link to={`/product/${product.id}`} className="block pt-2.5 pb-1 text-[13px] leading-snug">
+        <h3 className="font-body font-normal group-hover:underline underline-offset-2 decoration-1">{product.name}</h3>
+        <p className="mt-0.5">
+          {onSale && <span className="text-graphite line-through mr-2">{formatPrice(product.original_price)}</span>}
+          <span className={onSale ? 'text-coral' : ''}>{formatPrice(product.price)}</span>
+        </p>
+        {soldOut ? (
+          <p className="text-graphite mt-0.5">Sold out</p>
+        ) : colorCount > 1 ? (
+          <p className="text-graphite mt-0.5">{colorCount} colours</p>
+        ) : null}
       </Link>
-    </motion.div>
+    </div>
   );
 }

@@ -67,21 +67,21 @@ export default function OrderConfirmation() {
             {order.items?.map((item, i) => (
               <div key={i} className="flex justify-between text-sm py-1.5">
                 <span className="text-charcoal/60">{item.name} (Size: {item.size}) × {item.quantity}</span>
-                <span className="font-mono">৳{(item.price * item.quantity).toLocaleString()}</span>
+                <span className="font-mono">Tk {(item.price * item.quantity).toLocaleString()}</span>
               </div>
             ))}
             <div className="h-px bg-gold/20 my-4" />
             <div className="flex justify-between mb-2">
               <span className="text-sm">Subtotal</span>
-              <span className="text-sm font-mono">৳{order.subtotal?.toLocaleString()}</span>
+              <span className="text-sm font-mono">Tk {order.subtotal?.toLocaleString()}</span>
             </div>
             <div className="flex justify-between mb-4">
               <span className="text-sm">Delivery Charge</span>
-              <span className="text-sm font-mono">৳{order.delivery_charge?.toLocaleString()}</span>
+              <span className="text-sm font-mono">Tk {order.delivery_charge?.toLocaleString()}</span>
             </div>
             <div className="flex justify-between">
               <span className="font-medium">Total</span>
-              <span className="text-lg font-mono font-medium">৳{order.total?.toLocaleString()}</span>
+              <span className="text-lg font-mono font-medium">Tk {order.total?.toLocaleString()}</span>
             </div>
           </div>
 

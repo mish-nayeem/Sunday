@@ -10,6 +10,11 @@ module.exports = {
   			sm: 'calc(var(--radius) - 4px)'
   		},
   		colors: {
+  			ink: '#000000',
+  			stone: '#F1F0EE',
+  			graphite: '#6E6E6E',
+  			rule: '#E4E2DF',
+  			coral: '#FF7254',
   			ivory: '#F7F5F2',
   			charcoal: '#1C1C1C',
   			wine: '#561C24',
