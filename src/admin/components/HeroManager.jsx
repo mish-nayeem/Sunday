@@ -14,6 +14,7 @@ import { fetchHeroExtras, saveSetting, DEFAULT_HERO_BUTTON, fetchTicker } from '
 import { useCountdown } from './DropCountdown.jsx'
 import InfoTip from './InfoTip.jsx'
 import FocusPicker from './FocusPicker.jsx'
+import FeatureManager from './FeatureManager.jsx'
 import { IconX } from './Icons.jsx'
 import './hero-manager.css'
 
@@ -26,7 +27,7 @@ const DEVICES = [
 // (PC and phone apart, each in its real shape), the button on the hero, an
 // optional drop countdown, the ticker — and a live preview of all of it on
 // a phone and a laptop.
-export default function HeroManager({ drops = [], ticker: TickerBox }) {
+export default function HeroManager({ drops = [], products = [], ticker: TickerBox }) {
   const [slides, setSlides] = useState([])
   const [loading, setLoading] = useState(true)
   const [busy, setBusy] = useState(false)
@@ -142,7 +143,7 @@ export default function HeroManager({ drops = [], ticker: TickerBox }) {
 
   const linkChoices = [
     ['/shop', 'Shop · everything'],
-    ['/shop?c=NEW', 'Shop · new arrivals'],
+    ['/shop?filter=new_arrival', 'Shop · new arrivals'],
     ...drops.map((d) => [`/lookbook/${encodeURIComponent(d)}`, `Lookbook · ${d}`]),
   ]
 
@@ -217,11 +218,14 @@ export default function HeroManager({ drops = [], ticker: TickerBox }) {
         )
       })}
 
+      {/* ---- Drop sections under the hero ---- */}
+      <FeatureManager drops={drops} products={products} />
+
       {/* ---- Button ---- */}
-      <Box title="HERO BUTTON" tip="The button in the middle of the hero. Point it at a new drop while it's fresh — e.g. SHOP CITYBOY → the CITYBOY lookbook — then back to VIEW SHOP.">
+      <Box title="HERO BUTTON" tip="The SHOP NOW button at the bottom of the main hero. It opens every product (/shop) unless you point it somewhere else — e.g. a new drop while it's fresh, then back to Shop · everything.">
         <label className="pf-field">
           <span className="hm-flabel mono">TEXT</span>
-          <input value={button.label} maxLength={28} onChange={(e) => { setButton({ ...button, label: e.target.value }); setNote({}) }} placeholder="VIEW SHOP" />
+          <input value={button.label} maxLength={28} onChange={(e) => { setButton({ ...button, label: e.target.value }); setNote({}) }} placeholder="SHOP NOW" />
         </label>
         <label className="pf-field">
           <span className="hm-flabel mono">GOES TO</span>
@@ -369,7 +373,7 @@ function Preview({ slides, button, countdown, ticker }) {
                 {left}
               </span>
             )}
-            <span className="hm-frame-btn">{(button.label || 'VIEW SHOP').toUpperCase()}</span>
+            <span className="hm-frame-btn">{(button.label || 'SHOP NOW').toUpperCase()}</span>
           </div>
           {list.length > 1 && (
             <div className="hm-frame-dots">{list.map((s, i) => <i key={s.id} className={i === tick % list.length ? 'on' : ''} />)}</div>

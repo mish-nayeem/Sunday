@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Volume2, VolumeX } from 'lucide-react';
+import { Volume2, VolumeX, ShoppingBag } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { supabase } from '@/lib/supabaseClient';
 import { imgUrl } from '@/lib/storage';
@@ -9,6 +9,7 @@ import heroImage from '@/assets/hero.jpeg';
 import { fetchHeroSlides, slidesFor, isVideo, PHONE_QUERY } from '@/admin/lib/hero.js';
 import { fetchHeroExtras, DEFAULT_HERO_BUTTON } from '@/admin/lib/siteSettings.js';
 import { useCountdown } from '@/admin/components/DropCountdown.jsx';
+import { fetchFeatures, dropShopLink } from '@/admin/lib/features.js';
 
 // The panel saves labels in capitals; the storefront writes in sentence case.
 const sentence = (text) => (text ? text[0].toUpperCase() + text.slice(1).toLowerCase() : '');
@@ -18,6 +19,76 @@ const sentence = (text) => (text ? text[0].toUpperCase() + text.slice(1).toLower
 // video plays to its end, then the next slide comes. Videos start muted
 // (browsers only autoplay muted) — the speaker button bottom left turns the
 // sound on. With nothing set yet, the campaign photo stands in.
+// Square-edged white outline button over a photo: SHOP NOW, A CLOSER LOOK.
+function HeroButton({ to, children }) {
+  const cls = 'inline-flex items-center justify-center h-10 md:h-11 px-5 md:px-6 border border-white text-white text-[11px] md:text-[12px] font-semibold uppercase tracking-[0.08em] hover:bg-white hover:text-ink transition-colors';
+  return /^https?:/.test(to)
+    ? <a href={to} target="_blank" rel="noreferrer" className={cls}>{children}</a>
+    : <Link to={to} className={cls}>{children}</Link>;
+}
+
+// A drop under the hero (Admin → Homepage → Drop sections): a wide photo with
+// the drop's name and a line of text bottom left, SHOP NOW bottom right
+// (→ only that drop's products), then a row of picked photos.
+function DropFeature({ f, isPhone }) {
+  const shop = dropShopLink(f.drop_name);
+  const banner = (isPhone && f.mobile_image_url) || f.image_url;
+  const pics = (Array.isArray(f.pics) ? f.pics : []).filter((p) => p?.url);
+  return (
+    <section className="pb-10 md:pb-14">
+      {banner && (
+        <div className="relative aspect-[4/5] md:aspect-auto md:h-[calc(100svh-4rem)] md:min-h-[520px] bg-stone overflow-hidden">
+          <Link to={shop} className="absolute inset-0" tabIndex={-1} aria-hidden="true">
+            <img
+              src={imgUrl(banner, isPhone ? 900 : 2000)}
+              alt=""
+              loading="lazy"
+              className="absolute inset-0 w-full h-full object-cover"
+              style={{ objectPosition: f.focus || 'center' }}
+            />
+          </Link>
+          <div className="pointer-events-none absolute inset-x-0 bottom-0 h-2/5 bg-gradient-to-t from-black/45 to-transparent" />
+          <div className="pointer-events-none absolute inset-x-4 md:inset-x-6 bottom-5 md:bottom-7 flex flex-col md:flex-row md:items-end md:justify-between gap-4 text-white">
+            <div className="max-w-md">
+              <h2 className="font-heading text-[30px] md:text-[40px] leading-none">{f.title || f.drop_name}</h2>
+              {f.blurb && <p className="mt-3 text-[13px] leading-snug">{f.blurb}</p>}
+            </div>
+            <div className="pointer-events-auto flex gap-3 shrink-0">
+              <HeroButton to={shop}>Shop now</HeroButton>
+              {f.show_lookbook && <HeroButton to={`/lookbook/${encodeURIComponent(f.drop_name)}`}>A closer look</HeroButton>}
+            </div>
+          </div>
+        </div>
+      )}
+      {!banner && (
+        <div className="px-4 md:px-6 pt-10 flex items-end justify-between gap-4">
+          <div className="max-w-md">
+            <h2 className="font-heading text-[30px] md:text-[40px] leading-none">{f.title || f.drop_name}</h2>
+            {f.blurb && <p className="mt-3 text-[13px] text-graphite">{f.blurb}</p>}
+          </div>
+          <Link to={shop} className="text-[13px] underline underline-offset-4 shrink-0">Shop now</Link>
+        </div>
+      )}
+      {pics.length > 0 && (
+        <div className="px-4 md:px-6 pt-4 md:pt-5 grid grid-cols-2 md:grid-cols-4 gap-2 md:gap-4">
+          {pics.map((p, i) => {
+            const to = p.product_id ? `/product/${p.product_id}` : shop;
+            return (
+              <Link key={`${p.url}-${i}`} to={to} className="group relative block aspect-[3/4] bg-stone overflow-hidden">
+                <img src={imgUrl(p.url, 700)} alt="" loading="lazy" className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-[1.02]" />
+                <span className="absolute right-3 bottom-3 w-9 h-9 md:w-10 md:h-10 rounded-full bg-white text-ink flex items-center justify-center" aria-hidden="true">
+                  <ShoppingBag size={17} strokeWidth={1.5} />
+                </span>
+                <span className="sr-only">{p.product_id ? 'View product' : `Shop ${f.drop_name}`}</span>
+              </Link>
+            );
+          })}
+        </div>
+      )}
+    </section>
+  );
+}
+
 function Hero({ slides, button, countdown }) {
   const [isPhone, setIsPhone] = useState(() => window.matchMedia(PHONE_QUERY).matches);
   const [at, setAt] = useState(0);
@@ -51,8 +122,6 @@ function Hero({ slides, button, countdown }) {
       } else v.pause();
     });
   }, [current.id]);
-
-  const external = /^https?:/.test(button.link);
 
   return (
     <section className="relative h-[100svh] min-h-[480px] bg-ink overflow-hidden">
@@ -102,13 +171,9 @@ function Hero({ slides, button, countdown }) {
         </button>
       )}
 
-      <div className="absolute left-1/2 -translate-x-1/2 bottom-5 md:bottom-7 text-center whitespace-nowrap text-white text-[13px] [text-shadow:0_1px_8px_rgba(0,0,0,0.35)]">
-        {left && <p className="tabular-nums mb-1">{sentence(countdown.label || 'Next drop')} in {left.toLowerCase()}</p>}
-        {external ? (
-          <a href={button.link} target="_blank" rel="noreferrer" className="underline underline-offset-4">{sentence(button.label)}</a>
-        ) : (
-          <Link to={button.link} className="underline underline-offset-4">{sentence(button.label)}</Link>
-        )}
+      <div className="absolute left-1/2 -translate-x-1/2 bottom-5 md:bottom-7 flex flex-col items-center gap-2 whitespace-nowrap text-white">
+        {left && <p className="tabular-nums text-[13px] [text-shadow:0_1px_8px_rgba(0,0,0,0.35)]">{sentence(countdown.label || 'Next drop')} in {left.toLowerCase()}</p>}
+        <HeroButton to={button.link}>{button.label}</HeroButton>
       </div>
 
       <h1 className="sr-only">SUNDAY. Everyday feels like Sunday.</h1>
@@ -136,6 +201,16 @@ export default function Home() {
   const [products, setProducts] = useState([]);
   const [slides, setSlides] = useState([]);
   const [extras, setExtras] = useState({ button: DEFAULT_HERO_BUTTON, countdown: null });
+  const [features, setFeatures] = useState([]);
+  const [isPhone, setIsPhone] = useState(() => window.matchMedia(PHONE_QUERY).matches);
+
+  useEffect(() => {
+    fetchFeatures().then(({ features: f }) => setFeatures(f));
+    const mq = window.matchMedia(PHONE_QUERY);
+    const onChange = () => setIsPhone(mq.matches);
+    mq.addEventListener('change', onChange);
+    return () => mq.removeEventListener('change', onChange);
+  }, []);
 
   useEffect(() => {
     fetchHeroSlides().then(({ slides: s }) => setSlides(s || []));
@@ -175,6 +250,12 @@ export default function Home() {
       }) }} />
 
       <Hero slides={slides} button={extras.button} countdown={extras.countdown} />
+
+      {features.length > 0 && (
+        <div className="pt-0">
+          {features.map((f) => <DropFeature key={f.id} f={f} isPhone={isPhone} />)}
+        </div>
+      )}
 
       <ProductRow title="New arrivals" to="/shop?filter=new_arrival" products={newArrivals} />
 

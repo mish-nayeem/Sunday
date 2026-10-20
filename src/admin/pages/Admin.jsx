@@ -2042,7 +2042,7 @@ export default function Admin() {
           )}
           </>
         )}
-        {tab === 'hero' && <HeroManager drops={collectionNames} ticker={<TickerManager />} />}
+        {tab === 'hero' && <HeroManager drops={collectionNames} products={products} ticker={<TickerManager />} />}
         {!loading && tab === 'menu' && (
           <div className="ab-grid">
             <CategoryManager menu="shop" products={products} />

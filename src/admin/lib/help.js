@@ -32,7 +32,7 @@ export const PAGE_HELP = {
 
   analytics: 'Visitors to the shop: how many, from where, on which pages, at what times and from which districts, and how many went on to buy. Your own visits to /admin are not counted.',
 
-  hero: 'The top of the home page. Upload wide photos for computers and tall ones for phones (pick which), drag to reorder; they rotate every few seconds. Below: the button under the photos, an optional drop countdown, and the ticker — the black strip of text at the very top of every page.',
+  hero: 'The home page, top to bottom. MAIN HERO: full-screen photos or videos (wide for computers, tall for phones) with a SHOP NOW button that opens every product. DROP SECTIONS: under the hero, one banner per drop — photo, drop name, a line of text and SHOP NOW (opens only that drop’s products) — with a row of your best photos from the drop beneath it. Then the hero button, an optional drop countdown, and the ticker shown on every page but the home page.',
   lookbook: 'Photos for a drop’s lookbook page (/lookbook/drop-name). Upload a photo, pick its drop and tag the products worn in it: they are listed under the photo, and each tagged product shows the others under “Shop the look” on its own page.',
   menu: 'What shows in the header’s Shop menu. SHOP: the categories, in this order (leave empty to show Shirts, T-shirts, Polos, Trousers). DROPS: the drops to list; hide one once it sells out without deleting its products.',
   about: 'The About page: blocks of one photo with a heading and text, top to bottom. Until you add one, the built-in About text shows.',

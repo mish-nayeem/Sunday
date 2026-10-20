@@ -38,7 +38,7 @@ export async function fetchTicker() {
 
 // The homepage hero's button and its optional drop countdown — Admin →
 // Homepage. Stored as site_settings 'hero_button' and 'hero_countdown'.
-export const DEFAULT_HERO_BUTTON = { label: 'Shop new arrivals', link: '/shop?filter=new_arrival' }
+export const DEFAULT_HERO_BUTTON = { label: 'Shop now', link: '/shop' }
 
 export async function fetchHeroExtras() {
   const [b, c] = await Promise.all([fetchSetting('hero_button'), fetchSetting('hero_countdown')])
