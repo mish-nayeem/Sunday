@@ -100,7 +100,7 @@ export default function Header() {
           </button>
 
           <Link to="/" className="absolute left-1/2 -translate-x-1/2" aria-label="SUNDAY home">
-            <img src={logo} alt="SUNDAY" className={`h-6 md:h-7 w-auto ${overHero ? 'brightness-0 invert' : ''}`} />
+            <img src={logo} alt="SUNDAY" className="h-6 md:h-7 w-auto" />
           </Link>
 
           <div className="flex items-center gap-1 md:gap-3 -mr-1.5">
