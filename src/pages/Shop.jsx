@@ -3,8 +3,7 @@ import { Link, useSearchParams } from 'react-router-dom';
 import { X } from 'lucide-react';
 import { supabase } from '@/lib/supabaseClient';
 import ProductCard from '@/components/products/ProductCard';
-import { SECTIONS, COLLECTIONS, SIZE_ORDER, CATEGORY_LABELS, isSizeAvailable, isSoldOut } from '@/lib/catalog';
-import { useMenus } from '@/lib/menus';
+import { SECTIONS, COLLECTIONS, SIZE_ORDER, isSizeAvailable, isSoldOut } from '@/lib/catalog';
 
 const SORTS = [
   // The order set in Admin → Products → Product catalog (drag to reorder);
@@ -32,12 +31,6 @@ export default function Shop() {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [drawerOpen, setDrawerOpen] = useState(false);
-  const [listOpen, setListOpen] = useState(false);
-  const menus = useMenus();
-
-  useEffect(() => {
-    setListOpen(false);
-  }, [params]);
 
   const setParam = (key, value) => {
     const next = new URLSearchParams(params);
@@ -106,31 +99,17 @@ export default function Shop() {
     return [...set].sort((a, b) => rank(a) - rank(b));
   }, [products]);
 
-  const section = SECTIONS.find((s) => s.key === category);
-  const collection = COLLECTIONS.find((c) => c.key === filter);
-  const title = search ? `Results for “${search}”` : drop || (type && (CATEGORY_LABELS[type] || type)) || collection?.label || section?.label || 'Shop all';
-
   const filterCount = sizes.length + (inStockOnly ? 1 : 0) + (sort !== 'featured' ? 1 : 0);
 
   return (
     <div className="pb-20">
-      {/* One quiet bar: what's showing (tap for the other lists) on the left,
-          one Filter button (sort, sold out, size) on the right. */}
+      {/* One quiet bar with a single Filter button (sort, sold out, size). */}
       <div className="sticky top-14 md:top-16 z-30 bg-white border-b border-rule">
-        <div className="h-14 md:h-16 px-4 md:px-6 flex items-center justify-between gap-4 text-[13px]">
-          <button type="button" onClick={() => setListOpen((v) => !v)} aria-expanded={listOpen} className="min-w-0 truncate text-left">
-            {title} <span aria-hidden="true">{listOpen ? '−' : '+'}</span>
-          </button>
+        <div className="h-14 md:h-16 px-4 md:px-6 flex items-center justify-end gap-4 text-[13px]">
           <button type="button" onClick={() => setDrawerOpen(true)} className="shrink-0">
             Filter{filterCount ? ` (${filterCount})` : ''}
           </button>
         </div>
-        {listOpen && (
-          <nav className="px-4 md:px-6 pb-5 pt-1 flex flex-wrap gap-x-6 gap-y-2 text-[13px]" aria-label="Shop lists">
-            {menus.shop.map((m) => <Link key={m.key} to={m.to} className="text-graphite hover:text-ink">{m.label}</Link>)}
-            {drop && <Link to={`/lookbook/${encodeURIComponent(drop)}`} className="underline underline-offset-4">{drop} lookbook</Link>}
-          </nav>
-        )}
       </div>
 
       <div className="px-4 md:px-6">

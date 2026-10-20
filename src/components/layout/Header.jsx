@@ -60,7 +60,7 @@ export default function Header() {
       >
         <div className="relative h-14 md:h-16 px-3 md:px-5 flex items-center justify-between">
           <button type="button" className={`-ml-1.5 ${icon}`} onClick={() => setMenuOpen(true)} aria-label="Open menu">
-            <Menu size={24} strokeWidth={1.25} />
+            <Menu size={24} strokeWidth={0.9} />
           </button>
 
           <Link to="/" className="absolute left-1/2 -translate-x-1/2" aria-label="SUNDAY home">
