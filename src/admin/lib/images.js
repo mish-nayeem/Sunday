@@ -21,6 +21,12 @@ const SUPABASE_OBJECT = '/storage/v1/object/public/'
 const SUPABASE_RENDER = '/storage/v1/render/image/public/'
 const CLOUDINARY_MARKER = '/image/upload/'
 
+// Supabase's resizer is a paid-plan feature; on the free plan the render URL
+// fails and the photo shows as broken. Same switch as the storefront
+// (src/lib/storage.js): off unless VITE_SUPABASE_IMAGE_TRANSFORM=true, and
+// then the stored file is served as it is.
+const TRANSFORM = import.meta.env.VITE_SUPABASE_IMAGE_TRANSFORM === 'true'
+
 export function imgUrl(url, { w, h, q, original = false } = {}) {
   if (typeof url !== 'string') return url
 
@@ -29,6 +35,7 @@ export function imgUrl(url, { w, h, q, original = false } = {}) {
   if (original) return url
 
   if (url.includes(SUPABASE_OBJECT)) {
+    if (!TRANSFORM) return url
     // A URL that already carries its own query was set up by hand — leave it.
     if (url.includes('?')) return url
 

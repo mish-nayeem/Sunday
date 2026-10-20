@@ -474,6 +474,7 @@ export default function Admin() {
   const [picked, setPicked] = useState(() => new Set())
   const [confirmBulk, setConfirmBulk] = useState(false)
   const [bulkBusy, setBulkBusy] = useState(false)
+  const [selecting, setSelecting] = useState(false)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [overviewSub, setOverviewSub] = useState('stats')
   const [ordersSub, setOrdersSub] = useState('list')
@@ -996,7 +997,13 @@ export default function Admin() {
       return
     }
     setPicked(new Set())
+    setSelecting(false)
     reload()
+  }
+
+  function stopSelecting() {
+    setSelecting(false)
+    pickOnly([])
   }
 
   async function handleSignOut() {
@@ -1633,6 +1640,18 @@ export default function Admin() {
 
             {products.length > 0 && (
               <div className="bulk-bar mono">
+                {!selecting ? (
+                  <>
+                    <button type="button" className="bulk-delete" onClick={() => setSelecting(true)}>
+                      Select to delete
+                    </button>
+                    <InfoTip>
+                      Select to delete puts a small box beside every product. Tick the ones to remove (or
+                      Select all), then Delete selected. Orders already placed keep their items and totals.
+                    </InfoTip>
+                  </>
+                ) : (
+                <>
                 <label className="bulk-all">
                   <input
                     type="checkbox"
@@ -1653,8 +1672,8 @@ export default function Admin() {
                 )}
                 <InfoTip>
                   Tick the small box beside a product's name to select it, or Select all. Then Delete selected
-                  removes them from the shop for good. Orders already placed keep their items and
-                  totals. Select demo products picks the sample catalog (SKU DEMO-…) in one go.
+                  removes them from the shop for good. Select demo products picks the sample catalog
+                  (SKU DEMO-…) in one go. Done hides the boxes again.
                 </InfoTip>
                 {picked.size > 0 && (
                   <span className="bulk-actions">
@@ -1675,6 +1694,9 @@ export default function Admin() {
                     )}
                   </span>
                 )}
+                <button type="button" className="bulk-link" onClick={stopSelecting}>Done</button>
+                </>
+                )}
               </div>
             )}
 
@@ -1684,21 +1706,23 @@ export default function Admin() {
                   className={`trow prow clickable queue ${drag.dragId === p.id ? 'dragging' : ''} ${picked.has(p.id) ? 'picked' : ''}`}
                   key={p.id}
                   ref={drag.rowRef(p.id)}
-                  onClick={() => setEditing(p)}
+                  onClick={() => (selecting ? togglePick(p.id) : setEditing(p))}
                 >
                   <div className="pthumb">
                     {Array.isArray(p.images) && p.images[0] && <img src={imgUrl(p.images[0], { w: 120 })} alt="" />}
                     <RestockStar sizes={starSizes(p)} />
                   </div>
                   <div className="tc name pick-name">
-                    <label className="pick-box" onClick={(e) => e.stopPropagation()} onPointerDown={(e) => e.stopPropagation()}>
-                      <input
-                        type="checkbox"
-                        checked={picked.has(p.id)}
-                        onChange={() => togglePick(p.id)}
-                        aria-label={`Select ${p.name}${p.variant ? `, ${p.variant}` : ''}`}
-                      />
-                    </label>
+                    {selecting && (
+                      <label className="pick-box" onClick={(e) => e.stopPropagation()} onPointerDown={(e) => e.stopPropagation()}>
+                        <input
+                          type="checkbox"
+                          checked={picked.has(p.id)}
+                          onChange={() => togglePick(p.id)}
+                          aria-label={`Select ${p.name}${p.variant ? `, ${p.variant}` : ''}`}
+                        />
+                      </label>
+                    )}
                     <div>
                       {p.name}
                       <div className="mini-id mono" style={{ marginTop: '2px' }}>{p.sku || String(p.id).slice(0, 8)}</div>
