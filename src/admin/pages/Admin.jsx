@@ -5,6 +5,7 @@ import {
   signOut,
   fetchOrders,
   fetchAdminProducts,
+  deleteProducts,
   updateOrderStatus,
   computeStats,
   dailySeries,
@@ -469,6 +470,10 @@ export default function Admin() {
   // the same launch time.
   const [newProductLaunch, setNewProductLaunch] = useState('')
   const [addingOrder, setAddingOrder] = useState(false)
+  // Products → Product catalog: rows ticked for Delete selected.
+  const [picked, setPicked] = useState(() => new Set())
+  const [confirmBulk, setConfirmBulk] = useState(false)
+  const [bulkBusy, setBulkBusy] = useState(false)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [overviewSub, setOverviewSub] = useState('stats')
   const [ordersSub, setOrdersSub] = useState('list')
@@ -962,6 +967,35 @@ export default function Admin() {
     }
 
     setNotifying(null)
+    reload()
+  }
+
+  function togglePick(id) {
+    setConfirmBulk(false)
+    setPicked((prev) => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  }
+
+  function pickOnly(ids) {
+    setConfirmBulk(false)
+    setPicked(new Set(ids))
+  }
+
+  async function handleBulkDelete() {
+    setBulkBusy(true)
+    setLoadError('')
+    const { error } = await deleteProducts([...picked])
+    setBulkBusy(false)
+    setConfirmBulk(false)
+    if (error) {
+      setLoadError("Couldn't delete those products. Try again.")
+      return
+    }
+    setPicked(new Set())
     reload()
   }
 
@@ -1597,15 +1631,70 @@ export default function Admin() {
 
             {products.length === 0 && <div className="empty mono">No products in the catalog.</div>}
 
+            {products.length > 0 && (
+              <div className="bulk-bar mono">
+                <label className="bulk-all">
+                  <input
+                    type="checkbox"
+                    checked={picked.size > 0 && picked.size === products.length}
+                    ref={(el) => { if (el) el.indeterminate = picked.size > 0 && picked.size < products.length }}
+                    onChange={(e) => pickOnly(e.target.checked ? products.map((p) => p.id) : [])}
+                  />
+                  Select all
+                </label>
+                {products.some((p) => String(p.sku || '').startsWith('DEMO-')) && (
+                  <button
+                    type="button"
+                    className="bulk-link"
+                    onClick={() => pickOnly(products.filter((p) => String(p.sku || '').startsWith('DEMO-')).map((p) => p.id))}
+                  >
+                    Select demo products
+                  </button>
+                )}
+                <InfoTip>
+                  Tick the box on a product's photo to select it, or Select all. Then Delete selected
+                  removes them from the shop for good. Orders already placed keep their items and
+                  totals. Select demo products picks the sample catalog (SKU DEMO-…) in one go.
+                </InfoTip>
+                {picked.size > 0 && (
+                  <span className="bulk-actions">
+                    <span>{picked.size} selected</span>
+                    <button type="button" className="bulk-link" onClick={() => pickOnly([])}>Clear</button>
+                    {confirmBulk ? (
+                      <>
+                        <span className="bulk-warn">Delete {picked.size} product{picked.size === 1 ? '' : 's'} for good?</span>
+                        <button type="button" className="bulk-delete" disabled={bulkBusy} onClick={handleBulkDelete}>
+                          {bulkBusy ? 'Deleting…' : 'Yes, delete'}
+                        </button>
+                        <button type="button" className="bulk-link" onClick={() => setConfirmBulk(false)}>Cancel</button>
+                      </>
+                    ) : (
+                      <button type="button" className="bulk-delete" onClick={() => setConfirmBulk(true)}>
+                        Delete selected
+                      </button>
+                    )}
+                  </span>
+                )}
+              </div>
+            )}
+
             <div className="table">
               {drag.list.map((p) => (
                 <div
-                  className={`trow prow clickable queue ${drag.dragId === p.id ? 'dragging' : ''}`}
+                  className={`trow prow clickable queue ${drag.dragId === p.id ? 'dragging' : ''} ${picked.has(p.id) ? 'picked' : ''}`}
                   key={p.id}
                   ref={drag.rowRef(p.id)}
                   onClick={() => setEditing(p)}
                 >
                   <div className="pthumb">
+                    <label className="pick-box" onClick={(e) => e.stopPropagation()} onPointerDown={(e) => e.stopPropagation()}>
+                      <input
+                        type="checkbox"
+                        checked={picked.has(p.id)}
+                        onChange={() => togglePick(p.id)}
+                        aria-label={`Select ${p.name}${p.variant ? `, ${p.variant}` : ''}`}
+                      />
+                    </label>
                     {Array.isArray(p.images) && p.images[0] && <img src={imgUrl(p.images[0], { w: 120 })} alt="" />}
                     <RestockStar sizes={starSizes(p)} />
                   </div>

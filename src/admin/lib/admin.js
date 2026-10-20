@@ -801,6 +801,20 @@ export async function saveProduct(product, isNewRecord) {
   return { error: null, id: data?.id ?? product.id }
 }
 
+// Several at once (Products → Product catalog → Delete selected). Orders
+// already placed keep their lines: they're stored on the order itself.
+export async function deleteProducts(ids) {
+  if (!ids.length) return { error: null }
+  const { error } = await supabase.from('products').delete().in('id', ids)
+
+  if (error) {
+    console.error('[Supabase] deleteProducts failed:', error.message)
+    return { error }
+  }
+
+  return { error: null }
+}
+
 export async function deleteProduct(id) {
   const { error } = await supabase.from('products').delete().eq('id', id)
 

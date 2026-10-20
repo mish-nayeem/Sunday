@@ -707,3 +707,43 @@ html:has(.admin)::-webkit-scrollbar-thumb:hover { background: rgba(120, 130, 125
     overscroll-behavior: contain;
   }
 }
+
+/* ---------- Products → Product catalog: select and delete several ---------- */
+.admin .bulk-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 16px;
+  margin: 4px 0 12px;
+  font-size: 12.5px;
+}
+.admin .bulk-all { display: inline-flex; align-items: center; gap: 8px; cursor: pointer; font-weight: 600; }
+.admin .bulk-all input,
+.admin .pick-box input { width: 16px; height: 16px; accent-color: var(--cobalt); cursor: pointer; }
+.admin .bulk-actions { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-left: auto; }
+.admin .bulk-link { background: none; border: none; padding: 0; color: var(--ink); text-decoration: underline; text-underline-offset: 3px; cursor: pointer; font: inherit; }
+.admin .bulk-warn { color: var(--pill-cancelled); font-weight: 700; }
+.admin .bulk-delete {
+  border: none;
+  border-radius: var(--r-ctl);
+  padding: 8px 14px;
+  background: var(--pill-cancelled);
+  color: #fff;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+.admin .bulk-delete:disabled { opacity: 0.6; cursor: default; }
+.admin .pthumb { position: relative; }
+.admin .pick-box {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  z-index: 1;
+  display: flex;
+  padding: 2px;
+  background: rgba(255, 255, 255, 0.92);
+  border-radius: 4px;
+  line-height: 0;
+}
+.admin .trow.prow.picked { outline: 2px solid var(--cobalt); outline-offset: -2px; }
