@@ -3,7 +3,6 @@ import { Link, useLocation } from 'react-router-dom';
 import { Menu, X, Search, User, ShoppingBag } from 'lucide-react';
 import { getCartCount, subscribeCart, openCartDrawer } from '@/lib/cartStore';
 import { useAuth } from '@/lib/AuthContext';
-import { COLLECTIONS } from '@/lib/catalog';
 import { useMenus } from '@/lib/menus';
 import { fetchTicker } from '@/admin/lib/siteSettings.js';
 import SearchOverlay from './SearchOverlay';
@@ -32,6 +31,7 @@ function useDhakaClock() {
 export default function Header() {
   const [cartCount, setCartCount] = useState(0);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [menuTab, setMenuTab] = useState('shop');
   const [searchOpen, setSearchOpen] = useState(false);
   const [pastHero, setPastHero] = useState(false);
   const { isAuthenticated, isAdmin, logout } = useAuth();
@@ -128,62 +128,73 @@ export default function Header() {
         )}
       </header>
 
-      {/* Menu: slides in from the left on every screen */}
-      {menuOpen && (
-        <div className="fixed inset-0 z-[90]" role="dialog" aria-modal="true" aria-label="Menu">
-          <div className="absolute inset-0 bg-black/30" onClick={() => setMenuOpen(false)} />
-          <aside className="absolute left-0 top-0 h-full w-full max-w-[420px] bg-white flex flex-col">
-            <div className="h-14 md:h-16 px-4 md:px-6 flex items-center justify-between border-b border-rule">
-              <img src={logo} alt="SUNDAY" className="h-6 w-auto" />
-              <button type="button" onClick={() => setMenuOpen(false)} aria-label="Close menu" className="p-1">
-                <X size={22} strokeWidth={1.5} />
+      {/* Menu: slides in from the left on every screen. Two tabs — SHOP and
+          EXPLORE (drops) — both set in Admin → Side menu. */}
+      <div
+        className={`fixed inset-0 z-[90] ${menuOpen ? '' : 'pointer-events-none'}`}
+        role="dialog"
+        aria-modal="true"
+        aria-label="Menu"
+        aria-hidden={!menuOpen}
+      >
+        <div
+          className={`absolute inset-0 bg-black/25 transition-opacity duration-300 ${menuOpen ? 'opacity-100' : 'opacity-0'}`}
+          onClick={() => setMenuOpen(false)}
+        />
+        <aside
+          className={`absolute left-0 top-0 h-full w-full max-w-[450px] bg-[#F6F1E7] text-ink flex flex-col overflow-hidden transition-transform duration-300 ease-out ${menuOpen ? 'translate-x-0' : '-translate-x-full'}`}
+        >
+          <img src={logo} alt="" aria-hidden="true" className="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[85%] opacity-[0.05] grayscale" />
+          <div className="relative grid grid-cols-[1fr_1fr_auto] h-16 shrink-0" role="tablist">
+            {[['shop', 'Shop'], ['explore', 'Explore']].map(([key, label]) => (
+              <button
+                key={key}
+                type="button"
+                role="tab"
+                aria-selected={menuTab === key}
+                onClick={() => setMenuTab(key)}
+                className={`text-left px-5 text-[11px] font-semibold uppercase tracking-[0.12em] ${menuTab === key ? 'text-ink' : 'bg-[#EAE2D3] text-graphite hover:text-ink'}`}
+              >
+                {label}
               </button>
-            </div>
-            <nav className="flex-1 overflow-y-auto px-4 md:px-6 py-6" aria-label="Main">
-              <ul className="space-y-3 font-heading text-[26px] leading-tight">
-                <li><Link to="/shop">Shop all</Link></li>
-                <li><Link to="/shop?filter=new_arrival">New arrivals</Link></li>
-                {menus.shop.map((s) => (
-                  <li key={s.key}><Link to={s.to}>{s.label}</Link></li>
-                ))}
-              </ul>
-              {menus.drops.length > 0 && (
-                <>
-                  <p className="mt-8 mb-2 text-[12px] text-graphite">Drops</p>
-                  <ul className="space-y-2 text-[15px]">
-                    {menus.drops.map((d) => (
-                      <li key={`drop-${d.key}`}><Link to={d.to}>{d.label}</Link></li>
-                    ))}
-                  </ul>
-                </>
-              )}
-              <p className="mt-8 mb-2 text-[12px] text-graphite">Collections</p>
-              <ul className="space-y-2 text-[15px]">
-                {COLLECTIONS.map((c) => (
-                  <li key={c.key}><Link to={`/shop?filter=${c.key}`}>{c.label}</Link></li>
-                ))}
-                <li><Link to="/about">About</Link></li>
-              </ul>
-              <p className="mt-8 mb-2 text-[12px] text-graphite">Help</p>
-              <ul className="space-y-2 text-[14px]">
-                <li><Link to="/support/size-guide">Size guide</Link></li>
-                <li><Link to="/support/portal">Returns and exchanges</Link></li>
-                <li><Link to="/order-tracking">Track an order</Link></li>
-                <li><Link to="/contact">Contact</Link></li>
-              </ul>
-              <ul className="mt-8 pt-6 border-t border-rule space-y-2 text-[14px]">
-                <li><Link to="/wishlist">Wishlist</Link></li>
-                {isAdmin && <li><Link to="/admin">Admin</Link></li>}
-                <li>
-                  {isAuthenticated
-                    ? <button type="button" onClick={() => { setMenuOpen(false); logout(); }}>Log out</button>
-                    : <Link to="/login">Log in</Link>}
+            ))}
+            <button type="button" onClick={() => setMenuOpen(false)} aria-label="Close menu" className="w-14 flex items-center justify-center bg-[#EAE2D3]">
+              <X size={22} strokeWidth={1.25} />
+            </button>
+          </div>
+
+          <nav className="relative flex-1 overflow-y-auto px-5 py-7" aria-label={menuTab === 'shop' ? 'Shop' : 'Explore'}>
+            <ul
+              className="space-y-[18px] text-[11px] uppercase tracking-[0.12em]"
+              // EXPLORE's links sit under the EXPLORE tab, the way SHOP's sit under SHOP.
+              style={menuTab === 'explore' ? { paddingLeft: 'calc((100% - 16px) / 2)' } : undefined}
+            >
+              {(menuTab === 'shop' ? menus.shop : menus.explore).map((item) => (
+                <li key={item.key}>
+                  {/^https?:/.test(item.to)
+                    ? <a href={item.to} target="_blank" rel="noreferrer" className="text-graphite hover:text-ink">{item.label}</a>
+                    : <Link to={item.to} className="text-graphite hover:text-ink">{item.label}</Link>}
                 </li>
-              </ul>
-            </nav>
-          </aside>
-        </div>
-      )}
+              ))}
+              {menuTab === 'explore' && menus.explore.length === 0 && (
+                <li className="normal-case tracking-normal text-[13px] text-graphite">New drops will show here.</li>
+              )}
+            </ul>
+
+            <ul className="mt-12 pt-6 border-t border-black/10 space-y-3 text-[12px] text-graphite">
+              <li><Link to="/wishlist" className="hover:text-ink">Wishlist</Link></li>
+              <li><Link to="/order-tracking" className="hover:text-ink">Track an order</Link></li>
+              <li><Link to="/support/portal" className="hover:text-ink">Returns and exchanges</Link></li>
+              {isAdmin && <li><Link to="/admin" className="hover:text-ink">Admin</Link></li>}
+              <li>
+                {isAuthenticated
+                  ? <button type="button" className="hover:text-ink" onClick={() => { setMenuOpen(false); logout(); }}>Log out</button>
+                  : <Link to="/login" className="hover:text-ink">Log in</Link>}
+              </li>
+            </ul>
+          </nav>
+        </aside>
+      </div>
 
       <SearchOverlay open={searchOpen} onClose={() => setSearchOpen(false)} />
     </>

@@ -4,11 +4,12 @@ import { X } from 'lucide-react';
 import { supabase } from '@/lib/supabaseClient';
 import ProductCard from '@/components/products/ProductCard';
 import { SECTIONS, COLLECTIONS, SIZE_ORDER, CATEGORY_LABELS, isSizeAvailable, isSoldOut } from '@/lib/catalog';
+import { useMenus } from '@/lib/menus';
 
 const SORTS = [
   // The order set in Admin → Products → Product catalog (drag to reorder);
   // products never placed there come first, newest first.
-  { value: 'featured', label: 'Featured', column: 'shop_position', ascending: true },
+  { value: 'featured', label: 'Recommended', column: 'shop_position', ascending: true },
   { value: 'newest', label: 'Newest', column: 'created_at', ascending: false },
   { value: 'price_asc', label: 'Price, low to high', column: 'price', ascending: true },
   { value: 'price_desc', label: 'Price, high to low', column: 'price', ascending: false },
@@ -31,6 +32,14 @@ export default function Shop() {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [listOpen, setListOpen] = useState(false);
+  const [sortOpen, setSortOpen] = useState(false);
+  const menus = useMenus();
+
+  useEffect(() => {
+    setListOpen(false);
+    setSortOpen(false);
+  }, [params]);
 
   const setParam = (key, value) => {
     const next = new URLSearchParams(params);
@@ -50,7 +59,8 @@ export default function Shop() {
         const section = SECTIONS.find((s) => s.key === category);
         if (section) query = query.in('category', section.categories);
         if (type) query = query.eq('category', type);
-        if (drop) query = query.eq('drop_name', drop);
+        // Any capitalisation: menus store drop names in capitals.
+        if (drop) query = query.ilike('drop_name', drop.replace(/[\\%_]/g, (c) => `\\${c}`));
         const collection = COLLECTIONS.find((c) => c.key === filter);
         if (collection) query = query.eq(collection.column, true);
         // Characters PostgREST reads as filter syntax are dropped from the term.
@@ -101,36 +111,56 @@ export default function Shop() {
   const section = SECTIONS.find((s) => s.key === category);
   const collection = COLLECTIONS.find((c) => c.key === filter);
   const title = search ? `Results for “${search}”` : drop || (type && (CATEGORY_LABELS[type] || type)) || collection?.label || section?.label || 'Shop all';
-  const activeCount = sizes.length + (inStockOnly ? 1 : 0) + (sort !== 'featured' ? 1 : 0);
 
-  const tabClass = (active) =>
-    `shrink-0 text-[13px] pb-1 border-b ${active ? 'border-ink text-ink' : 'border-transparent text-graphite hover:text-ink'}`;
+  const sortLabel = (SORTS.find((x) => x.value === sort) || SORTS[0]).label;
+  const refineCount = sizes.length + (inStockOnly ? 1 : 0);
 
   return (
-    <div className="px-4 md:px-6 pb-20">
-      <div className="pt-8 md:pt-12 pb-6 flex items-end justify-between gap-4">
-        <h1 className="font-heading text-[32px] md:text-[44px] leading-none">{title}</h1>
-        <div className="flex items-baseline gap-5 shrink-0 text-[13px]">
-          {drop && <Link to={`/lookbook/${encodeURIComponent(drop)}`} className="underline underline-offset-4">Lookbook</Link>}
-          <p className="text-graphite">{loading ? '' : `${visible.length} ${visible.length === 1 ? 'item' : 'items'}`}</p>
+    <div className="pb-20">
+      {/* One quiet bar: what's showing (tap for the other lists) on the left,
+          sort and refine on the right. */}
+      <div className="sticky top-14 md:top-16 z-30 bg-white border-b border-rule">
+        <div className="h-14 md:h-16 px-4 md:px-6 flex items-center justify-between gap-4 text-[13px]">
+          <button type="button" onClick={() => { setListOpen((v) => !v); setSortOpen(false); }} aria-expanded={listOpen} className="min-w-0 truncate text-left">
+            {title} <span aria-hidden="true">{listOpen ? '−' : '+'}</span>
+          </button>
+          <div className="flex items-center gap-5 md:gap-6 shrink-0">
+            {!loading && <span className="hidden md:inline text-graphite">{visible.length} {visible.length === 1 ? 'item' : 'items'}</span>}
+            <div className="relative">
+              <button type="button" onClick={() => { setSortOpen((v) => !v); setListOpen(false); }} aria-expanded={sortOpen}>
+                Sort<span className="hidden sm:inline">: {sortLabel}</span>
+              </button>
+              {sortOpen && (
+                <ul className="absolute right-0 top-full mt-3 w-52 bg-white border border-rule py-2 shadow-sm">
+                  {SORTS.map((x) => (
+                    <li key={x.value}>
+                      <button
+                        type="button"
+                        onClick={() => { setParam('sort', x.value === 'featured' ? '' : x.value); setSortOpen(false); }}
+                        className={`w-full text-left px-4 py-1.5 hover:underline underline-offset-4 ${sort === x.value ? 'text-ink' : 'text-graphite'}`}
+                        aria-current={sort === x.value ? 'true' : undefined}
+                      >
+                        {x.label}
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+            <button type="button" onClick={() => setDrawerOpen(true)}>
+              Refine{refineCount ? ` (${refineCount})` : ''}
+            </button>
+          </div>
         </div>
+        {listOpen && (
+          <nav className="px-4 md:px-6 pb-5 pt-1 flex flex-wrap gap-x-6 gap-y-2 text-[13px]" aria-label="Shop lists">
+            {menus.shop.map((m) => <Link key={m.key} to={m.to} className="text-graphite hover:text-ink">{m.label}</Link>)}
+            {drop && <Link to={`/lookbook/${encodeURIComponent(drop)}`} className="underline underline-offset-4">{drop} lookbook</Link>}
+          </nav>
+        )}
       </div>
 
-      <div className="sticky top-14 md:top-16 z-30 bg-white -mx-4 md:-mx-6 px-4 md:px-6 py-3 border-b border-rule flex items-center gap-6">
-        <nav className="flex-1 min-w-0 flex gap-5 overflow-x-auto hide-scrollbar" aria-label="Categories">
-          <Link to="/shop" className={tabClass(category === 'all' && !filter && !search && !type && !drop)}>All</Link>
-          {SECTIONS.map((s) => (
-            <Link key={s.key} to={`/shop?category=${s.key}`} className={tabClass(category === s.key)}>{s.label}</Link>
-          ))}
-          {COLLECTIONS.map((c) => (
-            <Link key={c.key} to={`/shop?filter=${c.key}`} className={tabClass(filter === c.key)}>{c.label}</Link>
-          ))}
-        </nav>
-        <button type="button" onClick={() => setDrawerOpen(true)} className="shrink-0 text-[13px] hover:underline underline-offset-4">
-          Filter and sort{activeCount ? ` (${activeCount})` : ''}
-        </button>
-      </div>
-
+      <div className="px-4 md:px-6">
       {search && (
         <button type="button" onClick={() => setParam('search', '')} className="mt-4 inline-flex items-center gap-1 text-[13px] text-graphite hover:text-ink">
           <X size={13} /> Clear search
@@ -139,7 +169,7 @@ export default function Shop() {
 
       <div className="pt-6">
         {loading ? (
-          <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-x-2 md:gap-x-3 gap-y-8">
+          <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-x-2 md:gap-x-4 gap-y-8">
             {Array.from({ length: 8 }).map((_, i) => <div key={i} className="aspect-[4/5] bg-stone animate-pulse" />)}
           </div>
         ) : visible.length === 0 ? (
@@ -148,35 +178,25 @@ export default function Shop() {
             <Link to="/shop" className="text-[13px] underline underline-offset-4">Clear filters and see everything</Link>
           </div>
         ) : (
-          <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-x-2 md:gap-x-3 gap-y-8 md:gap-y-10">
+          <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-x-2 md:gap-x-4 gap-y-8 md:gap-y-12">
             {visible.map((p) => <ProductCard key={p.id} product={p} colours={coloursOf(p)} />)}
           </div>
         )}
       </div>
 
+      </div>
+
       {drawerOpen && (
-        <div className="fixed inset-0 z-[95]" role="dialog" aria-modal="true" aria-label="Filter and sort">
+        <div className="fixed inset-0 z-[95]" role="dialog" aria-modal="true" aria-label="Refine">
           <div className="absolute inset-0 bg-black/30" onClick={() => setDrawerOpen(false)} />
           <aside className="absolute right-0 top-0 h-full w-full max-w-[400px] bg-white flex flex-col">
             <div className="h-14 md:h-16 px-5 flex items-center justify-between border-b border-rule">
-              <p className="text-[14px]">Filter and sort</p>
+              <p className="text-[14px]">Refine</p>
               <button type="button" onClick={() => setDrawerOpen(false)} aria-label="Close" className="p-1">
                 <X size={20} strokeWidth={1.5} />
               </button>
             </div>
             <div className="flex-1 overflow-y-auto px-5 py-6 space-y-8">
-              <fieldset>
-                <legend className="text-[12px] text-graphite mb-3">Sort by</legend>
-                <div className="space-y-2">
-                  {SORTS.map((s) => (
-                    <label key={s.value} className="flex items-center gap-3 text-[14px] cursor-pointer">
-                      <input type="radio" name="sort" className="accent-black" checked={sort === s.value}
-                        onChange={() => setParam('sort', s.value === 'featured' ? '' : s.value)} />
-                      {s.label}
-                    </label>
-                  ))}
-                </div>
-              </fieldset>
               {allSizes.length > 0 && (
                 <fieldset>
                   <legend className="text-[12px] text-graphite mb-3">Size</legend>
@@ -209,7 +229,7 @@ export default function Shop() {
                 type="button"
                 onClick={() => {
                   const next = new URLSearchParams(params);
-                  ['sort', 'size', 'instock'].forEach((k) => next.delete(k));
+                  ['size', 'instock'].forEach((k) => next.delete(k));
                   setParams(next, { replace: true });
                 }}
                 className="flex-1 h-12 border border-ink text-[13px]"

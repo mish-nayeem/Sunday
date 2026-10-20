@@ -33,11 +33,11 @@ import SaleManager from '../components/SaleManager.jsx'
 import ProductForm from '../components/ProductForm.jsx'
 import { collectLabels, lastLabels } from '../lib/details.js'
 import HeroManager from '../components/HeroManager.jsx'
+import MenuManager from '../components/MenuManager.jsx'
 import TickerManager from '../components/TickerManager.jsx'
 import LookbookManager from '../components/LookbookManager.jsx'
 import CollectionManager from '../components/CollectionManager.jsx'
 import DropReport from '../components/DropReport.jsx'
-import CategoryManager from '../components/CategoryManager.jsx'
 import AboutManager from '../components/AboutManager.jsx'
 import LinkGenerator from '../components/LinkGenerator.jsx'
 import AudienceManager from '../components/AudienceManager.jsx'
@@ -95,7 +95,7 @@ const TAB_LABELS = {
   analytics: 'Analytics',
   hero: 'Homepage hero',
   lookbook: 'Lookbook',
-  menu: 'Nav menus',
+  menu: 'Side menu',
   about: 'About us page',
   support: 'Support',
 }
@@ -607,7 +607,10 @@ export default function Admin() {
   const [menuDrops, setMenuDrops] = useState([])
   useEffect(() => {
     if (!editing) return
-    fetchAllNavCategories(DROPS_MENU).then(({ categories }) => setMenuDrops(categories.map((c) => c.label)))
+    // EXPLORE rows that open a drop; a lookbook or custom link isn't a drop name.
+    fetchAllNavCategories(DROPS_MENU).then(({ categories }) => setMenuDrops(
+      categories.filter((c) => !c.link || c.link.startsWith('/shop?drop=')).map((c) => (c.link ? decodeURIComponent(c.link.slice('/shop?drop='.length)) : c.label))
+    ))
   }, [editing])
   const collectionNames = useMemo(() => {
     const seen = new Map()
@@ -1061,7 +1064,7 @@ export default function Admin() {
     { key: 'analytics', label: 'Analytics', badge: null },
     { key: 'hero', label: 'Homepage', badge: null },
     { key: 'lookbook', label: 'Lookbook', badge: null },
-    { key: 'menu', label: 'Nav menus', badge: null },
+    { key: 'menu', label: 'Side menu', badge: null },
     { key: 'about', label: 'About us', badge: null },
     { key: 'support', label: 'Support', badge: newRequests > 0 ? newRequests : null },
   ]
@@ -2045,8 +2048,8 @@ export default function Admin() {
         {tab === 'hero' && <HeroManager drops={collectionNames} products={products} ticker={<TickerManager />} />}
         {!loading && tab === 'menu' && (
           <div className="ab-grid">
-            <CategoryManager menu="shop" products={products} />
-            <CategoryManager menu="drops" products={products} />
+            <MenuManager menu="shop" drops={collectionNames} products={products} />
+            <MenuManager menu="drops" drops={collectionNames} products={products} />
           </div>
         )}
         {!loading && tab === 'marketing' && (

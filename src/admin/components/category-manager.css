@@ -1,4 +1,4 @@
-/* Admin → Nav menus. One box per dropdown (SHOP, DROPS); the box itself is
+/* Admin → Side menu. One box per tab (SHOP, EXPLORE); the box itself is
    admin-box.css. */
 
 /* The word in the nav and its dropdown, as a shopper sees it. */
@@ -93,4 +93,58 @@
 @media (max-width: 860px) {
   .cm-row { grid-template-columns: 22px minmax(0, 1fr) auto; }
   .cm-tools { grid-column: 2 / -1; justify-content: flex-end; }
+}
+
+/* ---- Side menu (MenuManager) ---- */
+
+.mm-preview {
+  background: #F6F1E7;
+  color: #111;
+  border-radius: 12px;
+  overflow: hidden;
+  margin-bottom: 14px;
+  border: 1px solid #E6DCC9;
+}
+.mm-preview-tabs { display: grid; grid-template-columns: 1fr 1fr; font-size: 10.5px; letter-spacing: 0.12em; font-weight: 600; }
+.mm-preview-tabs span { padding: 10px 14px; background: #EAE2D3; color: #777; }
+.mm-preview-tabs span.on { background: transparent; color: #111; }
+.mm-preview-list {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  padding: 14px;
+  font-size: 10.5px;
+  letter-spacing: 0.12em;
+  color: #6e6e6e;
+}
+.mm-preview-list.right { padding-left: calc(50% + 14px); }
+.mm-preview-list em { font-style: normal; letter-spacing: 0.02em; }
+
+.mm-add {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto;
+  gap: 8px;
+  align-items: end;
+  margin-bottom: 12px;
+}
+.mm-add .ab-btn { height: 38px; }
+.mm-field { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.mm-field .ab-input, .mm-link .ab-input { width: 100%; min-width: 0; }
+@media (max-width: 600px) { .mm-add { grid-template-columns: minmax(0, 1fr); } }
+
+.mm-row {
+  display: grid;
+  grid-template-columns: 22px minmax(0, 1fr) minmax(0, 1fr) auto;
+  gap: 8px;
+  align-items: center;
+  border: 1px solid var(--order-edge, var(--steel-line));
+  border-radius: 12px;
+  padding: 6px 8px;
+  background: var(--glass, transparent);
+}
+.mm-row.off .cm-name, .mm-row.off .mm-link { opacity: 0.45; }
+.mm-link { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+@media (max-width: 600px) {
+  .mm-row { grid-template-columns: 22px minmax(0, 1fr); }
+  .mm-row .mm-link, .mm-row .cm-tools { grid-column: 2; }
 }

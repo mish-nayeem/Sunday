@@ -19,7 +19,7 @@ function taka(n) {
 // Products → Collections. A collection is a drop (EID 2026, SUMMER 26…):
 // made here, it shows up in the DROPS menu, the lookbook and Shop by
 // collection. Open one to see its products and add new ones straight into it.
-// The list is the same rows as Nav menus → DROPS, so the two stay in step.
+// The list is the same rows as Side menu → EXPLORE, so the two stay in step.
 export default function CollectionManager({ products, open, onOpen, onAddProduct, onEditProduct, onChanged }) {
   const [rows, setRows] = useState([])
   const [loading, setLoading] = useState(true)

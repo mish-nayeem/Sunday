@@ -47,7 +47,7 @@ export default function LinkGenerator({ products }) {
 
   // A drop or a category is its own view of the shop (see Shop.jsx's ?d= and
   // ?c= filters), so each gets its own destination instead of forcing a link
-  // to one product out of the group. Read straight from the Nav menus tab's
+  // to one product out of the group. Read straight from the Side menu tab's
   // own table rather than off the products list, so a category added there
   // shows up here right away, and one that's hidden or deleted drops out —
   // without that, this list and the one a customer actually sees could drift

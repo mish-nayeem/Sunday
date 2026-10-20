@@ -238,7 +238,7 @@ function FeatureCard({ f, index, count, drops, products, busy, confirm, onPatch,
           <label className="pf-field" style={{ marginTop: 0 }}>
             <span className="hm-flabel mono">
               DROP
-              <InfoTip>Which drop this section is for. SHOP NOW opens the shop showing only products whose Drop / collection is this name. New drops appear here once a product carries them or they’re added under Nav menus → Drops.</InfoTip>
+              <InfoTip>Which drop this section is for. SHOP NOW opens the shop showing only products whose Drop / collection is this name. New drops appear here once a product carries them or they’re added under Side menu → Explore.</InfoTip>
             </span>
             <select value={f.drop_name} disabled={busy} onChange={(e) => {
               const drop = e.target.value

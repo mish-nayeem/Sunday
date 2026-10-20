@@ -5,7 +5,7 @@ import { addToCart, openCartDrawer } from '@/lib/cartStore';
 import { isSizeAvailable, isSoldOut, formatPrice } from '@/lib/catalog';
 import { useLiveSales, withSale } from '@/lib/pricing';
 
-// Grid tile: photo on a quiet ground, name and price underneath. Hovering
+// Grid tile: photo on a quiet ground, name left and price right underneath. Hovering
 // shows the second photo and a row of sizes that add straight to the bag.
 // `colours` (optional): the other colours of the same piece (colour group),
 // shown as small swatches under the price.
@@ -79,12 +79,14 @@ export default function ProductCard({ product: raw, colours = [] }) {
         )}
       </div>
 
-      <Link to={`/product/${product.id}`} className="block pt-2.5 pb-1 text-[13px] leading-snug">
-        <h3 className="font-body font-normal group-hover:underline underline-offset-2 decoration-1">{product.name}</h3>
-        <p className="mt-0.5">
-          {onSale && <span className="text-graphite line-through mr-2">{formatPrice(product.compare_at)}</span>}
-          <span className={onSale ? 'text-coral' : ''}>{formatPrice(product.price)}</span>
-        </p>
+      <Link to={`/product/${product.id}`} className="block pt-3 pb-1 text-[12px] leading-snug">
+        <div className="flex items-baseline justify-between gap-3">
+          <h3 className="font-body font-normal min-w-0 group-hover:underline underline-offset-2 decoration-1">{product.name}</h3>
+          <p className="shrink-0 tabular-nums">
+            {onSale && <span className="text-graphite line-through mr-1.5">{formatPrice(product.compare_at)}</span>}
+            <span className={onSale ? 'text-coral' : ''}>{formatPrice(product.price)}</span>
+          </p>
+        </div>
         {soldOut ? (
           <p className="text-graphite mt-0.5">Sold out</p>
         ) : colorCount > 1 && colours.length === 0 ? (

@@ -59,11 +59,12 @@ export async function fetchAllNavCategories(menu = SHOP_MENU) {
   return { categories: data, error: null }
 }
 
-export async function createNavCategory({ label, sortOrder, menu = SHOP_MENU }) {
+export async function createNavCategory({ label, sortOrder, menu = SHOP_MENU, link }) {
   const { error } = await supabase.from('nav_categories').insert({
     label,
     sort_order: sortOrder,
     menu,
+    ...(link ? { link } : {}),
   })
 
   if (error) {
