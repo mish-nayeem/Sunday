@@ -33,12 +33,10 @@ export default function Shop() {
   const [loading, setLoading] = useState(true);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [listOpen, setListOpen] = useState(false);
-  const [sortOpen, setSortOpen] = useState(false);
   const menus = useMenus();
 
   useEffect(() => {
     setListOpen(false);
-    setSortOpen(false);
   }, [params]);
 
   const setParam = (key, value) => {
@@ -112,45 +110,20 @@ export default function Shop() {
   const collection = COLLECTIONS.find((c) => c.key === filter);
   const title = search ? `Results for “${search}”` : drop || (type && (CATEGORY_LABELS[type] || type)) || collection?.label || section?.label || 'Shop all';
 
-  const sortLabel = (SORTS.find((x) => x.value === sort) || SORTS[0]).label;
-  const refineCount = sizes.length + (inStockOnly ? 1 : 0);
+  const filterCount = sizes.length + (inStockOnly ? 1 : 0) + (sort !== 'featured' ? 1 : 0);
 
   return (
     <div className="pb-20">
       {/* One quiet bar: what's showing (tap for the other lists) on the left,
-          sort and refine on the right. */}
+          one Filter button (sort, sold out, size) on the right. */}
       <div className="sticky top-14 md:top-16 z-30 bg-white border-b border-rule">
         <div className="h-14 md:h-16 px-4 md:px-6 flex items-center justify-between gap-4 text-[13px]">
-          <button type="button" onClick={() => { setListOpen((v) => !v); setSortOpen(false); }} aria-expanded={listOpen} className="min-w-0 truncate text-left">
+          <button type="button" onClick={() => setListOpen((v) => !v)} aria-expanded={listOpen} className="min-w-0 truncate text-left">
             {title} <span aria-hidden="true">{listOpen ? '−' : '+'}</span>
           </button>
-          <div className="flex items-center gap-5 md:gap-6 shrink-0">
-            {!loading && <span className="hidden md:inline text-graphite">{visible.length} {visible.length === 1 ? 'item' : 'items'}</span>}
-            <div className="relative">
-              <button type="button" onClick={() => { setSortOpen((v) => !v); setListOpen(false); }} aria-expanded={sortOpen}>
-                Sort<span className="hidden sm:inline">: {sortLabel}</span>
-              </button>
-              {sortOpen && (
-                <ul className="absolute right-0 top-full mt-3 w-52 bg-white border border-rule py-2 shadow-sm">
-                  {SORTS.map((x) => (
-                    <li key={x.value}>
-                      <button
-                        type="button"
-                        onClick={() => { setParam('sort', x.value === 'featured' ? '' : x.value); setSortOpen(false); }}
-                        className={`w-full text-left px-4 py-1.5 hover:underline underline-offset-4 ${sort === x.value ? 'text-ink' : 'text-graphite'}`}
-                        aria-current={sort === x.value ? 'true' : undefined}
-                      >
-                        {x.label}
-                      </button>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </div>
-            <button type="button" onClick={() => setDrawerOpen(true)}>
-              Refine{refineCount ? ` (${refineCount})` : ''}
-            </button>
-          </div>
+          <button type="button" onClick={() => setDrawerOpen(true)} className="shrink-0">
+            Filter{filterCount ? ` (${filterCount})` : ''}
+          </button>
         </div>
         {listOpen && (
           <nav className="px-4 md:px-6 pb-5 pt-1 flex flex-wrap gap-x-6 gap-y-2 text-[13px]" aria-label="Shop lists">
@@ -187,16 +160,36 @@ export default function Shop() {
       </div>
 
       {drawerOpen && (
-        <div className="fixed inset-0 z-[95]" role="dialog" aria-modal="true" aria-label="Refine">
+        <div className="fixed inset-0 z-[95]" role="dialog" aria-modal="true" aria-label="Filter">
           <div className="absolute inset-0 bg-black/30" onClick={() => setDrawerOpen(false)} />
           <aside className="absolute right-0 top-0 h-full w-full max-w-[400px] bg-white flex flex-col">
             <div className="h-14 md:h-16 px-5 flex items-center justify-between border-b border-rule">
-              <p className="text-[14px]">Refine</p>
+              <p className="text-[14px]">Filter</p>
               <button type="button" onClick={() => setDrawerOpen(false)} aria-label="Close" className="p-1">
                 <X size={20} strokeWidth={1.5} />
               </button>
             </div>
             <div className="flex-1 overflow-y-auto px-5 py-6 space-y-8">
+              <fieldset>
+                <legend className="text-[12px] text-graphite mb-3">Sort by</legend>
+                <div className="space-y-2">
+                  {SORTS.map((x) => (
+                    <label key={x.value} className="flex items-center gap-3 text-[14px] cursor-pointer">
+                      <input type="radio" name="sort" className="accent-black" checked={sort === x.value}
+                        onChange={() => setParam('sort', x.value === 'featured' ? '' : x.value)} />
+                      {x.label}
+                    </label>
+                  ))}
+                </div>
+              </fieldset>
+              <fieldset>
+                <legend className="text-[12px] text-graphite mb-3">Availability</legend>
+                <label className="flex items-center gap-3 text-[14px] cursor-pointer">
+                  <input type="checkbox" className="accent-black" checked={inStockOnly}
+                    onChange={(e) => setParam('instock', e.target.checked ? '1' : '')} />
+                  Hide sold out items
+                </label>
+              </fieldset>
               {allSizes.length > 0 && (
                 <fieldset>
                   <legend className="text-[12px] text-graphite mb-3">Size</legend>
@@ -218,18 +211,13 @@ export default function Shop() {
                   </div>
                 </fieldset>
               )}
-              <label className="flex items-center gap-3 text-[14px] cursor-pointer">
-                <input type="checkbox" className="accent-black" checked={inStockOnly}
-                  onChange={(e) => setParam('instock', e.target.checked ? '1' : '')} />
-                Hide sold out items
-              </label>
             </div>
             <div className="p-5 border-t border-rule flex gap-3">
               <button
                 type="button"
                 onClick={() => {
                   const next = new URLSearchParams(params);
-                  ['size', 'instock'].forEach((k) => next.delete(k));
+                  ['sort', 'size', 'instock'].forEach((k) => next.delete(k));
                   setParams(next, { replace: true });
                 }}
                 className="flex-1 h-12 border border-ink text-[13px]"
