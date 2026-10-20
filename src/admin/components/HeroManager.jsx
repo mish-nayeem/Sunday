@@ -10,7 +10,7 @@ import {
   slidesFor,
   isVideo,
 } from '../lib/hero.js'
-import { fetchHeroExtras, saveSetting, DEFAULT_HERO_BUTTON, fetchTicker } from '../lib/siteSettings.js'
+import { fetchHeroExtras, saveSetting, DEFAULT_HERO_BUTTON } from '../lib/siteSettings.js'
 import { useCountdown } from './DropCountdown.jsx'
 import InfoTip from './InfoTip.jsx'
 import FocusPicker from './FocusPicker.jsx'
@@ -25,9 +25,9 @@ const DEVICES = [
 
 // Admin → Homepage. Everything the homepage shows, in boxes: the hero photos
 // (PC and phone apart, each in its real shape), the button on the hero, an
-// optional drop countdown, the ticker — and a live preview of all of it on
+// optional drop countdown — and a live preview of all of it on
 // a phone and a laptop.
-export default function HeroManager({ drops = [], products = [], ticker: TickerBox }) {
+export default function HeroManager({ drops = [], products = [] }) {
   const [slides, setSlides] = useState([])
   const [loading, setLoading] = useState(true)
   const [busy, setBusy] = useState(false)
@@ -36,7 +36,6 @@ export default function HeroManager({ drops = [], products = [], ticker: TickerB
 
   const [button, setButton] = useState(DEFAULT_HERO_BUTTON)
   const [countdown, setCountdown] = useState({ label: 'NEXT DROP', at: '' })
-  const [tickerLines, setTickerLines] = useState([])
   const [saved, setSaved] = useState({ button: '', countdown: '' })
   const [note, setNote] = useState({})
 
@@ -56,7 +55,6 @@ export default function HeroManager({ drops = [], products = [], ticker: TickerB
       setCountdown(cd)
       setSaved({ button: JSON.stringify(button), countdown: JSON.stringify(cd) })
     })
-    fetchTicker().then(setTickerLines)
   }, [])
 
   async function upload(file, device) {
@@ -157,7 +155,7 @@ export default function HeroManager({ drops = [], products = [], ticker: TickerB
         tip="How the top of the homepage looks right now, with the photos rotating as they do on the site. It follows your changes as you make them — the button and countdown show here before you save, so check, then save."
         wide
       >
-        <Preview slides={slides} button={button} countdown={countdown} ticker={tickerLines} />
+        <Preview slides={slides} button={button} countdown={countdown} />
       </Box>
 
       {/* ---- Hero photos, one box per kind of screen ---- */}
@@ -266,8 +264,6 @@ export default function HeroManager({ drops = [], products = [], ticker: TickerB
         </div>
       </Box>
 
-      {/* ---- Ticker ---- */}
-      <div className="hm-ticker">{TickerBox}</div>
     </div>
   )
 }
@@ -347,7 +343,7 @@ function SlideCard({ s, device, first, last, busy, confirm, onMove, onPatch, onA
 }
 
 // The top of the homepage on a phone and on a laptop, rotating like the site.
-function Preview({ slides, button, countdown, ticker }) {
+function Preview({ slides, button, countdown }) {
   const live = slides.filter((s) => s.active)
   const [tick, setTick] = useState(0)
   useEffect(() => {
@@ -379,7 +375,6 @@ function Preview({ slides, button, countdown, ticker }) {
             <div className="hm-frame-dots">{list.map((s, i) => <i key={s.id} className={i === tick % list.length ? 'on' : ''} />)}</div>
           )}
         </div>
-        <div className="hm-frame-ticker mono">{ticker.join('   ·   ')}</div>
         <div className="hm-frame-name mono">{isPhone ? 'PHONE' : 'PC / LAPTOP'}</div>
       </div>
     )

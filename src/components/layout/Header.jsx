@@ -4,7 +4,6 @@ import { Menu, X, Search, User, ShoppingBag } from 'lucide-react';
 import { getCartCount, subscribeCart, openCartDrawer } from '@/lib/cartStore';
 import { useAuth } from '@/lib/AuthContext';
 import { useMenus } from '@/lib/menus';
-import { fetchTicker } from '@/admin/lib/siteSettings.js';
 import SearchOverlay from './SearchOverlay';
 import logo from '@/assets/logo.png';
 
@@ -21,20 +20,8 @@ export default function Header() {
   const { isAuthenticated, isAdmin, logout } = useAuth();
   const location = useLocation();
   const menus = useMenus();
-  const [ticker, setTicker] = useState([]);
-  const [line, setLine] = useState(0);
   const isHome = location.pathname === '/';
   const overHero = isHome && !pastHero;
-
-  // The strip's lines come from Admin → Homepage → Ticker.
-  useEffect(() => {
-    fetchTicker().then(setTicker).catch(() => {});
-  }, []);
-  useEffect(() => {
-    if (ticker.length < 2) return;
-    const t = setInterval(() => setLine((n) => (n + 1) % ticker.length), 4000);
-    return () => clearInterval(t);
-  }, [ticker.length]);
 
   useEffect(() => {
     const update = () => setCartCount(getCartCount());
@@ -66,12 +53,6 @@ export default function Header() {
 
   return (
     <>
-      {!isHome && (
-        <div className="bg-ink text-white text-[12px] text-center py-2 px-4" aria-live="polite">
-          {ticker[line] || 'Delivery all over Bangladesh. Cash on delivery inside Dhaka.'}
-        </div>
-      )}
-
       <header
         className={`${isHome ? 'fixed inset-x-0' : 'sticky'} top-0 z-50 transition-colors duration-300 ${
           overHero ? 'bg-transparent' : 'bg-white border-b border-rule'

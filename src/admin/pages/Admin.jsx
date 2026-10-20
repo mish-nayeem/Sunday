@@ -34,7 +34,6 @@ import ProductForm from '../components/ProductForm.jsx'
 import { collectLabels, lastLabels } from '../lib/details.js'
 import HeroManager from '../components/HeroManager.jsx'
 import MenuManager from '../components/MenuManager.jsx'
-import TickerManager from '../components/TickerManager.jsx'
 import LookbookManager from '../components/LookbookManager.jsx'
 import CollectionManager from '../components/CollectionManager.jsx'
 import DropReport from '../components/DropReport.jsx'
@@ -2045,7 +2044,7 @@ export default function Admin() {
           )}
           </>
         )}
-        {tab === 'hero' && <HeroManager drops={collectionNames} products={products} ticker={<TickerManager />} />}
+        {tab === 'hero' && <HeroManager drops={collectionNames} products={products} />}
         {!loading && tab === 'menu' && (
           <div className="ab-grid">
             <MenuManager menu="shop" drops={collectionNames} products={products} />
