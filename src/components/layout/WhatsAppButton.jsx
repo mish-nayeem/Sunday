@@ -6,13 +6,17 @@ import { supabase } from '@/lib/supabaseClient';
 export default function WhatsAppButton() {
   const [number, setNumber] = useState('8801700000000');
   // On a product page the phone's sticky add-to-bag bar owns the bottom edge.
-  const onProduct = useLocation().pathname.startsWith('/product/');
+  const { pathname } = useLocation();
+  const onProduct = pathname.startsWith('/product/');
 
   useEffect(() => {
     supabase.from('settings').select('whatsapp_number').limit(1).then(({ data }) => {
       if (data && data[0]?.whatsapp_number) setNumber(data[0].whatsapp_number);
     });
   }, []);
+
+  // Not on the homepage: the hero and drop banners stay clear.
+  if (pathname === '/') return null;
 
   return (
     <a

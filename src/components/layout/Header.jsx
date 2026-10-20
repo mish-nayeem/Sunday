@@ -8,25 +8,9 @@ import { fetchTicker } from '@/admin/lib/siteSettings.js';
 import SearchOverlay from './SearchOverlay';
 import logo from '@/assets/logo.png';
 
-// "Dhaka, BD | Tuesday, October 20, 2026 | 15:56 BST", kept to the minute.
-function useDhakaClock() {
-  const make = () => {
-    const now = new Date();
-    const day = now.toLocaleDateString('en-US', { timeZone: 'Asia/Dhaka', weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
-    const time = now.toLocaleTimeString('en-GB', { timeZone: 'Asia/Dhaka', hour: '2-digit', minute: '2-digit' });
-    return `Dhaka, BD | ${day} | ${time} BST`;
-  };
-  const [text, setText] = useState(make);
-  useEffect(() => {
-    const t = setInterval(() => setText(make()), 15000);
-    return () => clearInterval(t);
-  }, []);
-  return text;
-}
-
 // Menu icon on the left, the wordmark in the centre, search, account and bag
 // icons on the right. On the homepage it sits see-through over the hero,
-// in white, with the Dhaka date and time under the logo, and turns solid
+// with white icons, and turns solid
 // once the hero has scrolled away. Everything else lives in the menu.
 export default function Header() {
   const [cartCount, setCartCount] = useState(0);
@@ -39,7 +23,6 @@ export default function Header() {
   const menus = useMenus();
   const [ticker, setTicker] = useState([]);
   const [line, setLine] = useState(0);
-  const clock = useDhakaClock();
   const isHome = location.pathname === '/';
   const overHero = isHome && !pastHero;
 
@@ -121,11 +104,6 @@ export default function Header() {
           </div>
         </div>
 
-        {overHero && (
-          <p className="text-center text-white text-[10px] md:text-[11px] font-semibold tracking-wide -mt-1 px-4 tabular-nums" aria-hidden="true">
-            {clock}
-          </p>
-        )}
       </header>
 
       {/* Menu: slides in from the left on every screen. Two tabs — SHOP and
