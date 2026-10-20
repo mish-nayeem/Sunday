@@ -1652,7 +1652,7 @@ export default function Admin() {
                   </button>
                 )}
                 <InfoTip>
-                  Tick the box on a product's photo to select it, or Select all. Then Delete selected
+                  Tick the small box beside a product's name to select it, or Select all. Then Delete selected
                   removes them from the shop for good. Orders already placed keep their items and
                   totals. Select demo products picks the sample catalog (SKU DEMO-…) in one go.
                 </InfoTip>
@@ -1687,6 +1687,10 @@ export default function Admin() {
                   onClick={() => setEditing(p)}
                 >
                   <div className="pthumb">
+                    {Array.isArray(p.images) && p.images[0] && <img src={imgUrl(p.images[0], { w: 120 })} alt="" />}
+                    <RestockStar sizes={starSizes(p)} />
+                  </div>
+                  <div className="tc name pick-name">
                     <label className="pick-box" onClick={(e) => e.stopPropagation()} onPointerDown={(e) => e.stopPropagation()}>
                       <input
                         type="checkbox"
@@ -1695,12 +1699,10 @@ export default function Admin() {
                         aria-label={`Select ${p.name}${p.variant ? `, ${p.variant}` : ''}`}
                       />
                     </label>
-                    {Array.isArray(p.images) && p.images[0] && <img src={imgUrl(p.images[0], { w: 120 })} alt="" />}
-                    <RestockStar sizes={starSizes(p)} />
-                  </div>
-                  <div className="tc name">
-                    {p.name}
-                    <div className="mini-id mono" style={{ marginTop: '2px' }}>{p.sku || String(p.id).slice(0, 8)}</div>
+                    <div>
+                      {p.name}
+                      <div className="mini-id mono" style={{ marginTop: '2px' }}>{p.sku || String(p.id).slice(0, 8)}</div>
+                    </div>
                   </div>
                   <div className="tc mono dim">{p.variant}</div>
                   <div className="tc mono">{taka(p.price)}</div>
