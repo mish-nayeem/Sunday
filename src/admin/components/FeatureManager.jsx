@@ -87,7 +87,7 @@ export default function FeatureManager({ drops = [], products = [] }) {
         <span className="hm-box-title mono">DROP SECTIONS · UNDER THE HERO</span>
         <InfoTip>
           <p>Big drop banners under the main hero, top to bottom in this order. Each has:</p>
-          <p><b>1.</b> A wide photo with the drop’s name and a short line of text at the bottom left, and a <b>SHOP NOW</b> button at the bottom right. SHOP NOW opens the shop with only that drop’s products.</p>
+          <p><b>1.</b> A wide photo, 70% the height of the main hero, with the drop’s name and a short line of text at the bottom left, and a <b>SHOP NOW</b> button at the bottom right. SHOP NOW opens the shop with only that drop’s products.</p>
           <p><b>2.</b> A row of your best photos from the drop underneath (4 to a row on a PC, 2 on a phone). Tapping one opens the product you link it to, or the whole drop.</p>
           <p>A product belongs to a drop through the <b>Drop / collection</b> field in its product form. Hide a section to take it off the homepage without losing it.</p>
         </InfoTip>
@@ -218,7 +218,7 @@ function FeatureCard({ f, index, count, drops, products, busy, confirm, onPatch,
 
           <span className="hm-flabel mono" style={{ marginTop: 12 }}>
             BANNER PHOTO · PHONE (OPTIONAL)
-            <InfoTip>A tall photo just for phones, about 1080 × 1350 px (4:5). Leave it empty and phones use the PC photo, cropped.</InfoTip>
+            <InfoTip>A tall photo just for phones, about 1080 × 1500 px (it fills 70% of the phone’s height). Leave it empty and phones use the PC photo, cropped.</InfoTip>
           </span>
           <div className="fm-phone-row">
             <label className={`fm-phone ${busy ? 'busy' : ''}`}>

@@ -37,7 +37,7 @@ function DropFeature({ f, isPhone }) {
   return (
     <section className="pb-10 md:pb-14">
       {banner && (
-        <div className="relative aspect-[4/5] md:aspect-auto md:h-[calc(100svh-4rem)] md:min-h-[520px] bg-stone overflow-hidden">
+        <div className="relative h-[70svh] min-h-[340px] bg-stone overflow-hidden">
           <Link to={shop} className="absolute inset-0" tabIndex={-1} aria-hidden="true">
             <img
               src={imgUrl(banner, isPhone ? 900 : 2000)}
