@@ -8,6 +8,7 @@ import {
   deleteHeroSlide,
   reorderHeroSlides,
   slidesFor,
+  isVideo,
 } from '../lib/hero.js'
 import { fetchHeroExtras, saveSetting, DEFAULT_HERO_BUTTON, fetchTicker } from '../lib/siteSettings.js'
 import { useCountdown } from './DropCountdown.jsx'
@@ -61,6 +62,9 @@ export default function HeroManager({ drops = [], ticker: TickerBox }) {
     setBusy(true)
     setError('')
     try {
+      if (file.type.startsWith('video/') && file.size > 50 * 1024 * 1024) {
+        throw new Error('That video is over 50 MB. Export it smaller (1080p, about 15–30 seconds) and try again.')
+      }
       const url = await uploadImage(file, supabase, 'hero')
       const label = (file.name || 'Slide').replace(/\.[^.]+$/, '').replace(/[-_]+/g, ' ').toUpperCase().slice(0, 40)
       const { error: createError } = await createHeroSlide({
@@ -166,7 +170,8 @@ export default function HeroManager({ drops = [], ticker: TickerBox }) {
             wide
             tip={
               <>
-                <p>The full-screen photos at the top of the homepage. They rotate every 5 seconds, in this order.</p>
+                <p>The full-screen photos or videos at the top of the homepage, under the see-through header. Photos rotate every 5 seconds, in this order; a video plays to its end, then the next one comes.</p>
+                <p><b>Video:</b> MP4, under 50 MB — about 15–30 seconds at 1080p. It starts muted (browsers only autoplay muted); visitors can turn the sound on with the speaker button.</p>
                 <p><b>Size:</b> {size} A photo of another shape is cropped to fill the screen — pick which part stays in frame under each photo.</p>
                 <p>{device === 'mobile' ? 'If no photo is set for phones, the PC photos are used there too.' : 'If no photo is set for PCs, the phone photos are used there too.'} A photo set to Both shows on every screen.</p>
               </>
@@ -193,11 +198,11 @@ export default function HeroManager({ drops = [], ticker: TickerBox }) {
                 />
               ))}
               <label className={`hm-add-card mono ${device} ${busy ? 'busy' : ''}`}>
-                <span>{busy ? 'Working…' : `+ Add a photo for ${device === 'mobile' ? 'phones' : 'PC'}`}</span>
+                <span>{busy ? 'Working…' : `+ Add a photo or video for ${device === 'mobile' ? 'phones' : 'PC'}`}</span>
                 <em>{size}</em>
                 <input
                   type="file"
-                  accept="image/*"
+                  accept="image/*,video/mp4,video/webm"
                   disabled={busy}
                   onChange={(e) => {
                     const f = e.target.files?.[0]
@@ -288,7 +293,9 @@ function SlideCard({ s, device, first, last, busy, confirm, onMove, onPatch, onA
   return (
     <div className={`hm-card ${s.active ? '' : 'off'}`}>
       <div className={`hm-shot ${device}`}>
-        <img src={imgUrl(s.image_url, { w: device === 'mobile' ? 360 : 640 })} alt="" style={{ objectPosition: s.focus || 'center' }} />
+        {isVideo(s.image_url)
+          ? <video src={s.image_url} muted loop autoPlay playsInline style={{ objectPosition: s.focus || 'center' }} />
+          : <img src={imgUrl(s.image_url, { w: device === 'mobile' ? 360 : 640 })} alt="" style={{ objectPosition: s.focus || 'center' }} />}
         {!s.active && <span className="hm-hidden mono">HIDDEN</span>}
         <span className="hm-pos mono">{s.device === 'all' || !s.device ? 'BOTH' : device === 'mobile' ? 'PHONE' : 'PC'}</span>
       </div>
@@ -351,7 +358,9 @@ function Preview({ slides, button, countdown, ticker }) {
     return (
       <div className={`hm-frame ${isPhone ? 'phone' : 'pc'}`}>
         <div className="hm-frame-screen">
-          {cur && <img src={imgUrl(cur.image_url, { w: isPhone ? 360 : 720 })} alt="" style={{ objectPosition: cur.focus || 'center' }} />}
+          {cur && (isVideo(cur.image_url)
+            ? <video key={cur.id} src={cur.image_url} muted loop autoPlay playsInline style={{ objectPosition: cur.focus || 'center' }} />
+            : <img src={imgUrl(cur.image_url, { w: isPhone ? 360 : 720 })} alt="" style={{ objectPosition: cur.focus || 'center' }} />)}
           <div className="hm-frame-shade" />
           <div className="hm-frame-center mono">
             {left && (

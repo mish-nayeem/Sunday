@@ -1,24 +1,32 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+import { Volume2, VolumeX } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { supabase } from '@/lib/supabaseClient';
 import { imgUrl } from '@/lib/storage';
 import { SECTIONS } from '@/lib/catalog';
 import ProductCard from '@/components/products/ProductCard';
 import heroImage from '@/assets/hero.jpeg';
-import { fetchHeroSlides, slidesFor, PHONE_QUERY } from '@/admin/lib/hero.js';
+import { fetchHeroSlides, slidesFor, isVideo, PHONE_QUERY } from '@/admin/lib/hero.js';
 import { fetchHeroExtras, DEFAULT_HERO_BUTTON } from '@/admin/lib/siteSettings.js';
 import { useCountdown } from '@/admin/components/DropCountdown.jsx';
 
 // The panel saves labels in capitals; the storefront writes in sentence case.
 const sentence = (text) => (text ? text[0].toUpperCase() + text.slice(1).toLowerCase() : '');
 
-// The photos set in Admin → Homepage, one at a time, with its button and
-// optional drop countdown. Phones get the slides made for phones.
-function HeroSlides({ slides, button, countdown }) {
+// Full-screen hero under the see-through header: the photos or videos set in
+// Admin → Homepage (phones get their own). Photos rotate every 5 seconds; a
+// video plays to its end, then the next slide comes. Videos start muted
+// (browsers only autoplay muted) — the speaker button bottom left turns the
+// sound on. With nothing set yet, the campaign photo stands in.
+function Hero({ slides, button, countdown }) {
   const [isPhone, setIsPhone] = useState(() => window.matchMedia(PHONE_QUERY).matches);
   const [at, setAt] = useState(0);
+  const [muted, setMuted] = useState(true);
   const left = useCountdown(countdown?.at);
-  const shown = slidesFor(slides, isPhone);
+  const shown = slides.length ? slidesFor(slides, isPhone) : [{ id: 'default', image_url: heroImage }];
+  const current = shown[at % shown.length];
+  const playing = isVideo(current.image_url);
+  const videoRefs = useRef({});
 
   useEffect(() => {
     const mq = window.matchMedia(PHONE_QUERY);
@@ -28,33 +36,82 @@ function HeroSlides({ slides, button, countdown }) {
   }, []);
 
   useEffect(() => {
-    if (shown.length < 2 || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-    const t = setInterval(() => setAt((n) => (n + 1) % shown.length), 5000);
-    return () => clearInterval(t);
-  }, [shown.length]);
+    if (shown.length < 2 || playing || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    const t = setTimeout(() => setAt((n) => (n + 1) % shown.length), 5000);
+    return () => clearTimeout(t);
+  }, [shown.length, at, playing]);
+
+  // Only the slide on screen plays; it starts from the top each time.
+  useEffect(() => {
+    Object.entries(videoRefs.current).forEach(([id, v]) => {
+      if (!v) return;
+      if (String(current.id) === id) {
+        v.currentTime = 0;
+        v.play().catch(() => {});
+      } else v.pause();
+    });
+  }, [current.id]);
+
+  const external = /^https?:/.test(button.link);
 
   return (
-    <section className="relative">
-      <div className="relative aspect-[4/5] md:aspect-auto md:h-[calc(100vh-6rem)] md:min-h-[560px] bg-stone overflow-hidden">
-        {shown.map((s, i) => (
+    <section className="relative h-[100svh] min-h-[480px] bg-ink overflow-hidden">
+      {shown.map((s, i) => {
+        const on = i === at % shown.length;
+        const cls = `absolute inset-0 w-full h-full object-cover transition-opacity duration-700 ${on ? 'opacity-100' : 'opacity-0'}`;
+        return isVideo(s.image_url) ? (
+          <video
+            key={s.id}
+            ref={(el) => { videoRefs.current[s.id] = el; }}
+            src={s.image_url}
+            className={cls}
+            style={{ objectPosition: s.focus || 'center' }}
+            muted={muted}
+            autoPlay={i === 0}
+            loop={shown.length === 1}
+            playsInline
+            preload={i === 0 ? 'auto' : 'metadata'}
+            onEnded={() => setAt((n) => (n + 1) % shown.length)}
+            aria-label={s.label || 'SUNDAY campaign video'}
+          />
+        ) : (
           <img
             key={s.id}
-            src={imgUrl(s.image_url, isPhone ? 900 : 2000)}
-            alt={s.label || ''}
+            src={s.id === 'default' ? s.image_url : imgUrl(s.image_url, isPhone ? 900 : 2000)}
+            alt={s.label || 'SUNDAY campaign'}
             fetchpriority={i === 0 ? 'high' : undefined}
             loading={i === 0 ? 'eager' : 'lazy'}
-            className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-700 ${i === at % shown.length ? 'opacity-100' : 'opacity-0'}`}
+            className={cls}
             style={{ objectPosition: s.focus || 'center' }}
           />
-        ))}
-      </div>
-      <div className="px-4 md:px-6 pt-4 flex flex-wrap items-baseline justify-between gap-x-6 gap-y-1">
-        <h1 className="font-heading text-[30px] md:text-[40px] leading-tight">Everyday feels like Sunday</h1>
-        <div className="flex items-baseline gap-5 text-[13px]">
-          {left && <span className="tabular-nums">{sentence(countdown.label || 'Next drop')} in {left.toLowerCase()}</span>}
+        );
+      })}
+
+      {/* Keeps the white header readable over a bright photo. */}
+      <div className="pointer-events-none absolute inset-x-0 top-0 h-36 bg-gradient-to-b from-black/35 to-transparent" />
+
+      {playing && (
+        <button
+          type="button"
+          onClick={() => setMuted((m) => !m)}
+          className="absolute left-4 md:left-6 bottom-4 md:bottom-6 w-9 h-9 rounded-full bg-white text-ink flex items-center justify-center"
+          aria-label={muted ? 'Turn sound on' : 'Turn sound off'}
+          aria-pressed={!muted}
+        >
+          {muted ? <VolumeX size={17} strokeWidth={1.5} /> : <Volume2 size={17} strokeWidth={1.5} />}
+        </button>
+      )}
+
+      <div className="absolute left-1/2 -translate-x-1/2 bottom-5 md:bottom-7 text-center whitespace-nowrap text-white text-[13px] [text-shadow:0_1px_8px_rgba(0,0,0,0.35)]">
+        {left && <p className="tabular-nums mb-1">{sentence(countdown.label || 'Next drop')} in {left.toLowerCase()}</p>}
+        {external ? (
+          <a href={button.link} target="_blank" rel="noreferrer" className="underline underline-offset-4">{sentence(button.label)}</a>
+        ) : (
           <Link to={button.link} className="underline underline-offset-4">{sentence(button.label)}</Link>
-        </div>
+        )}
       </div>
+
+      <h1 className="sr-only">SUNDAY. Everyday feels like Sunday.</h1>
     </section>
   );
 }
@@ -97,7 +154,6 @@ export default function Home() {
   const flagged = (key) => products.filter((p) => p[key]);
   const newArrivals = (flagged('is_new_arrival').length ? flagged('is_new_arrival') : products).slice(0, 4);
   const bestSellers = flagged('is_best_seller').slice(0, 4);
-  const lead = newArrivals[0];
   // One photo per section, taken from its newest product.
   const tiles = SECTIONS.map((s) => ({
     ...s,
@@ -118,31 +174,7 @@ export default function Home() {
         },
       }) }} />
 
-      {slides.length > 0 ? (
-        <HeroSlides slides={slides} button={extras.button} countdown={extras.countdown} />
-      ) : (
-      <>
-      {/* Opening spread: campaign photo beside the newest piece */}
-      <section className="grid md:grid-cols-2 gap-1">
-        <Link to="/shop?filter=new_arrival" className="group block">
-          <div className="aspect-[4/5] md:aspect-auto md:h-[calc(100vh-6rem)] md:min-h-[560px] bg-stone overflow-hidden">
-            <img src={heroImage} alt="SUNDAY new arrivals" className="w-full h-full object-cover" fetchpriority="high" />
-          </div>
-        </Link>
-        <Link to={lead ? `/product/${lead.id}` : '/shop'} className="group hidden md:block">
-          <div className="h-[calc(100vh-6rem)] min-h-[560px] bg-stone overflow-hidden">
-            {lead?.images?.[0] && (
-              <img src={imgUrl(lead.images[0], 1000)} alt={lead.name} className="w-full h-full object-cover" />
-            )}
-          </div>
-        </Link>
-      </section>
-      <div className="px-4 md:px-6 pt-4 flex flex-wrap items-baseline justify-between gap-x-6 gap-y-1">
-        <h1 className="font-heading text-[30px] md:text-[40px] leading-tight">Everyday feels like Sunday</h1>
-        <Link to="/shop?filter=new_arrival" className="text-[13px] underline underline-offset-4">Shop new arrivals</Link>
-      </div>
-      </>
-      )}
+      <Hero slides={slides} button={extras.button} countdown={extras.countdown} />
 
       <ProductRow title="New arrivals" to="/shop?filter=new_arrival" products={newArrivals} />
 

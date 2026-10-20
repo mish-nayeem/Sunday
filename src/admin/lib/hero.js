@@ -99,3 +99,8 @@ export function slidesFor(slides, isPhone) {
   const mine = slides.filter((s) => !s.device || s.device === 'all' || s.device === want)
   return mine.length ? mine : slides
 }
+
+// A hero slide can be a video instead of a photo — told apart by the file.
+export function isVideo(url) {
+  return typeof url === 'string' && /\.(mp4|webm|mov)(\?|$)/i.test(url)
+}
