@@ -71,15 +71,17 @@ export function imgUrl(url, { w, h, q, original = false } = {}) {
 
 // ---------- Upload ----------
 
-// Photos are shrunk in the browser before they go up: a camera original can
-// be 20–50 MB and 8000 px wide, which the bucket refuses (20 MB a file) and
-// Supabase's resizer won't take as a source either. 3600 px on the long side
-// at 92% leaves headroom over the largest view the site serves (2500 px,
-// Supabase's own maximum, full screen), so zooming in stays crisp — a few
-// MB at most. Small photos that already fit go up untouched.
-const MAX_SIDE = 3600
-const QUALITY = 0.92
-const KEEP_UNDER = 2.5 * 1024 * 1024
+// Photos are shrunk in the browser before they go up, to 1.5 MB at most a
+// file: Supabase's free storage is small, and a camera original can be
+// 20–50 MB and 8000 px wide. It starts at 3600 px on the long side at 92%
+// and steps the quality, then the size, down only as far as it must to fit
+// — most photos stay 3000 px or more, plenty for full-screen zoom. Photos
+// that already fit go up untouched.
+const MAX_BYTES = 1.5 * 1024 * 1024
+const STEPS = [
+  [3600, 0.92], [3600, 0.85], [3000, 0.85], [3000, 0.78],
+  [2500, 0.8], [2200, 0.78], [2000, 0.75], [1600, 0.72],
+]
 
 async function shrink(file) {
   if (!/^image\/(jpeg|png|webp)$/.test(file.type) || typeof createImageBitmap !== 'function') return file
@@ -92,25 +94,35 @@ async function shrink(file) {
   }
 
   const { width, height } = bitmap
-  const scale = Math.min(1, MAX_SIDE / Math.max(width, height))
-  if (scale === 1 && file.size <= KEEP_UNDER) {
+  const longSide = Math.max(width, height)
+  if (longSide <= STEPS[0][0] && file.size <= MAX_BYTES) {
     bitmap.close?.()
     return file
   }
 
-  const w = Math.round(width * scale)
-  const h = Math.round(height * scale)
-  const canvas = document.createElement('canvas')
-  canvas.width = w
-  canvas.height = h
-  const ctx = canvas.getContext('2d')
-  ctx.imageSmoothingQuality = 'high'
-  ctx.drawImage(bitmap, 0, 0, w, h)
-  bitmap.close?.()
-
   // PNGs may be see-through: WebP keeps that. Everything else becomes JPEG.
   const wanted = file.type === 'image/png' ? 'image/webp' : 'image/jpeg'
-  const blob = await new Promise((resolve) => canvas.toBlob(resolve, wanted, QUALITY))
+  const canvas = document.createElement('canvas')
+  const ctx = canvas.getContext('2d')
+  let drawnSide = 0
+  let blob = null
+
+  for (const [side, quality] of STEPS) {
+    const scale = Math.min(1, side / longSide)
+    const w = Math.round(width * scale)
+    const h = Math.round(height * scale)
+    if (w !== drawnSide) {
+      canvas.width = w
+      canvas.height = h
+      ctx.imageSmoothingQuality = 'high'
+      ctx.drawImage(bitmap, 0, 0, w, h)
+      drawnSide = w
+    }
+    blob = await new Promise((resolve) => canvas.toBlob(resolve, wanted, quality))
+    if (blob && blob.size <= MAX_BYTES) break
+  }
+  bitmap.close?.()
+
   if (!blob || blob.size >= file.size) return file
 
   const type = blob.type || wanted

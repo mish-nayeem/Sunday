@@ -7,8 +7,8 @@ const RENDER_PATH = '/storage/v1/render/image/public/';
 
 // Supabase's on-the-fly resizing is a paid-plan feature, so it stays off
 // unless VITE_SUPABASE_IMAGE_TRANSFORM=true. Without it the original is
-// served — uploads are already shrunk in the browser (3600 px long side at
-// most, 92% JPEG; see src/admin/lib/images.js).
+// served — uploads are already shrunk in the browser (1.5 MB a photo at most;
+// see src/admin/lib/images.js).
 const TRANSFORM = import.meta.env.VITE_SUPABASE_IMAGE_TRANSFORM === 'true';
 
 // Returns a URL for roughly `width` px wide. Any other URL (old links,
