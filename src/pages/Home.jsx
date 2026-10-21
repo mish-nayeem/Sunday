@@ -73,8 +73,8 @@ function DropFeature({ f, isPhone }) {
             return (
               <Link key={`${p.url}-${i}`} to={to} className="group relative block aspect-[3/4] bg-stone overflow-hidden">
                 <img src={imgUrl(p.url, 700)} alt="" loading="lazy" className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-[1.02]" />
-                <span className="absolute right-3 bottom-3 w-9 h-9 md:w-10 md:h-10 rounded-full bg-white/25 backdrop-blur-sm border border-white/60 text-ink flex items-center justify-center" aria-hidden="true">
-                  <ShoppingBag size={17} strokeWidth={1.5} />
+                <span className="absolute right-3 bottom-3 md:right-4 md:bottom-4 text-white [filter:drop-shadow(0_1px_3px_rgba(0,0,0,0.45))]" aria-hidden="true">
+                  <ShoppingBag size={22} strokeWidth={1.25} />
                 </span>
                 <span className="sr-only">{p.product_id ? 'View product' : `Shop ${f.drop_name}`}</span>
               </Link>
