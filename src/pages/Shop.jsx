@@ -4,6 +4,17 @@ import { X } from 'lucide-react';
 import { supabase } from '@/lib/supabaseClient';
 import ProductCard from '@/components/products/ProductCard';
 import { SECTIONS, COLLECTIONS, SIZE_ORDER, isSizeAvailable, isSoldOut } from '@/lib/catalog';
+import { useMenus } from '@/lib/menus';
+
+// The params that say which list is showing; sort, size and stock only refine it.
+const LIST_KEYS = ['category', 'type', 'drop', 'filter', 'search'];
+
+// Is this menu link the list on screen? Drop names match in any case.
+function isCurrent(to, params) {
+  if (!to.startsWith('/shop')) return false;
+  const want = new URLSearchParams(to.split('?')[1] || '');
+  return LIST_KEYS.every((k) => (want.get(k) || '').toLowerCase() === (params.get(k) || '').toLowerCase());
+}
 
 const SORTS = [
   // The order set in Admin → Products → Product catalog (drag to reorder);
@@ -31,6 +42,9 @@ export default function Shop() {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const menus = useMenus();
+  // Inside a drop: the other drops (EXPLORE). Anywhere else: the SHOP list.
+  const tabs = (drop ? menus.explore : menus.shop).filter((m) => m.to.startsWith('/shop'));
 
   const setParam = (key, value) => {
     const next = new URLSearchParams(params);
@@ -103,10 +117,30 @@ export default function Shop() {
 
   return (
     <div className="pb-20">
-      {/* One quiet bar with a single Filter button (sort, sold out, size). */}
+      {/* One quiet bar: the lists to hop between on the left — the other drops
+          inside a drop, the categories everywhere else, as set in Admin → Side
+          menu — and a single Filter button (sort, sold out, size) on the right. */}
       <div className="sticky top-14 md:top-16 z-30 bg-white border-b border-rule">
-        <div className="h-14 md:h-16 px-4 md:px-6 flex items-center justify-end gap-4 text-[13px]">
-          <button type="button" onClick={() => setDrawerOpen(true)} className="shrink-0">
+        <div className="h-14 md:h-16 px-4 md:px-6 flex items-center gap-6 text-[13px]">
+          <nav className="flex-1 min-w-0 h-full flex items-center gap-7 overflow-x-auto hide-scrollbar max-md:pr-6 max-md:[mask-image:linear-gradient(to_right,black_80%,transparent)]" aria-label={drop ? 'Drops' : 'Categories'}>
+            {tabs.map((m) => {
+              const on = isCurrent(m.to, params);
+              return (
+                <Link
+                  key={m.key}
+                  to={m.to}
+                  aria-current={on ? 'page' : undefined}
+                  className={`relative shrink-0 h-full flex items-center text-[11px] uppercase tracking-[0.16em] transition-colors ${
+                    on ? 'text-ink' : 'text-graphite hover:text-ink'
+                  }`}
+                >
+                  {m.label}
+                  {on && <span className="absolute inset-x-0 bottom-0 h-px bg-burgundy" aria-hidden="true" />}
+                </Link>
+              );
+            })}
+          </nav>
+          <button type="button" onClick={() => setDrawerOpen(true)} className="shrink-0 text-[11px] uppercase tracking-[0.16em]">
             Filter{filterCount ? ` (${filterCount})` : ''}
           </button>
         </div>
