@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { Share2 } from 'lucide-react';
 import { supabase } from '@/lib/supabaseClient';
 import { imgUrl } from '@/lib/storage';
 import { addToCart, openCartDrawer, isInWishlist, toggleWishlist } from '@/lib/cartStore';
@@ -82,6 +83,60 @@ function Disclosure({ title, children }) {
   );
 }
 
+// Share a product: the phone's own share sheet where there is one (WhatsApp,
+// Messenger, Instagram…), otherwise a small menu — copy the link, WhatsApp,
+// Facebook. The icon is in the logo's orange.
+export function ShareButton({ product }) {
+  const [open, setOpen] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const box = useRef(null);
+  const url = `${window.location.origin}/product/${product.id}`;
+  const text = `${product.name}${product.variant ? `, ${product.variant}` : ''} — SUNDAY`;
+
+  useEffect(() => {
+    if (!open) return;
+    const close = (e) => { if (!box.current?.contains(e.target)) setOpen(false); };
+    document.addEventListener('pointerdown', close);
+    return () => document.removeEventListener('pointerdown', close);
+  }, [open]);
+
+  const share = async () => {
+    const touch = window.matchMedia('(hover: none)').matches;
+    if (touch && navigator.share) {
+      try { await navigator.share({ title: text, text, url }); } catch { /* closed */ }
+      return;
+    }
+    setOpen((v) => !v);
+  };
+
+  const copy = async () => {
+    try {
+      await navigator.clipboard.writeText(url);
+      setCopied(true);
+      setTimeout(() => { setCopied(false); setOpen(false); }, 1200);
+    } catch { /* no clipboard */ }
+  };
+
+  const item = 'block w-full text-left px-4 py-2 text-[13px] hover:bg-stone';
+  return (
+    <div ref={box} className="relative shrink-0">
+      <button type="button" onClick={share} aria-label="Share this product" aria-expanded={open}
+        className="p-1.5 -m-1.5 text-coral hover:text-[#E85A3B] transition-colors">
+        <Share2 size={20} strokeWidth={1.75} />
+      </button>
+      {open && (
+        <div className="absolute right-0 top-full mt-2 w-48 bg-white border border-rule shadow-sm py-1 z-20" role="menu">
+          <button type="button" role="menuitem" onClick={copy} className={item}>{copied ? 'Link copied' : 'Copy link'}</button>
+          <a role="menuitem" className={item} target="_blank" rel="noreferrer"
+            href={`https://wa.me/?text=${encodeURIComponent(`${text} ${url}`)}`}>WhatsApp</a>
+          <a role="menuitem" className={item} target="_blank" rel="noreferrer"
+            href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}`}>Facebook</a>
+        </div>
+      )}
+    </div>
+  );
+}
+
 // Breadcrumb, name, colour name, price and sale line. `as` sets the
 // heading level (the look view has its own page heading).
 export function ProductHeader({ product, as: Heading = 'h1', kicker }) {
@@ -100,7 +155,10 @@ export function ProductHeader({ product, as: Heading = 'h1', kicker }) {
           )}
         </nav>
       )}
-      <Heading className="font-heading text-[28px] lg:text-[26px] leading-tight">{product.name}</Heading>
+      <div className="flex items-start justify-between gap-4">
+        <Heading className="font-heading text-[28px] lg:text-[26px] leading-tight">{product.name}</Heading>
+        <div className="pt-1.5"><ShareButton product={product} /></div>
+      </div>
       {product.variant && <p className="text-[14px] text-graphite mt-1">{product.variant}</p>}
       <p className="mt-2 text-[15px]">
         {onSale && <span className="text-graphite line-through mr-2">{formatPrice(product.compare_at)}</span>}
