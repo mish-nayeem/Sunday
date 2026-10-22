@@ -19,12 +19,12 @@ const NEW_CATEGORY = '__new_category'
 const TABS = {
   shop: {
     title: 'SHOP TAB',
-    intro: 'The SHOP tab of the side menu (☰ at the top left of the site): links to all products, new arrivals, categories — whatever you put here, in this order.',
+    intro: 'The SHOP tab of the side menu (☰ at the top left of the site): links to all products, new arrivals, categories — whatever you put here, in this order. Under them the site adds SHOP BY COLLECTION by itself: hovering it lists your drops (the EXPLORE rows), each opening that drop’s products.',
     empty: `Nothing here yet, so the site shows the default list: ${DEFAULT_SHOP.map((d) => d.label).join(', ')}.`,
   },
   drops: {
     title: 'EXPLORE TAB',
-    intro: 'The EXPLORE tab of the side menu: your drops. Each one opens that drop’s lookbook, where every photo shows the products worn in it. A drop you create in Products → Collections appears here by itself. Point a row at Drop · … instead to open the drop’s products in the shop.',
+    intro: 'The EXPLORE tab of the side menu: your drops’ lookbooks. Each row opens that drop’s lookbook, where tapping a photo shows the products worn in it to shop one by one. A drop you create in Products → Collections appears here by itself. The same drops are listed under SHOP → Shop by collection for drop-wise shopping.',
     empty: 'Nothing here yet, so the site lists every drop a product carries, A to Z.',
   },
 }

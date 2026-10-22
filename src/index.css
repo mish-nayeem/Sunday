@@ -99,8 +99,12 @@ html {
   scroll-behavior: smooth;
 }
 
+/* clip, not hidden: hidden on both html and body makes body a scroll box of
+   its own, and every position: sticky on the site (header, shop bar, the
+   lookbook's side columns) stops sticking. clip stops sideways scroll the
+   same way without that. */
 html, body {
-  overflow-x: hidden;
+  overflow-x: clip;
   max-width: 100%;
 }
 

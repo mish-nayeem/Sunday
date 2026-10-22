@@ -3,7 +3,7 @@ import { Link, useLocation } from 'react-router-dom';
 import { Menu, X, Search, User, ShoppingBag } from 'lucide-react';
 import { getCartCount, subscribeCart, openCartDrawer } from '@/lib/cartStore';
 import { useAuth } from '@/lib/AuthContext';
-import { useMenus } from '@/lib/menus';
+import { useMenus, dropLink, lookbookLink } from '@/lib/menus';
 import SearchOverlay from './SearchOverlay';
 import logo from '@/assets/logo.png';
 
@@ -15,11 +15,13 @@ export default function Header() {
   const [cartCount, setCartCount] = useState(0);
   const [menuOpen, setMenuOpen] = useState(false);
   const [menuTab, setMenuTab] = useState('shop');
+  const [collectionsOpen, setCollectionsOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [pastHero, setPastHero] = useState(false);
   const { isAuthenticated, isAdmin, logout } = useAuth();
   const location = useLocation();
   const menus = useMenus();
+  const drops = menus.explore.filter((m) => m.drop);
   const isHome = location.pathname === '/';
   const overHero = isHome && !pastHero;
 
@@ -128,15 +130,41 @@ export default function Header() {
               // EXPLORE's links sit under the EXPLORE tab, the way SHOP's sit under SHOP.
               style={menuTab === 'explore' ? { paddingLeft: 'calc((100% - 16px) / 2)' } : undefined}
             >
-              {(menuTab === 'shop' ? menus.shop : menus.explore).map((item) => (
+              {menuTab === 'shop' && menus.shop.map((item) => (
                 <li key={item.key}>
                   {/^https?:/.test(item.to)
                     ? <a href={item.to} target="_blank" rel="noreferrer" className="text-graphite hover:text-ink">{item.label}</a>
                     : <Link to={item.to} className="text-graphite hover:text-ink">{item.label}</Link>}
                 </li>
               ))}
-              {menuTab === 'explore' && menus.explore.length === 0 && (
-                <li className="normal-case tracking-normal text-[13px] text-graphite">New drops will show here.</li>
+              {/* Shop by collection: the drops, each opening its products in
+                  the shop. Opens on hover with a mouse, on tap on a phone. */}
+              {menuTab === 'shop' && drops.length > 0 && (
+                <li onMouseEnter={() => setCollectionsOpen(true)} onMouseLeave={() => setCollectionsOpen(false)}>
+                  <button
+                    type="button"
+                    // With a mouse, hover already opened it; a tap toggles it.
+                    onClick={() => { if (!window.matchMedia('(hover: hover)').matches) setCollectionsOpen((v) => !v); }}
+                    aria-expanded={collectionsOpen}
+                    className="uppercase tracking-[0.12em] text-graphite hover:text-ink"
+                  >
+                    Shop by collection <span aria-hidden="true">{collectionsOpen ? '−' : '+'}</span>
+                  </button>
+                  {collectionsOpen && (
+                    <ul className="mt-4 ml-3 pl-4 border-l border-burgundy/40 space-y-3">
+                      {drops.map((d) => (
+                        <li key={d.key}><Link to={dropLink(d.drop)} className="text-graphite hover:text-ink">{d.label}</Link></li>
+                      ))}
+                    </ul>
+                  )}
+                </li>
+              )}
+              {/* EXPLORE: the drops' lookbooks only. */}
+              {menuTab === 'explore' && drops.map((d) => (
+                <li key={d.key}><Link to={lookbookLink(d.drop)} className="text-graphite hover:text-ink">{d.label}</Link></li>
+              ))}
+              {menuTab === 'explore' && drops.length === 0 && (
+                <li className="normal-case tracking-normal text-[13px] text-graphite">New lookbooks will show here.</li>
               )}
             </ul>
 

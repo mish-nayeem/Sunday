@@ -4,12 +4,13 @@ import { supabase } from '@/lib/supabaseClient';
 import { imgUrl } from '@/lib/storage';
 import { fetchLooks, dropKey } from '@/admin/lib/lookbook.js';
 import { useMenus, dropLink, lookbookLink } from '@/lib/menus';
-import ProductCard from '@/components/products/ProductCard';
+import LookView from '@/components/lookbook/LookView';
 
 // A drop's lookbook (EXPLORE in the side menu): the photos uploaded in
-// Admin → Lookbook. Tapping a photo opens it in the middle of the page with
-// the pieces worn in it — shirt, trousers, bag, belt — underneath, each with
-// its own photo, price and quick add. ?look=<id> keeps that view linkable,
+// Admin → Lookbook. Tapping a photo opens it as a shoppable look (LookView):
+// the photo and each piece worn in it — shirt, trousers, bag, belt — down the
+// middle, the piece in view described on the left, added to the bag on the
+// right. ?look=<id> keeps that view linkable,
 // which is how the homepage's drop photos open a look straight away.
 export default function Lookbook() {
   const { drop } = useParams();
@@ -84,31 +85,9 @@ export default function Lookbook() {
           <button type="button" onClick={() => showLook('')} className="text-[11px] uppercase tracking-[0.16em] text-graphite hover:text-ink">
             ← All looks
           </button>
-          <figure className="mx-auto mt-6 max-w-[560px]">
-            <div className="aspect-[4/5] bg-stone overflow-hidden">
-              <img
-                src={imgUrl(open.image_url, 1400)}
-                alt={open.title || `${drop} look`}
-                className="w-full h-full object-cover"
-                style={{ objectPosition: open.focus || 'center' }}
-              />
-            </div>
-            {open.title && <figcaption className="pt-3 text-center text-[13px]">{open.title}</figcaption>}
-          </figure>
-
-          {items.length > 0 && (
-            <div className="mt-12 md:mt-16">
-              <h2 className="font-body text-center text-[11px] uppercase tracking-[0.16em] text-graphite mb-6">In this look</h2>
-              {/* Centred however many pieces the look has. */}
-              <div className="flex flex-wrap justify-center gap-x-2 md:gap-x-4 gap-y-8">
-                {items.map((p) => (
-                  <div key={p.id} className="w-[calc(50%-4px)] md:w-[calc(25%-12px)]">
-                    <ProductCard product={p} />
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
+          <div className="mt-6">
+            <LookView look={open} items={items} drop={drop} />
+          </div>
         </section>
       )}
 
