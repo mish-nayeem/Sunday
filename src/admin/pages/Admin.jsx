@@ -44,9 +44,9 @@ import ManualOrderForm from '../components/ManualOrderForm.jsx'
 import useDragList from '../lib/useDragList.js'
 import useAdminHistory from '../lib/useAdminHistory.js'
 import { supabase } from '../lib/supabaseClient.js'
-import { CATEGORY_LABELS } from '@/lib/catalog'
 import { queueOrder, saveQueueOrder } from '../lib/products.js'
-import { fetchAllNavCategories, DROPS_MENU } from '../lib/navCategories.js'
+import { fetchAllNavCategories, DROPS_MENU, SHOP_MENU, ensureShopCategory } from '../lib/navCategories.js'
+import { categoryOptions, categoryKey } from '@/lib/menus'
 import { dropKey } from '../lib/lookbook.js'
 import { isScheduled, launchLabel } from '../lib/schedule.js'
 import { stockMap, totalStock, LOW_STOCK_AT, starSizes } from '../lib/stock.js'
@@ -619,9 +619,28 @@ export default function Admin() {
     return [...seen.values()]
   }, [menuDrops, products])
 
-  // SUNDAY's product categories are a fixed set (the shop's tabs are built on
-  // them), so the form offers exactly those.
-  const productCategories = useMemo(() => Object.keys(CATEGORY_LABELS), [])
+  // Product categories: SUNDAY's own plus any added in the product form or
+  // under Side menu → SHOP — one list, so a new category shows in both.
+  const [shopRows, setShopRows] = useState([])
+  const loadShopRows = () => fetchAllNavCategories(SHOP_MENU).then(({ categories }) => setShopRows(categories))
+  useEffect(() => { if (editing && tab === 'products') loadShopRows() }, [editing, tab]) // eslint-disable-line react-hooks/exhaustive-deps
+  const categoryList = useMemo(
+    () => categoryOptions(shopRows, products.map((p) => p.category)),
+    [shopRows, products]
+  )
+  const productCategories = useMemo(() => categoryList.map((c) => c.key), [categoryList])
+  const categoryLabels = useMemo(() => Object.fromEntries(categoryList.map((c) => [c.key, c.label])), [categoryList])
+
+  // "+ New category" in the product form: the category goes on the SHOP tab
+  // of the side menu straight away. Returns its key, or throws.
+  async function addCategory(label) {
+    const key = categoryKey(label)
+    if (!key) throw new Error('Give the category a name.')
+    const { error } = await ensureShopCategory(key, label)
+    if (error) throw new Error("Couldn't add it to the side menu — has the side-menu migration run?")
+    await loadShopRows()
+    return key
+  }
 
   // Product catalog = the shop's ALL page, top to bottom. Dragging a row by
   // its handle changes that order; categories stay newest upload first.
@@ -1587,6 +1606,8 @@ export default function Admin() {
             allProducts={products}
             existingIds={products.map((p) => p.id)}
             categories={productCategories}
+            categoryLabels={categoryLabels}
+            onNewCategory={addCategory}
             drops={collectionNames}
             initialDrop={newProductDrop}
             initialPublishAt={newProductLaunch}

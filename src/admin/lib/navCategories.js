@@ -1,5 +1,6 @@
 import { supabase } from './supabaseClient.js'
 import { fetchProducts } from './products.js'
+import { DEFAULT_SHOP, rowLink, typeOf } from '@/lib/menus'
 
 // One table backs both nav dropdowns; `menu` says which one a row belongs to.
 // SHOP rows match a product's category, DROPS rows match its drop name.
@@ -113,4 +114,24 @@ export async function reorderNavCategories(categories) {
   }
 
   return { error: null }
+}
+
+// Puts a category on the side menu's SHOP tab (a row → /shop?type=key)
+// unless it's there already, so a category made in the product form shows
+// in the menu too. An empty SHOP tab shows a default list on the site; it's
+// written out first, so adding one category doesn't replace the rest.
+export async function ensureShopCategory(key, label) {
+  const { categories, error } = await fetchAllNavCategories(SHOP_MENU)
+  if (error) return { error }
+  if (categories.some((c) => typeOf(rowLink(c)) === key)) return { error: null }
+
+  let order = categories.length
+  if (categories.length === 0) {
+    const { error: seedError } = await supabase.from('nav_categories').insert(
+      DEFAULT_SHOP.map((d, i) => ({ label: d.label.toUpperCase(), link: d.to, menu: SHOP_MENU, sort_order: i }))
+    )
+    if (seedError) return { error: seedError }
+    order = DEFAULT_SHOP.length
+  }
+  return createNavCategory({ label: label.trim().toUpperCase(), link: `/shop?type=${encodeURIComponent(key)}`, sortOrder: order, menu: SHOP_MENU })
 }

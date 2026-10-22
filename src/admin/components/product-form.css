@@ -799,3 +799,5 @@
   .qc-grid { grid-template-columns: minmax(0, 1fr); }
   .qc-colour { width: 88px; }
 }
+
+.pf-cat.pf-cat-new { border-style: dashed; color: var(--cobalt); }

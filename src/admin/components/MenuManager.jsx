@@ -5,12 +5,16 @@ import {
   updateNavCategory,
   deleteNavCategory,
   reorderNavCategories,
+  ensureShopCategory,
 } from '../lib/navCategories.js'
-import { linkChoices, rowLink, dropOf, lookbookLink, DEFAULT_SHOP } from '@/lib/menus'
+import { linkChoices, rowLink, dropOf, lookbookLink, categoryOptions, categoryKey, DEFAULT_SHOP } from '@/lib/menus'
 import { IconX } from './Icons.jsx'
 import AdminBox from './AdminBox.jsx'
 import InfoTip from './InfoTip.jsx'
 import './category-manager.css'
+
+// "Goes to → New category…" in the SHOP tab: makes a product category.
+const NEW_CATEGORY = '__new_category'
 
 const TABS = {
   shop: {
@@ -29,8 +33,12 @@ const TABS = {
 // and where it goes), rename it, point it elsewhere, reorder, hide, delete.
 export default function MenuManager({ menu, drops = [], products = [] }) {
   const config = TABS[menu]
-  const choices = useMemo(() => linkChoices(drops), [drops])
   const [rows, setRows] = useState([])
+  // Categories made here or in the product form are choices too.
+  const choices = useMemo(
+    () => linkChoices(drops, menu === 'shop' ? categoryOptions(rows, products.map((p) => p.category)) : []),
+    [drops, rows, products, menu]
+  )
   const [loading, setLoading] = useState(true)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
@@ -61,9 +69,19 @@ export default function MenuManager({ menu, drops = [], products = [] }) {
     return hit ? hit[1].replace(/^Drop · /, '').replace(/ \(all\)$/, '') : ''
   }
 
+  const makingCategory = draft.link === NEW_CATEGORY
+
   function add(e) {
     e.preventDefault()
     const label = (draft.label.trim() || suggest(draft.link)).toUpperCase()
+    // A new category: its own shop page (/shop?type=key), and it shows in the
+    // product form's Category list for products to be filed under.
+    if (makingCategory) {
+      const key = categoryKey(label)
+      if (key) run(() => ensureShopCategory(key, label))
+      setDraft({ ...draft, label: '' })
+      return
+    }
     const link = draft.link.trim()
     if (!label || !link) return
     run(() => createNavCategory({ label, link, sortOrder: rows.length, menu }))
@@ -91,11 +109,12 @@ export default function MenuManager({ menu, drops = [], products = [] }) {
   }, [products])
 
   const visible = rows.filter((r) => r.active)
-  const linkSelect = (value, onChange, label) => {
-    const known = choices.some(([v]) => v === value)
+  const linkSelect = (value, onChange, label, allowNew = false) => {
+    const known = value === NEW_CATEGORY || choices.some(([v]) => v === value)
     return (
       <select className="ab-input mono" value={known ? value : 'custom'} aria-label={label} disabled={busy}
         onChange={(e) => onChange(e.target.value === 'custom' ? (known ? '' : value) : e.target.value)}>
+        {allowNew && <option value={NEW_CATEGORY}>+ New category…</option>}
         {choices.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
         <option value="custom">Another link…</option>
       </select>
@@ -110,6 +129,7 @@ export default function MenuManager({ menu, drops = [], products = [] }) {
         <>
           <p>{config.intro}</p>
           <p><b>To add:</b> pick where it goes under <b>Goes to</b>, type the words to show (or leave them empty to use the suggested name), then + Add.</p>
+          {menu === 'shop' && <p><b>New category:</b> Goes to → + New category…, type its name (e.g. TRACKSUITS), + Add. It gets its own shop page and appears in the product form’s Category list; a category made with + New category in the product form shows up here the same way.</p>}
           <p><b>To change:</b> edit the words in a row (saved when you click away) or pick a new Goes to. ↑ ↓ change the order, Showing/Hidden takes a row off the menu without deleting it, ✕ deletes it.</p>
           <p>Another link… takes a page on the site starting with / (e.g. /product/…) or a full https:// link.</p>
         </>
@@ -131,19 +151,19 @@ export default function MenuManager({ menu, drops = [], products = [] }) {
       <form className="mm-add" onSubmit={add}>
         <label className="mm-field">
           <span className="ab-label">GOES TO</span>
-          {linkSelect(draft.link, (link) => setDraft({ ...draft, link }), 'Goes to')}
+          {linkSelect(draft.link, (link) => setDraft({ ...draft, link }), 'Goes to', menu === 'shop')}
         </label>
-        {!choices.some(([v]) => v === draft.link) && (
+        {!makingCategory && !choices.some(([v]) => v === draft.link) && (
           <label className="mm-field">
             <span className="ab-label">LINK</span>
             <input className="ab-input mono" value={draft.link} placeholder="/shop?drop=… or https://…" onChange={(e) => setDraft({ ...draft, link: e.target.value })} />
           </label>
         )}
         <label className="mm-field">
-          <span className="ab-label">WORDS ON THE MENU</span>
-          <input className="ab-input mono" value={draft.label} maxLength={40} placeholder={suggest(draft.link).toUpperCase() || 'e.g. NEW ARRIVALS'} onChange={(e) => setDraft({ ...draft, label: e.target.value.toUpperCase() })} disabled={busy} />
+          <span className="ab-label">{makingCategory ? 'NEW CATEGORY NAME' : 'WORDS ON THE MENU'}</span>
+          <input className="ab-input mono" value={draft.label} maxLength={40} placeholder={makingCategory ? 'e.g. TRACKSUITS' : suggest(draft.link).toUpperCase() || 'e.g. NEW ARRIVALS'} onChange={(e) => setDraft({ ...draft, label: e.target.value.toUpperCase() })} disabled={busy} />
         </label>
-        <button className="ab-btn mono" disabled={busy || !draft.link.trim()}>{busy ? 'Working…' : '+ Add'}</button>
+        <button className="ab-btn mono" disabled={busy || !draft.link.trim() || (makingCategory && !categoryKey(draft.label))}>{busy ? 'Working…' : '+ Add'}</button>
       </form>
 
       {missingDrops.length > 0 && (

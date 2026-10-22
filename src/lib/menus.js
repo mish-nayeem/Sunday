@@ -33,6 +33,31 @@ function rowLabel(row) {
   return CATEGORY_LABELS[key] || SECTIONS.find((s) => s.key === key)?.label || row.label;
 }
 
+// A category's key from the name it's given: "Leather bags" → leather_bags.
+export const categoryKey = (label) =>
+  String(label || '').trim().toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '');
+
+// The category a link shows: /shop?type=X → X.
+export function typeOf(link) {
+  if (!link || !link.startsWith('/shop?')) return '';
+  return new URLSearchParams(link.split('?')[1]).get('type') || '';
+}
+
+const titleCase = (text) => String(text || '').toLowerCase().replace(/(^|\s)\S/g, (c) => c.toUpperCase());
+
+// Every product category: SUNDAY's own, the ones added in the product form
+// or under Side menu → SHOP (a row pointing at /shop?type=…), and any a
+// product already carries. [{ key, label }], built-in ones first.
+export function categoryOptions(shopRows = [], productCategories = []) {
+  const out = new Map(Object.entries(CATEGORY_LABELS).map(([key, label]) => [key, label]));
+  for (const r of shopRows) {
+    const key = typeOf(rowLink(r));
+    if (key && !out.has(key)) out.set(key, titleCase(r.label));
+  }
+  for (const key of productCategories) if (key && !out.has(key)) out.set(key, titleCase(key.replace(/_/g, ' ')));
+  return [...out].map(([key, label]) => ({ key, label }));
+}
+
 export const DEFAULT_SHOP = [
   { key: 'all', label: 'All products', to: '/shop' },
   ...COLLECTIONS.map((c) => ({ key: c.key, label: c.label, to: `/shop?filter=${c.key}` })),
@@ -40,12 +65,13 @@ export const DEFAULT_SHOP = [
 ];
 
 // Everything a menu row can point at, for the admin's "Goes to" list.
-export function linkChoices(drops = []) {
+export function linkChoices(drops = [], extraCategories = []) {
   return [
     ['/shop', 'All products'],
     ...COLLECTIONS.map((c) => [`/shop?filter=${c.key}`, c.label]),
     ...SECTIONS.map((s) => [`/shop?category=${s.key}`, `${s.label} (all)`]),
     ...Object.entries(CATEGORY_LABELS).map(([k, l]) => [`/shop?type=${encodeURIComponent(k)}`, l]),
+    ...extraCategories.filter((c) => !CATEGORY_LABELS[c.key]).map((c) => [`/shop?type=${encodeURIComponent(c.key)}`, c.label]),
     ...drops.map((d) => [dropLink(d), `Drop · ${d}`]),
     ...drops.map((d) => [`/lookbook/${encodeURIComponent(d)}`, `Lookbook · ${d}`]),
     ['/about', 'About'],

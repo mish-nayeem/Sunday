@@ -189,7 +189,7 @@ function Box({ title, tip, wide = false, children }) {
   )
 }
 
-export default function ProductForm({ existing, copyFrom = null, allProducts = [], existingIds = [], categories = [], drops = [], initialDrop = '', initialPublishAt = '', detailLabels = [], startLabels = [], onDone, onCancel }) {
+export default function ProductForm({ existing, copyFrom = null, allProducts = [], existingIds = [], categories = [], categoryLabels = {}, onNewCategory, drops = [], initialDrop = '', initialPublishAt = '', detailLabels = [], startLabels = [], onDone, onCancel }) {
   const isNewRecord = !existing
   // A product added from Products → Collections starts in that collection.
   const [p, setP] = useState(() => {
@@ -214,6 +214,28 @@ export default function ProductForm({ existing, copyFrom = null, allProducts = [
   const [confirmDelete, setConfirmDelete] = useState(false)
   const [addingCategory, setAddingCategory] = useState(false)
   const [newCategory, setNewCategory] = useState('')
+  const [categoryBusy, setCategoryBusy] = useState(false)
+  const [categoryError, setCategoryError] = useState('')
+  const categoryName = (c) => categoryLabels[c] || CATEGORY_LABELS[c] || c
+
+  // A new category is saved to the side menu's SHOP tab at once (so it shows
+  // there too), then picked for this product.
+  async function addNewCategory() {
+    const label = newCategory.trim()
+    if (!label) return
+    setCategoryBusy(true)
+    setCategoryError('')
+    try {
+      const key = onNewCategory ? await onNewCategory(label) : label
+      pickCategory(key)
+      setNewCategory('')
+      setAddingCategory(false)
+    } catch (err) {
+      setCategoryError(err.message)
+    } finally {
+      setCategoryBusy(false)
+    }
+  }
   const fileRef = useRef(null)
   // Set once a new product is saved, or from + Add another colour: the
   // piece whose other colours are being added (QuickColours).
@@ -401,7 +423,7 @@ export default function ProductForm({ existing, copyFrom = null, allProducts = [
     if (!p.price || Number(p.price) <= 0) return 'Enter a price above 0'
     if (p.images.length === 0) return 'Add at least one image'
     if (p.sizes.length === 0) return 'Add at least one size'
-    if (!CATEGORY_LABELS[p.category]) return 'Pick a category.'
+    if (!(p.category || '').trim()) return 'Pick a category.'
     return ''
   }
 
@@ -647,9 +669,9 @@ export default function ProductForm({ existing, copyFrom = null, allProducts = [
         </Box>
 
         {/* ---- Category ---- */}
-        <Box title="CATEGORY" tip="The product shows under this category in the shop: Shirts, T-shirts, Polos, Trousers (formal, cargo, jeans), Jackets, or Accessories (bags, belts, caps, shoes, other). Bags and belts can then be tagged in lookbook photos like any piece. Picking one also fills in the size chart from the last product in that category.">
+        <Box title="CATEGORY" tip="Where the product shows in the shop: pick one, or + New category to make another (e.g. Tracksuits). A new category is added to Side menu → SHOP at once, and one made there shows here too. Bags and belts can be tagged in lookbook photos like any piece. Picking a category also fills in the size chart from the last product in it.">
           <div className="pf-cats">
-            {[...new Set([...categories, p.category].filter(Boolean))].sort().map((c) => (
+            {[...new Set([...categories, p.category].filter(Boolean))].sort((a, b) => categoryName(a).localeCompare(categoryName(b))).map((c) => (
               <button
                 type="button"
                 key={c}
@@ -657,9 +679,14 @@ export default function ProductForm({ existing, copyFrom = null, allProducts = [
                 onClick={() => pickCategory(c)}
               >
                 <span className="pf-box" />
-                {CATEGORY_LABELS[c] || c}
+                {categoryName(c)}
               </button>
             ))}
+            {!addingCategory && (
+              <button type="button" className="pf-cat pf-cat-new" onClick={() => setAddingCategory(true)}>
+                + New category
+              </button>
+            )}
           </div>
 
           {addingCategory && (
@@ -668,26 +695,25 @@ export default function ProductForm({ existing, copyFrom = null, allProducts = [
                 className="mono"
                 autoFocus
                 value={newCategory}
-                onChange={(e) => setNewCategory(e.target.value.toUpperCase())}
-                placeholder="E.G. TRACKSUITS"
+                onChange={(e) => setNewCategory(e.target.value)}
+                onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addNewCategory() } }}
+                placeholder="e.g. Tracksuits"
+                disabled={categoryBusy}
               />
               <button
                 type="button"
                 className="pf-newcat-add mono"
-                onClick={() => {
-                  if (!newCategory.trim()) return
-                  pickCategory(newCategory.trim())
-                  setNewCategory('')
-                  setAddingCategory(false)
-                }}
+                disabled={categoryBusy || !newCategory.trim()}
+                onClick={addNewCategory}
               >
-                Use
+                {categoryBusy ? 'Adding…' : 'Add'}
               </button>
               <button
                 type="button"
                 className="pf-ghost mono"
                 onClick={() => {
                   setNewCategory('')
+                  setCategoryError('')
                   setAddingCategory(false)
                 }}
               >
@@ -695,6 +721,7 @@ export default function ProductForm({ existing, copyFrom = null, allProducts = [
               </button>
             </div>
           )}
+          {categoryError && <div className="err-banner mono">{categoryError}</div>}
         </Box>
 
         {/* ---- Description ---- */}
