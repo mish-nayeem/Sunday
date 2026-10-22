@@ -13,8 +13,17 @@ export default defineConfig(({ command, mode }) => {
     if (missing.length) throw new Error(`Missing build variables: ${missing.join(', ')}`)
   }
 
+  // The site's own address, for the share preview (og:image must be a full
+  // URL) and the canonical link. Set VITE_SITE_URL once the shop has its
+  // own domain (e.g. https://sunday.com.bd).
+  const siteUrl = (loadEnv(mode, process.cwd(), '').VITE_SITE_URL || 'https://sunday.mish-nayeem.workers.dev').replace(/\/+$/, '')
+  const siteUrlPlugin = {
+    name: 'site-url',
+    transformIndexHtml: (html) => html.replaceAll('__SITE_URL__', siteUrl),
+  }
+
   return {
-    plugins: [react()],
+    plugins: [react(), siteUrlPlugin],
     resolve: {
       alias: {
         '@': '/src',

@@ -502,3 +502,20 @@
 .fm-tags li span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .admin .main .fm-tags button { border: 0; background: none; color: var(--steel); cursor: pointer; font-size: 13px; line-height: 1; padding: 0 2px; }
 .admin .main .fm-tags button:hover { color: var(--signal); }
+
+.fm-banner.fm-editorial { aspect-ratio: 4 / 5; max-width: 320px; }
+
+/* ---- Shop page tiles (ShopTilesManager, Admin → Lookbook) ---- */
+.st-box { margin-bottom: 16px; }
+.st-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(300px, 100%), 1fr)); gap: 12px; }
+.st-tile { display: flex; gap: 12px; border: 1px solid var(--steel-line); border-radius: 12px; padding: 10px; min-width: 0; }
+.st-img { width: 90px; aspect-ratio: 4 / 5; border-radius: 8px; overflow: hidden; flex-shrink: 0; background: var(--steel-line); }
+.st-img img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.st-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 6px; }
+.st-heading { border: 1px solid var(--steel-line); background: transparent; border-radius: 8px; padding: 8px 10px; font-size: 13.5px; color: var(--ink); min-width: 0; }
+.st-heading:focus { outline: none; border-color: var(--cobalt); }
+.st-pick { margin-top: 12px; display: flex; flex-direction: column; gap: 12px; }
+.st-pick-row { display: flex; flex-wrap: wrap; gap: 8px; }
+.admin .main .st-pick-row button { width: 72px; aspect-ratio: 4 / 5; padding: 0; border: 1px solid var(--steel-line); border-radius: 8px; overflow: hidden; cursor: pointer; background: none; }
+.admin .main .st-pick-row button:hover { border-color: var(--cobalt); }
+.st-pick-row img { width: 100%; height: 100%; object-fit: cover; display: block; }

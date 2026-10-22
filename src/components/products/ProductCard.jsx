@@ -1,18 +1,32 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { imgUrl } from '@/lib/storage';
 import { addToCart, openCartDrawer } from '@/lib/cartStore';
+import { flyToBag } from '@/lib/flyToBag';
 import { isSizeAvailable, isSoldOut, formatPrice } from '@/lib/catalog';
 import { useLiveSales, withSale } from '@/lib/pricing';
 
 // Grid tile: photo on a quiet ground, name left and price right underneath,
-// then its sizes. Hovering
-// shows the second photo and a row of sizes that add straight to the bag.
+// then its sizes. Hovering slowly runs through its photos and shows a row of
+// sizes that add straight to the bag.
 // `colours` (optional): the other colours of the same piece (colour group),
 // shown as small swatches under the price.
 export default function ProductCard({ product: raw, colours = [] }) {
   const product = withSale(raw, useLiveSales());
   const [added, setAdded] = useState('');
+  const [slide, setSlide] = useState(0);
+  const timer = useRef(null);
+  const startSlides = () => {
+    if (images.length < 2 || timer.current) return;
+    setSlide(1);
+    timer.current = setInterval(() => setSlide((n) => (n + 1) % images.length), 1800);
+  };
+  const stopSlides = () => {
+    clearInterval(timer.current);
+    timer.current = null;
+    setSlide(0);
+  };
+  useEffect(() => () => clearInterval(timer.current), []);
   const images = (product.images || []).filter(Boolean);
   const soldOut = isSoldOut(product);
   const onSale = !!product.compare_at;
@@ -22,32 +36,34 @@ export default function ProductCard({ product: raw, colours = [] }) {
     e.preventDefault();
     addToCart(product, size, 1);
     setAdded(size);
-    openCartDrawer();
+    flyToBag(e.currentTarget.closest('.group')?.querySelector('img'), images[0] && imgUrl(images[0], 300)).then(openCartDrawer);
     setTimeout(() => setAdded(''), 1500);
   };
 
   return (
     <div className="group">
       <div className="relative aspect-[4/5] bg-stone overflow-hidden">
-        <Link to={`/product/${product.id}`} className="absolute inset-0" tabIndex={-1} aria-hidden="true">
-          {images[0] && (
+        <Link
+          to={`/product/${product.id}`}
+          className="absolute inset-0"
+          tabIndex={-1}
+          aria-hidden="true"
+          onMouseEnter={startSlides}
+          onMouseLeave={stopSlides}
+        >
+          {/* While the pointer rests on the photo, the product's photos cross-
+              fade one after another, slowly. Only the photo showing and the
+              next one are loaded. */}
+          {images.map((src, i) => (i === 0 || i === slide || i === (slide + 1) % images.length) && (
             <img
-              src={imgUrl(images[0], 600)}
-              alt={product.name}
+              key={src}
+              src={imgUrl(src, 600)}
+              alt={i === 0 ? product.name : ''}
               loading="lazy"
               decoding="async"
-              className="absolute inset-0 w-full h-full object-cover"
+              className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-700 ${i === slide ? 'opacity-100' : 'opacity-0'}`}
             />
-          )}
-          {images[1] && (
-            <img
-              src={imgUrl(images[1], 600)}
-              alt=""
-              loading="lazy"
-              decoding="async"
-              className="absolute inset-0 w-full h-full object-cover opacity-0 group-hover:opacity-100 transition-opacity duration-300"
-            />
-          )}
+          ))}
         </Link>
 
         {product.sale ? (

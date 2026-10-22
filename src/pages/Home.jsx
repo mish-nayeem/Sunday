@@ -90,6 +90,34 @@ function DropFeature({ f, isPhone }) {
   );
 }
 
+// An editorial block (Admin → Homepage): one big photo beside a heading, two
+// lines of text and an optional link, like a magazine spread. Photo left on
+// a computer, on top on a phone.
+function Editorial({ f, isPhone }) {
+  const photo = (isPhone && f.mobile_image_url) || f.image_url;
+  const external = /^https?:/.test(f.link || '');
+  const linkClass = 'inline-block mt-6 text-[11px] uppercase tracking-[0.16em] border-b border-ink pb-1 hover:text-burgundy hover:border-burgundy transition-colors';
+  return (
+    <section className="px-4 md:px-6 pb-12 md:pb-20">
+      <div className="md:grid md:grid-cols-12 md:gap-8 md:items-center">
+        {photo && (
+          <div className="md:col-span-7 aspect-[4/5] bg-stone overflow-hidden">
+            <img src={imgUrl(photo, isPhone ? 900 : 1600)} alt="" loading="lazy" className="w-full h-full object-cover" style={{ objectPosition: f.focus || 'center' }} />
+          </div>
+        )}
+        <div className={`pt-6 md:pt-0 ${photo ? 'md:col-span-4 md:col-start-9' : 'md:col-span-8 md:col-start-3 text-center'}`}>
+          <p className="text-[11px] uppercase tracking-[0.16em] text-burgundy mb-4">Editorial</p>
+          {f.title && <h2 className="font-heading text-[32px] md:text-[44px] leading-[1.05]">{f.title}</h2>}
+          {f.blurb && <p className="mt-4 text-[14px] leading-relaxed text-graphite max-w-md">{f.blurb}</p>}
+          {f.link && (external
+            ? <a href={f.link} target="_blank" rel="noreferrer" className={linkClass}>{f.link_label || 'Discover'}</a>
+            : <Link to={f.link} className={linkClass}>{f.link_label || 'Discover'}</Link>)}
+        </div>
+      </div>
+    </section>
+  );
+}
+
 function Hero({ slides, button, countdown }) {
   const [isPhone, setIsPhone] = useState(() => window.matchMedia(PHONE_QUERY).matches);
   const [at, setAt] = useState(0);
@@ -221,7 +249,9 @@ export default function Home() {
 
       {features.length > 0 && (
         <div className="pt-8 md:pt-12">
-          {features.map((f) => <DropFeature key={f.id} f={f} isPhone={isPhone} />)}
+          {features.map((f) => (f.kind === 'editorial'
+            ? <Editorial key={f.id} f={f} isPhone={isPhone} />
+            : <DropFeature key={f.id} f={f} isPhone={isPhone} />))}
         </div>
       )}
     </div>

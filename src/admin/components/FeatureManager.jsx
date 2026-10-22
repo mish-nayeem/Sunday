@@ -37,11 +37,14 @@ export default function FeatureManager({ drops = [], products = [] }) {
 
   useEffect(() => { load(); loadLooks() }, [])
 
-  async function add() {
+  async function add(kind = 'drop') {
     setBusy(true)
     setError('')
     const drop = drops[0] || 'NEW DROP'
-    const { error } = await createFeature({ drop_name: drop, title: drop, sort_order: list.length })
+    const row = kind === 'editorial'
+      ? { kind, drop_name: '', title: 'A heading for the story', blurb: '', sort_order: list.length }
+      : { drop_name: drop, title: drop, sort_order: list.length }
+    const { error } = await createFeature(row)
     if (error) setError("Couldn't add a section — try again.")
     await load()
     setBusy(false)
@@ -93,20 +96,40 @@ export default function FeatureManager({ drops = [], products = [] }) {
   return (
     <section className="hm-box wide">
       <div className="hm-box-head">
-        <span className="hm-box-title mono">DROP SECTIONS · UNDER THE HERO</span>
+        <span className="hm-box-title mono">DROP SECTIONS & EDITORIAL BLOCKS · UNDER THE HERO</span>
         <InfoTip>
-          <p>Big drop banners under the main hero, top to bottom in this order. Each has:</p>
+          <p>Everything under the main hero, top to bottom in this order. Two kinds, mixed however you like with ↑ ↓:</p>
+          <p><b>Drop section</b> (+ Add drop section) — a drop’s banner and its best photos, below.</p>
+          <p><b>Editorial block</b> (+ Add editorial block) — magazine style: one big photo beside a heading and two lines of text, with an optional link. Use it between drops to tell a story: the fabric, the shoot, the season.</p>
+          <p>A drop section has:</p>
           <p><b>1.</b> A wide photo, 70% the height of the main hero, with the drop’s name and a short line of text at the bottom left, and a <b>SHOP NOW</b> button at the bottom right. SHOP NOW opens the shop with only that drop’s products.</p>
-          <p><b>2.</b> A row of your best photos from the drop underneath (4 to a row on a PC, 2 on a phone). Tapping one opens the product you link it to, or the whole drop.</p>
+          <p><b>2.</b> A row of your best photos from the drop underneath (4 to a row on a PC, 2 on a phone). Each is a look in the drop’s lookbook; tapping one opens it with the products worn in it.</p>
           <p>A product belongs to a drop through the <b>Drop / collection</b> field in its product form. Hide a section to take it off the homepage without losing it.</p>
         </InfoTip>
       </div>
 
       {error && <div className="err-banner mono">{error}</div>}
-      {!loading && list.length === 0 && <div className="empty mono">No drop sections yet — the homepage goes straight from the hero to New arrivals.</div>}
+      {!loading && list.length === 0 && <div className="empty mono">Nothing here yet — the homepage goes straight from the hero to the footer.</div>}
 
       <div className="fm-list">
-        {list.map((f, i) => (
+        {list.map((f, i) => f.kind === 'editorial' ? (
+          <EditorialCard
+            key={f.id}
+            f={f}
+            index={i}
+            count={list.length}
+            drops={drops}
+            busy={busy}
+            confirm={confirmId === f.id}
+            onPatch={(fields) => patch(f, fields)}
+            onUpload={upload}
+            withBusy={withBusy}
+            onMove={(dir) => move(i, dir)}
+            onAskDelete={() => setConfirmId(f.id)}
+            onCancelDelete={() => setConfirmId(null)}
+            onDelete={() => remove(f.id)}
+          />
+        ) : (
           <FeatureCard
             key={f.id}
             f={f}
@@ -130,7 +153,8 @@ export default function FeatureManager({ drops = [], products = [] }) {
       </div>
 
       <div className="hm-actions">
-        <button type="button" className="courier-btn mono" onClick={add} disabled={busy}>+ Add drop section</button>
+        <button type="button" className="courier-btn mono" onClick={() => add('drop')} disabled={busy}>+ Add drop section</button>
+        <button type="button" className="courier-btn ghost mono" onClick={() => add('editorial')} disabled={busy}>+ Add editorial block</button>
       </div>
     </section>
   )
@@ -376,6 +400,118 @@ function FeatureCard({ f, index, count, drops, products, looks, onLooksChanged, 
           <button type="button" className="courier-btn ghost mono" onClick={fillFromLooks} disabled={busy}>Use lookbook photos</button>
         </div>
       )}
+    </div>
+  )
+}
+
+// Where an editorial block's link can go.
+function editorialLinks(drops) {
+  return [
+    ['', 'No link'],
+    ['/shop', 'Shop · everything'],
+    ['/shop?filter=new_arrival', 'Shop · new arrivals'],
+    ...drops.map((d) => [`/lookbook/${encodeURIComponent(d)}`, `Lookbook · ${d}`]),
+    ...drops.map((d) => [`/shop?drop=${encodeURIComponent(d)}`, `Shop · ${d}`]),
+    ['/about', 'About SUNDAY'],
+  ]
+}
+
+// One editorial block: a big photo beside a heading, two lines of text and
+// an optional link — magazine style, between the drop sections.
+function EditorialCard({ f, index, count, drops, busy, confirm, onPatch, onUpload, withBusy, onMove, onAskDelete, onCancelDelete, onDelete }) {
+  const [title, setTitle] = useState(f.title || '')
+  const [blurb, setBlurb] = useState(f.blurb || '')
+  const [label, setLabel] = useState(f.link_label || '')
+  const choices = editorialLinks(drops)
+  const known = choices.some(([v]) => v === (f.link || ''))
+
+  function pickPhoto(field) {
+    return (e) => {
+      const file = e.target.files?.[0]
+      e.target.value = ''
+      if (!file) return
+      withBusy(async () => {
+        const url = await onUpload(file)
+        await onPatch({ [field]: url })
+      })
+    }
+  }
+
+  return (
+    <div className={`fm-card ${f.active ? '' : 'off'}`}>
+      <div className="fm-card-head mono">
+        <span className="hm-box-title">SECTION {index + 1} · EDITORIAL</span>
+        <span className="hm-move">
+          <button type="button" onClick={() => onMove(-1)} disabled={index === 0 || busy} aria-label="Move up">↑</button>
+          <button type="button" onClick={() => onMove(1)} disabled={index === count - 1 || busy} aria-label="Move down">↓</button>
+        </span>
+        <button type="button" className={`hm-vis ${f.active ? 'on' : ''}`} onClick={() => onPatch({ active: !f.active })} disabled={busy}>
+          {f.active ? 'Showing' : 'Hidden'}
+        </button>
+        {confirm ? (
+          <span className="hm-confirm">
+            <button type="button" className="hm-danger" onClick={onDelete}>Delete block</button>
+            <button type="button" className="hm-ghost" onClick={onCancelDelete}>No</button>
+          </span>
+        ) : (
+          <button type="button" className="hm-x" onClick={onAskDelete} aria-label="Delete block"><IconX width="13" height="13" /></button>
+        )}
+      </div>
+
+      <div className="fm-cols">
+        <div>
+          <span className="hm-flabel mono">
+            PHOTO
+            <InfoTip>The big photo of the block, on the left on a computer and on top on a phone. A tall photo works best: about 1600 × 2000 px (4:5). Pick below which part stays in frame.</InfoTip>
+          </span>
+          <label className={`fm-banner fm-editorial ${busy ? 'busy' : ''}`}>
+            {f.image_url
+              ? <img src={imgUrl(f.image_url, { w: 480 })} alt="" style={{ objectPosition: f.focus || 'center' }} />
+              : <span className="mono">+ Upload photo</span>}
+            <input type="file" accept="image/*" hidden disabled={busy} onChange={pickPhoto('image_url')} />
+          </label>
+          {f.image_url && <FocusPicker value={f.focus} disabled={busy} onChange={(focus) => onPatch({ focus })} />}
+        </div>
+
+        <div>
+          <label className="pf-field" style={{ marginTop: 0 }}>
+            <span className="hm-flabel mono">
+              HEADING
+              <InfoTip>The big words beside the photo, e.g. “Linen, washed twice”. A few words read best.</InfoTip>
+            </span>
+            <input value={title} maxLength={60} onChange={(e) => setTitle(e.target.value)} onBlur={() => title !== f.title && onPatch({ title: title.trim() })} />
+          </label>
+          <label className="pf-field">
+            <span className="hm-flabel mono">
+              TWO LINES OF TEXT
+              <InfoTip>One or two sentences under the heading — the story behind the pieces. About 160 characters at most.</InfoTip>
+            </span>
+            <textarea className="fm-text" rows={3} maxLength={180} value={blurb} onChange={(e) => setBlurb(e.target.value)} onBlur={() => blurb !== f.blurb && onPatch({ blurb: blurb.trim() })} placeholder="Cut from Japanese linen and washed twice, so it’s soft from the first wear." />
+          </label>
+          <label className="pf-field">
+            <span className="hm-flabel mono">
+              LINK (OPTIONAL)
+              <InfoTip>Where the link under the text goes — a drop’s lookbook, its products, or the shop. No link shows the photo and words only.</InfoTip>
+            </span>
+            <select value={known ? (f.link || '') : 'custom'} disabled={busy} onChange={(e) => e.target.value !== 'custom' && onPatch({ link: e.target.value || null })}>
+              {choices.map(([v, l]) => <option key={v || 'none'} value={v}>{l}</option>)}
+              <option value="custom">Another page or link…</option>
+            </select>
+          </label>
+          {!known && (
+            <label className="pf-field">
+              <span className="hm-flabel mono">ADDRESS</span>
+              <input defaultValue={f.link || ''} placeholder="/product/… or https://…" onBlur={(e) => onPatch({ link: e.target.value.trim() || null })} />
+            </label>
+          )}
+          {f.link && (
+            <label className="pf-field">
+              <span className="hm-flabel mono">LINK WORDS</span>
+              <input value={label} maxLength={30} onChange={(e) => setLabel(e.target.value)} onBlur={() => label !== (f.link_label || '') && onPatch({ link_label: label.trim() || null })} placeholder="Discover" />
+            </label>
+          )}
+        </div>
+      </div>
     </div>
   )
 }

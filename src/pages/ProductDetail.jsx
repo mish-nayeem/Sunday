@@ -6,6 +6,8 @@ import { addToCart, openCartDrawer, addRecentlyViewed, getRecentlyViewed, isInWi
 import { CATEGORY_LABELS, DELIVERY, sectionFor, isSizeAvailable, isSoldOut, formatPrice } from '@/lib/catalog';
 import ProductCard from '@/components/products/ProductCard';
 import SizeChartPopup, { SizeTable } from '@/components/products/SizeChartPopup';
+import Lightbox from '@/components/products/Lightbox';
+import { flyToBag } from '@/lib/flyToBag';
 import { useLiveSales, withSale } from '@/lib/pricing';
 import { timeLeft } from '@/admin/lib/sales.js';
 import { joinWishlist, hasJoined, savedEmail } from '@/admin/lib/wishlist.js';
@@ -128,6 +130,7 @@ export default function ProductDetail() {
   const [look, setLook] = useState([]);
   const [recent, setRecent] = useState([]);
   const railRef = useRef(null);
+  const [viewer, setViewer] = useState(null); // photo index open full screen, or null
   const leftRef = useRef(null);
   const rightRef = useRef(null);
   const wide = useWide();
@@ -207,7 +210,13 @@ export default function ProductDetail() {
   const handleAdd = () => {
     if (!requireSize()) return;
     addToCart(product, size, 1);
-    openCartDrawer();
+    // From the product photo on screen into the bag, then the bag opens.
+    const photo = [...document.querySelectorAll('[data-pdp-photo]')].find((el) => {
+      const r = el.getBoundingClientRect();
+      return r.bottom > 0 && r.top < window.innerHeight && r.width > 0;
+    });
+    const first = (product.images || []).find(Boolean);
+    flyToBag(photo, first && imgUrl(first, 300)).then(openCartDrawer);
   };
 
   const handleBuyNow = () => {
@@ -363,45 +372,33 @@ export default function ProductDetail() {
           Size guide
         </button>
       </div>
-      {wide ? (
-        <div className="relative">
-          <label htmlFor="size-select" className="sr-only">Size</label>
-          <select
-            id="size-select"
-            value={size || waitSize}
-            onChange={(e) => pickSize(e.target.value)}
-            className={`w-full h-12 appearance-none bg-white border px-4 pr-10 text-[13px] outline-none focus:border-ink ${sizeError ? 'border-coral' : 'border-rule'}`}
-          >
-            <option value="" disabled>Select size</option>
-            {product.sizes.map((s) => (
-              <option key={s} value={s}>{isSizeAvailable(product, s) ? s : `${s}, sold out (notify me)`}</option>
-            ))}
-          </select>
-          <svg aria-hidden="true" viewBox="0 0 24 24" className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M6 9l6 6 6-6" /></svg>
-        </div>
-      ) : (
-        <div className="grid grid-cols-5 gap-1.5">
-          {product.sizes.map((s) => {
-            const ok = isSizeAvailable(product, s);
-            return (
-              <button
-                key={s}
-                type="button"
-                aria-pressed={ok ? size === s : waitSize === s}
-                aria-label={ok ? `Size ${s}` : `Size ${s}, sold out`}
-                onClick={() => (ok ? pickSize(s) : setWaitSize(waitSize === s ? '' : s))}
-                className={`h-11 text-[13px] border ${
-                  !ok ? `text-graphite/60 line-through ${waitSize === s ? 'border-ink' : 'border-rule hover:border-graphite'}`
-                    : size === s ? 'border-ink bg-ink text-white'
-                      : 'border-rule hover:border-ink'
-                }`}
-              >
-                {s}
-              </button>
-            );
-          })}
-        </div>
-      )}
+      {/* Big size buttons. A sold-out size says Notify me: tapping it opens
+          the email form below, which lands in Admin → Customers → Wishlist. */}
+      <div className="grid grid-cols-4 gap-2">
+        {product.sizes.map((s) => {
+          const ok = isSizeAvailable(product, s);
+          const on = ok ? size === s : waitSize === s;
+          return (
+            <button
+              key={s}
+              type="button"
+              aria-pressed={on}
+              aria-label={ok ? `Size ${s}` : `Size ${s}, sold out. Notify me when it's back`}
+              onClick={() => (ok ? pickSize(s) : setWaitSize(waitSize === s ? '' : s))}
+              className={`h-14 flex flex-col items-center justify-center border transition-colors ${
+                !ok
+                  ? `text-graphite ${on ? 'border-ink' : 'border-rule border-dashed hover:border-graphite'}`
+                  : on
+                    ? 'border-ink bg-ink text-white'
+                    : `${sizeError ? 'border-coral' : 'border-rule'} hover:border-ink`
+              }`}
+            >
+              <span className={`text-[14px] leading-none ${ok ? '' : 'line-through opacity-60'}`}>{s}</span>
+              {!ok && <span className="mt-1 text-[9px] uppercase tracking-[0.12em] text-burgundy">Notify me</span>}
+            </button>
+          );
+        })}
+      </div>
       {waitSize && <RestockForm key={waitSize} product={product} size={waitSize} />}
     </div>
   );
@@ -465,13 +462,16 @@ export default function ProductDetail() {
             {(images.length ? images : [null]).map((img, i) => (
               <div key={i} className="aspect-[4/5] bg-stone">
                 {img && (
-                  <img
-                    src={imgUrl(img, 1000)}
-                    alt={`${product.name}, photo ${i + 1}`}
-                    loading={i < 2 ? 'eager' : 'lazy'}
-                    decoding="async"
-                    className="w-full h-full object-cover"
-                  />
+                  <button type="button" onClick={() => setViewer(i)} className="block w-full h-full cursor-zoom-in" aria-label={`View photo ${i + 1} full screen`}>
+                    <img
+                      data-pdp-photo
+                      src={imgUrl(img, 1000)}
+                      alt={`${product.name}, photo ${i + 1}`}
+                      loading={i < 2 ? 'eager' : 'lazy'}
+                      decoding="async"
+                      className="w-full h-full object-cover"
+                    />
+                  </button>
                 )}
               </div>
             ))}
@@ -496,13 +496,16 @@ export default function ProductDetail() {
               {(images.length ? images : [null]).map((img, i) => (
                 <div key={i} className="shrink-0 w-full snap-center aspect-[4/5] bg-stone md:mb-1">
                   {img && (
-                    <img
-                      src={imgUrl(img, 1200)}
-                      alt={`${product.name}, photo ${i + 1}`}
-                      loading={i === 0 ? 'eager' : 'lazy'}
-                      decoding="async"
-                      className="w-full h-full object-cover"
-                    />
+                    <button type="button" onClick={() => setViewer(i)} className="block w-full h-full cursor-zoom-in" aria-label={`View photo ${i + 1} full screen`}>
+                      <img
+                        data-pdp-photo
+                        src={imgUrl(img, 1200)}
+                        alt={`${product.name}, photo ${i + 1}`}
+                        loading={i === 0 ? 'eager' : 'lazy'}
+                        decoding="async"
+                        className="w-full h-full object-cover"
+                      />
+                    </button>
                   )}
                 </div>
               ))}
@@ -525,6 +528,10 @@ export default function ProductDetail() {
             </div>
           </div>
         </div>
+      )}
+
+      {viewer !== null && images.length > 0 && (
+        <Lightbox images={images} start={viewer} alt={product.name} onClose={() => setViewer(null)} />
       )}
 
       {related.length > 0 && (

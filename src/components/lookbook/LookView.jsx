@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { imgUrl } from '@/lib/storage';
 import { addToCart, openCartDrawer } from '@/lib/cartStore';
+import { flyToBag } from '@/lib/flyToBag';
 import { isSizeAvailable, isSoldOut, formatPrice } from '@/lib/catalog';
 import { useLiveSales, withSale } from '@/lib/pricing';
 
@@ -43,6 +44,7 @@ function Details({ product, index, count }) {
 function BuyBox({ product }) {
   const [size, setSize] = useState('');
   const [error, setError] = useState(false);
+  const buttonRef = useRef(null);
   const soldOut = isSoldOut(product);
 
   useEffect(() => {
@@ -53,7 +55,9 @@ function BuyBox({ product }) {
   const add = () => {
     if (!size) return setError(true);
     addToCart(product, size, 1);
-    openCartDrawer();
+    // From the piece's photo on screen, else the button itself.
+    const photo = document.querySelector(`[data-piece="${product.id}"] img`);
+    flyToBag(photo || buttonRef.current, product.images?.[0] && imgUrl(product.images[0], 300)).then(openCartDrawer);
   };
 
   return (
@@ -77,6 +81,7 @@ function BuyBox({ product }) {
         })}
       </div>
       <button
+        ref={buttonRef}
         type="button"
         onClick={add}
         disabled={soldOut}
@@ -170,7 +175,7 @@ export default function LookView({ look, items: rawItems, drop }) {
         </div>
 
         {items.map((p, i) => (
-          <div key={p.id} ref={block(i)} data-index={i} className="mx-auto max-w-[620px] pt-6 lg:pt-10">
+          <div key={p.id} ref={block(i)} data-index={i} data-piece={p.id} className="mx-auto max-w-[620px] pt-6 lg:pt-10">
             <div className="space-y-3">
               {(p.images || []).filter(Boolean).slice(0, 2).map((src, k) => (
                 <div key={src} className="aspect-[4/5] bg-stone overflow-hidden">

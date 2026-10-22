@@ -34,6 +34,7 @@ import ProductForm from '../components/ProductForm.jsx'
 import { collectLabels, lastLabels } from '../lib/details.js'
 import HeroManager from '../components/HeroManager.jsx'
 import MenuManager from '../components/MenuManager.jsx'
+import ShopTilesManager from '../components/ShopTilesManager.jsx'
 import LookbookManager from '../components/LookbookManager.jsx'
 import CollectionManager from '../components/CollectionManager.jsx'
 import DropReport from '../components/DropReport.jsx'
@@ -2255,7 +2256,12 @@ export default function Admin() {
           <AnalyticsManager sub={analyticsSub} orders={orders} products={products} />
           </>
         )}
-        {!loading && tab === 'lookbook' && <LookbookManager products={products} />}
+        {!loading && tab === 'lookbook' && (
+          <>
+            <ShopTilesManager />
+            <LookbookManager products={products} />
+          </>
+        )}
         {tab === 'about' && <AboutManager />}
         {!loading && tab === 'support' && (
           <>

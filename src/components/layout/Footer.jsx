@@ -20,12 +20,14 @@ const COLUMNS = [
     ],
   },
   {
-    title: 'Company',
+    title: 'Policies',
     links: [
-      { to: '/about', label: 'About' },
       { to: '/support/refunds', label: 'Refund policy' },
-      { to: '/support/privacy', label: 'Privacy' },
-      { to: '/support/terms', label: 'Terms' },
+      { to: '/support/portal', label: 'Return and exchange policy' },
+      { to: '/support/delivery', label: 'Delivery policy' },
+      { to: '/support/privacy', label: 'Privacy policy' },
+      { to: '/support/terms', label: 'Terms of service' },
+      { to: '/about', label: 'About SUNDAY' },
     ],
   },
 ];
@@ -34,6 +36,36 @@ const SOCIAL = [
   { href: 'https://www.instagram.com/sunday.clothin?igsh=MWhyZzNpZzNod2xsZQ==', label: 'Instagram' },
   { href: 'https://www.facebook.com/share/19U1FfCwMY/', label: 'Facebook' },
 ];
+
+// One footer group, folded away behind a thin plus: hovering it (with a
+// mouse) or tapping it (on a phone) opens its links.
+function FooterGroup({ col }) {
+  const [open, setOpen] = useState(false);
+  const canHover = () => window.matchMedia('(hover: hover)').matches;
+  return (
+    <div onMouseEnter={() => canHover() && setOpen(true)} onMouseLeave={() => canHover() && setOpen(false)}>
+      <button
+        type="button"
+        onClick={() => !canHover() && setOpen((v) => !v)}
+        aria-expanded={open}
+        className="w-full sm:w-auto flex items-center justify-between sm:justify-start gap-3 text-[11px] uppercase tracking-[0.16em] py-1"
+      >
+        {col.title}
+        <span aria-hidden="true" className={`inline-block text-[16px] font-light leading-none text-graphite transition-transform duration-300 ${open ? 'rotate-45' : ''}`}>+</span>
+      </button>
+      <div className={`grid transition-[grid-template-rows] duration-300 ease-out ${open ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'}`}>
+        <ul className="overflow-hidden space-y-2" aria-hidden={!open}>
+          <li className="h-2" aria-hidden="true" />
+          {col.links.map((l) => (
+            <li key={l.to + l.label}>
+              <Link to={l.to} tabIndex={open ? 0 : -1} className="text-graphite hover:text-ink hover:underline underline-offset-4">{l.label}</Link>
+            </li>
+          ))}
+        </ul>
+      </div>
+    </div>
+  );
+}
 
 export default function Footer() {
   const [email, setEmail] = useState('');
@@ -76,17 +108,8 @@ export default function Footer() {
           {status === 'error' && <p className="mt-2 text-coral">That didn’t go through. Check the address and try again.</p>}
         </div>
 
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-8">
-          {COLUMNS.map((col) => (
-            <div key={col.title}>
-              <p className="text-graphite mb-3">{col.title}</p>
-              <ul className="space-y-2">
-                {col.links.map((l) => (
-                  <li key={l.to}><Link to={l.to} className="hover:underline underline-offset-4">{l.label}</Link></li>
-                ))}
-              </ul>
-            </div>
-          ))}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 sm:gap-8 content-start">
+          {COLUMNS.map((col) => <FooterGroup key={col.title} col={col} />)}
         </div>
       </div>
 

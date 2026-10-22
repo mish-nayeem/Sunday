@@ -31,6 +31,20 @@ export default function Header() {
     return subscribeCart(update);
   }, []);
 
+  // The bag bounces when an added product lands in it (lib/flyToBag).
+  const [bump, setBump] = useState(false);
+  useEffect(() => {
+    let t;
+    const onLand = () => {
+      setBump(false);
+      requestAnimationFrame(() => setBump(true));
+      clearTimeout(t);
+      t = setTimeout(() => setBump(false), 600);
+    };
+    window.addEventListener('sunday:bag-landed', onLand);
+    return () => { window.removeEventListener('sunday:bag-landed', onLand); clearTimeout(t); };
+  }, []);
+
   useEffect(() => {
     if (!isHome) return;
     const onScroll = () => setPastHero(window.scrollY > window.innerHeight - 80);
@@ -76,7 +90,7 @@ export default function Header() {
             <Link to={isAdmin ? '/admin' : isAuthenticated ? '/wishlist' : '/login'} className={icon} aria-label={isAuthenticated ? 'Account' : 'Log in'}>
               <User size={21} strokeWidth={1.5} />
             </Link>
-            <button type="button" className={`relative ${icon}`} onClick={openCartDrawer} aria-label={`Bag, ${cartCount} items`}>
+            <button type="button" data-bag-icon className={`relative ${icon} ${bump ? 'bag-bump' : ''}`} onClick={openCartDrawer} aria-label={`Bag, ${cartCount} items`}>
               <ShoppingBag size={21} strokeWidth={1.5} />
               {cartCount > 0 && (
                 <span className="absolute top-0 -right-0.5 min-w-4 h-4 px-1 rounded-full bg-coral text-white text-[10px] leading-4 text-center">

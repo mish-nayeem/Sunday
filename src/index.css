@@ -115,3 +115,24 @@ html, body {
   -ms-overflow-style: none;
   scrollbar-width: none;
 }
+
+/* A product landing in the bag (lib/flyToBag): the icon bounces and its
+   count pops. */
+@keyframes bag-bump {
+  0% { transform: scale(1); }
+  30% { transform: scale(1.25) rotate(-6deg); }
+  60% { transform: scale(0.92) rotate(3deg); }
+  100% { transform: scale(1); }
+}
+.bag-bump { animation: bag-bump 0.55s cubic-bezier(0.3, 0, 0.3, 1); }
+.bag-bump > span { animation: bag-bump 0.55s 0.08s cubic-bezier(0.3, 0, 0.3, 1); }
+
+/* Page changes fade in (SiteLayout keys the page on its path). Opacity
+   only, and nothing held after it ends: a transform — even a finished one
+   held by fill-mode — would trap position: fixed children (the photo
+   viewer, drawers) inside the page instead of the screen. */
+@keyframes page-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+.page-in { animation: page-in 0.4s ease-out backwards; }

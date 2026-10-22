@@ -6,6 +6,8 @@ import ProductCard from '@/components/products/ProductCard';
 import { SECTIONS, COLLECTIONS, SIZE_ORDER, isSizeAvailable, isSoldOut } from '@/lib/catalog';
 import { useMenus, dropLink } from '@/lib/menus';
 import { dropKey } from '@/admin/lib/lookbook.js';
+import { fetchSetting } from '@/admin/lib/siteSettings.js';
+import { imgUrl } from '@/lib/storage';
 
 // The params that say which list is showing; sort, size and stock only refine it.
 const LIST_KEYS = ['category', 'type', 'drop', 'filter', 'search'];
@@ -16,6 +18,30 @@ function isCurrent(to, params) {
   const want = new URLSearchParams(to.split('?')[1] || '');
   const norm = (v) => (v || '').trim().replace(/\s+/g, ' ').toLowerCase();
   return LIST_KEYS.every((k) => norm(want.get(k)) === norm(params.get(k)));
+}
+
+// A big lookbook photo in the grid with its heading; opens that look.
+function ShopTile({ tile }) {
+  return (
+    <Link
+      to={`/lookbook/${encodeURIComponent(tile.drop)}?look=${tile.look_id}`}
+      className="group relative col-span-2 md:row-span-2 block bg-stone overflow-hidden min-h-[420px]"
+    >
+      <img
+        src={imgUrl(tile.image_url, 1400)}
+        alt=""
+        loading="lazy"
+        className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-[1.02]"
+        style={{ objectPosition: tile.focus || 'center' }}
+      />
+      <div className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-black/45 to-transparent" />
+      <div className="absolute left-5 right-5 bottom-5 md:left-7 md:bottom-7 text-white">
+        <p className="text-[11px] uppercase tracking-[0.16em] opacity-85 mb-2">{tile.drop} · Lookbook</p>
+        {tile.heading && <p className="font-heading text-[28px] md:text-[38px] leading-none">{tile.heading}</p>}
+        <p className="mt-4 inline-block text-[11px] uppercase tracking-[0.16em] border-b border-white pb-1">Shop the look</p>
+      </div>
+    </Link>
+  );
 }
 
 const SORTS = [
@@ -45,6 +71,10 @@ export default function Shop() {
   const [loading, setLoading] = useState(true);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const menus = useMenus();
+  const [tiles, setTiles] = useState([]);
+  useEffect(() => {
+    fetchSetting('shop_tiles').then(({ value }) => setTiles(Array.isArray(value) ? value : [])).catch(() => {});
+  }, []);
   // Inside a drop: the other drops (EXPLORE), each opening its products here.
   // Anywhere else: the SHOP list.
   const tabs = drop
@@ -173,7 +203,17 @@ export default function Shop() {
           </div>
         ) : (
           <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-x-2 md:gap-x-4 gap-y-8 md:gap-y-12">
-            {visible.map((p) => <ProductCard key={p.id} product={p} colours={coloursOf(p)} />)}
+            {visible.map((p, i) => {
+              // After every 8 products, the next lookbook tile (Admin →
+              // Lookbook → Shop page tiles), if there is one.
+              const tile = (i + 1) % 8 === 0 && i + 1 < visible.length ? tiles[(i + 1) / 8 - 1] : null;
+              return (
+                <React.Fragment key={p.id}>
+                  <ProductCard product={p} colours={coloursOf(p)} />
+                  {tile && <ShopTile tile={tile} />}
+                </React.Fragment>
+              );
+            })}
           </div>
         )}
       </div>
