@@ -12,6 +12,7 @@ import { getAttribution } from '@/lib/attribution';
 import { saveAbandonedCart, markCartConverted } from '@/lib/abandonedCart';
 import { fetchLiveSales } from '@/admin/lib/sales.js';
 import { withSale } from '@/lib/pricing';
+import { BKASH_NUMBER } from '@/admin/lib/delivery.js';
 
 // create_order's tagged errors, said plainly.
 function orderErrorMessage(error) {
@@ -24,13 +25,26 @@ function orderErrorMessage(error) {
   return 'The order didn’t go through. Check your details and try again.';
 }
 
-const districts = [
-  'Dhaka', 'Chittagong', 'Rajshahi', 'Khulna', 'Sylhet', 'Rangpur', 'Barisal', 'Mymensingh',
-  'Comilla', 'Gazipur', 'Narayanganj', 'Cox\'s Bazar', 'Jessore', 'Bogra', 'Dinajpur',
+// All 64 districts. Dhaka is cash on delivery; every other district pays
+// the delivery charge in advance by bKash (create_order checks the same).
+const OUTSIDE_DHAKA = [
+  'Bagerhat', 'Bandarban', 'Barguna', 'Barishal', 'Bhola', 'Bogura', 'Brahmanbaria', 'Chandpur',
+  'Chapai Nawabganj', 'Chattogram', 'Chuadanga', "Cox's Bazar", 'Cumilla', 'Dinajpur', 'Faridpur',
+  'Feni', 'Gaibandha', 'Gazipur', 'Gopalganj', 'Habiganj', 'Jamalpur', 'Jashore', 'Jhalokathi',
+  'Jhenaidah', 'Joypurhat', 'Khagrachhari', 'Khulna', 'Kishoreganj', 'Kurigram', 'Kushtia',
+  'Lakshmipur', 'Lalmonirhat', 'Madaripur', 'Magura', 'Manikganj', 'Meherpur', 'Moulvibazar',
+  'Munshiganj', 'Mymensingh', 'Naogaon', 'Narail', 'Narayanganj', 'Narsingdi', 'Natore', 'Netrokona',
+  'Nilphamari', 'Noakhali', 'Pabna', 'Panchagarh', 'Patuakhali', 'Pirojpur', 'Rajbari', 'Rajshahi',
+  'Rangamati', 'Rangpur', 'Satkhira', 'Shariatpur', 'Sherpur', 'Sirajganj', 'Sunamganj', 'Sylhet',
+  'Tangail', 'Thakurgaon',
 ];
 
-// TODO: put your real bKash merchant/personal number here
-const BKASH_NUMBER = '01629178834';
+// "Save this information for next time" keeps the delivery details here,
+// in this browser only.
+const SAVED_INFO_KEY = 'sunday_checkout_info';
+function savedInfo() {
+  try { return JSON.parse(localStorage.getItem(SAVED_INFO_KEY)) || null; } catch { return null; }
+}
 
 const SHIPPING_METHODS = [
   { key: 'inside_dhaka', label: 'Inside Dhaka', price: 80 },
@@ -39,11 +53,17 @@ const SHIPPING_METHODS = [
 
 export default function Checkout() {
   const navigate = useNavigate();
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, user } = useAuth();
   const [bag, setBag] = useState(getCart());
   const [catalog, setCatalog] = useState(new Map()); // productId → product (with sale)
   const placed = useRef(false);
-  const [form, setForm] = useState({ full_name: '', email: '', mobile: '', address: '', district: '', area: '', notes: '' });
+  const [form, setForm] = useState(() => ({
+    full_name: '', email: '', mobile: '', address: '', district: '', area: '', postal: '', notes: '',
+    ...(savedInfo() || {}),
+  }));
+  const [newsOptIn, setNewsOptIn] = useState(false);
+  const [saveInfo, setSaveInfo] = useState(() => !!savedInfo());
+  const [agreed, setAgreed] = useState(false);
   const [bkashTrxId, setBkashTrxId] = useState('');
   const [numberCopied, setNumberCopied] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -128,6 +148,7 @@ export default function Checkout() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (isAdvancePay && !bkashTrxId.trim()) return;
+    if (!agreed) { setSubmitError('Tick the box to agree to the terms before placing the order.'); return; }
     setSubmitting(true);
     setSubmitError('');
     const utm = getAttribution();
@@ -145,7 +166,8 @@ export default function Checkout() {
       p_full_name: form.full_name,
       p_email: form.email,
       p_mobile: form.mobile,
-      p_address: form.address,
+      // No postal code column on orders: it rides at the end of the address.
+      p_address: form.postal.trim() ? `${form.address.trim()}, ${form.postal.trim()}` : form.address,
       p_district: form.district,
       p_area: form.area,
       p_notes: form.notes,
@@ -216,6 +238,18 @@ export default function Checkout() {
       }
     }
 
+    // "Save this information" and "Email me with news" — neither can hold
+    // up the order.
+    try {
+      if (saveInfo) {
+        const { full_name, email, mobile, address, district, area, postal } = form;
+        localStorage.setItem(SAVED_INFO_KEY, JSON.stringify({ full_name, email, mobile, address, district, area, postal }));
+      } else localStorage.removeItem(SAVED_INFO_KEY);
+    } catch { /* storage off */ }
+    if (newsOptIn && form.email.trim()) {
+      await supabase.from('newsletter_subscribers').insert({ email: form.email.trim() }).then(() => {}, () => {});
+    }
+
     placed.current = true;
     clearCart();
     navigate(`/order-confirmation/${oid}`);
@@ -224,11 +258,20 @@ export default function Checkout() {
   return (
     <div className="min-h-screen">
       <div className="max-w-[1440px] mx-auto px-5 md:px-10 py-10 md:py-16">
-        <Link to="/cart" className="inline-flex items-center gap-2 text-[13px] text-graphite hover:text-charcoal mb-8 transition-colors">
-          <ArrowLeft size={14} /> Back to Bag
-        </Link>
+        {/* Top: back to the shop, and sign in for a returning customer. */}
+        <div className="flex items-center justify-between gap-4 mb-8 text-[12px] uppercase tracking-[0.14em]">
+          <Link to="/shop" className="inline-flex items-center gap-2 text-graphite hover:text-ink transition-colors">
+            <ArrowLeft size={14} /> Continue shopping
+          </Link>
+          {isAuthenticated ? (
+            <span className="normal-case tracking-normal text-[13px] text-graphite truncate">Signed in{user?.email ? ` as ${user.email}` : ''}</span>
+          ) : (
+            <Link to="/login?next=/checkout" className="h-10 px-5 inline-flex items-center border border-ink hover:bg-ink hover:text-white transition-colors">
+              Sign in
+            </Link>
+          )}
+        </div>
 
-        {/* Brand mark — replaces express checkout */}
         <div className="text-center mb-10">
           <h1 className="font-heading text-[32px] md:text-[40px] leading-none">Checkout</h1>
         </div>
@@ -236,139 +279,164 @@ export default function Checkout() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-10 lg:gap-16">
           {/* Form */}
           <div className="lg:col-span-2">
-            <div className="flex items-center justify-between mb-6">
-              <p className="text-[13px]">Delivery details</p>
-              {!isAuthenticated && (
-                <p className="text-xs text-charcoal/60">
-                  Returning customer?{' '}
-                  <Link to="/login?next=/checkout" className="text-obsidian underline hover:text-graphite transition-colors">
-                    Login
-                  </Link>
-                </p>
-              )}
-            </div>
-            <form onSubmit={handleSubmit} className="space-y-6">
-              <div>
-                <label className="text-[13px] block mb-2">Full Name *</label>
-                <input
-                  type="text" required value={form.full_name}
-                  onChange={e => setForm({ ...form, full_name: e.target.value })}
-                  className="w-full border border-rule px-4 py-3 text-sm bg-white outline-none focus:border-ink transition-colors"
-                />
-              </div>
-              <div>
-                <label className="text-[13px] block mb-2">Mobile Number *</label>
-                <input
-                  type="tel" required value={form.mobile}
-                  onChange={e => setForm({ ...form, mobile: e.target.value })}
-                  placeholder="01XXXXXXXXX"
-                  className="w-full border border-rule px-4 py-3 text-sm bg-white outline-none focus:border-ink transition-colors placeholder:text-charcoal/30"
-                />
-              </div>
-              <div>
-                <label className="text-[13px] block mb-2">Email *</label>
-                <input
-                  type="email" required value={form.email}
-                  onChange={e => setForm({ ...form, email: e.target.value })}
-                  placeholder="your@email.com"
-                  className="w-full border border-rule px-4 py-3 text-sm bg-white outline-none focus:border-ink transition-colors placeholder:text-charcoal/30"
-                />
-              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+            <form onSubmit={handleSubmit} className="space-y-10">
+              {/* 1. Contact */}
+              <fieldset className="space-y-4">
+                <legend className="w-full flex items-baseline justify-between mb-4">
+                  <span className="font-heading text-[24px]">Contact</span>
+                  {!isAuthenticated && (
+                    <Link to="/login?next=/checkout" className="text-[13px] underline underline-offset-4">Have an account? Sign in</Link>
+                  )}
+                </legend>
                 <div>
-                  <label className="text-[13px] block mb-2">District *</label>
-                  <select
-                    required value={form.district}
-                    onChange={e => setForm({ ...form, district: e.target.value })}
-                    className="w-full border border-rule px-4 py-3 text-sm bg-white outline-none focus:border-ink transition-colors"
-                  >
-                    <option value="">Select District</option>
-                    {districts.map(d => <option key={d} value={d}>{d}</option>)}
+                  <label htmlFor="co-email" className="text-[13px] block mb-2">Email *</label>
+                  <input id="co-email" type="email" required autoComplete="email" value={form.email}
+                    onChange={(e) => setForm({ ...form, email: e.target.value })}
+                    placeholder="you@example.com" className="w-full h-12 border border-rule px-4 text-[14px] bg-white outline-none focus:border-ink transition-colors placeholder:text-graphite/60" />
+                </div>
+                <label className="flex items-center gap-3 text-[14px] cursor-pointer">
+                  <input type="checkbox" className="w-4 h-4 accent-black" checked={newsOptIn} onChange={(e) => setNewsOptIn(e.target.checked)} />
+                  Email me with news and offers
+                </label>
+                <div>
+                  <label htmlFor="co-mobile" className="text-[13px] block mb-2">Mobile number *</label>
+                  <input id="co-mobile" type="tel" required autoComplete="tel" value={form.mobile}
+                    onChange={(e) => setForm({ ...form, mobile: e.target.value })}
+                    placeholder="01XXXXXXXXX" className="w-full h-12 border border-rule px-4 text-[14px] bg-white outline-none focus:border-ink transition-colors placeholder:text-graphite/60" />
+                </div>
+              </fieldset>
+
+              {/* 2. Delivery */}
+              <fieldset className="space-y-4">
+                <legend className="font-heading text-[24px] mb-4">Delivery</legend>
+                <div>
+                  <label htmlFor="co-name" className="text-[13px] block mb-2">Full name *</label>
+                  <input id="co-name" type="text" required autoComplete="name" value={form.full_name}
+                    onChange={(e) => setForm({ ...form, full_name: e.target.value })} className="w-full h-12 border border-rule px-4 text-[14px] bg-white outline-none focus:border-ink transition-colors placeholder:text-graphite/60" />
+                </div>
+                <div>
+                  <label htmlFor="co-district" className="text-[13px] block mb-2">District *</label>
+                  <select id="co-district" required value={form.district}
+                    onChange={(e) => setForm({ ...form, district: e.target.value })} className="w-full h-12 border border-rule px-4 text-[14px] bg-white outline-none focus:border-ink transition-colors placeholder:text-graphite/60">
+                    <option value="">Select your district</option>
+                    <optgroup label="Inside Dhaka · cash on delivery">
+                      <option value="Dhaka">Dhaka</option>
+                    </optgroup>
+                    <optgroup label="Outside Dhaka · Tk 200 delivery paid in advance by bKash">
+                      {OUTSIDE_DHAKA.map((d) => <option key={d} value={d}>{d}</option>)}
+                    </optgroup>
                   </select>
                 </div>
-                <div>
-                  <label className="text-[13px] block mb-2">Area *</label>
-                  <input
-                    type="text" required value={form.area}
-                    onChange={e => setForm({ ...form, area: e.target.value })}
-                    className="w-full border border-rule px-4 py-3 text-sm bg-white outline-none focus:border-ink transition-colors"
-                  />
-                </div>
-              </div>
-              <div>
-                <label className="text-[13px] block mb-2">Full Address *</label>
-                <textarea
-                  required value={form.address}
-                  onChange={e => setForm({ ...form, address: e.target.value })}
-                  rows={3}
-                  className="w-full border border-rule px-4 py-3 text-sm bg-white outline-none focus:border-ink transition-colors resize-none"
-                />
-              </div>
-              <div>
-                <label className="text-[13px] block mb-2">Notes (Optional)</label>
-                <textarea
-                  value={form.notes}
-                  onChange={e => setForm({ ...form, notes: e.target.value })}
-                  rows={2}
-                  placeholder="Any special instructions..."
-                  className="w-full border border-rule px-4 py-3 text-sm bg-white outline-none focus:border-ink transition-colors resize-none placeholder:text-charcoal/30"
-                />
-              </div>
-
-              {/* Shipping method — auto-determined by district, not manually selectable */}
-              {form.district && (
-                <div className="border border-rule px-4 py-3 flex items-center justify-between  bg-white">
+                <div className="grid grid-cols-1 sm:grid-cols-[minmax(0,1fr)_160px] gap-4">
                   <div>
-                    <p className="text-[13px]">{selectedMethod?.label}</p>
-                    <p className="text-xs text-charcoal/50 mt-0.5">
-                      {isAdvancePay ? 'bKash advance payment required' : 'Cash on delivery'}
-                    </p>
+                    <label htmlFor="co-area" className="text-[13px] block mb-2">Area / thana *</label>
+                    <input id="co-area" type="text" required value={form.area}
+                      onChange={(e) => setForm({ ...form, area: e.target.value })} placeholder="e.g. Dhanmondi" className="w-full h-12 border border-rule px-4 text-[14px] bg-white outline-none focus:border-ink transition-colors placeholder:text-graphite/60" />
                   </div>
-                  <span className="text-sm font-mono">Tk {deliveryCharge}.00</span>
+                  <div>
+                    <label htmlFor="co-postal" className="text-[13px] block mb-2">Postal code</label>
+                    <input id="co-postal" type="text" inputMode="numeric" autoComplete="postal-code" maxLength={6} value={form.postal}
+                      onChange={(e) => setForm({ ...form, postal: e.target.value.replace(/[^0-9]/g, '') })} placeholder="e.g. 1209" className="w-full h-12 border border-rule px-4 text-[14px] bg-white outline-none focus:border-ink transition-colors placeholder:text-graphite/60" />
+                  </div>
                 </div>
-              )}
+                <div>
+                  <label htmlFor="co-address" className="text-[13px] block mb-2">Full address *</label>
+                  <textarea id="co-address" required rows={3} autoComplete="street-address" value={form.address}
+                    onChange={(e) => setForm({ ...form, address: e.target.value })}
+                    placeholder="House, road, block or village"
+                    className="w-full border border-rule px-4 py-3 text-[14px] bg-white outline-none focus:border-ink transition-colors resize-none placeholder:text-graphite/60" />
+                </div>
+                <div>
+                  <label htmlFor="co-notes" className="text-[13px] block mb-2">Notes (optional)</label>
+                  <textarea id="co-notes" rows={2} value={form.notes}
+                    onChange={(e) => setForm({ ...form, notes: e.target.value })}
+                    placeholder="Anything the rider should know"
+                    className="w-full border border-rule px-4 py-3 text-[14px] bg-white outline-none focus:border-ink transition-colors resize-none placeholder:text-graphite/60" />
+                </div>
+                <label className="flex items-center gap-3 text-[14px] cursor-pointer">
+                  <input type="checkbox" className="w-4 h-4 accent-black" checked={saveInfo} onChange={(e) => setSaveInfo(e.target.checked)} />
+                  Save this information for next time
+                </label>
+              </fieldset>
 
-              {/* bKash advance payment section — only for Outside Dhaka */}
-              {isAdvancePay && (
-                <div className="border border-rule p-5  bg-white">
-                  <p className="text-[13px] mb-4">bKash Payment</p>
-
-                  <div className="flex items-center justify-between border border-rule px-4 py-3 mb-4 bg-white">
-                    <span className="text-sm font-medium">bKash Number</span>
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm font-mono">{BKASH_NUMBER}</span>
-                      <button type="button" onClick={handleCopyNumber} className="text-charcoal/50 hover:text-charcoal transition-colors">
-                        {numberCopied ? <Check size={14} /> : <Copy size={14} />}
-                      </button>
+              {/* 3. Payment: follows the district. */}
+              <fieldset>
+                <legend className="font-heading text-[24px] mb-4">Payment</legend>
+                {!form.district ? (
+                  <p className="border border-rule px-4 py-4 text-[13px] text-graphite bg-white">Choose your district above to see how you’ll pay.</p>
+                ) : !isAdvancePay ? (
+                  <div className="border border-ink px-5 py-4 bg-white flex items-start justify-between gap-4">
+                    <div>
+                      <p className="text-[14px]">Cash on delivery</p>
+                      <p className="text-[13px] text-graphite mt-1">Inside Dhaka — nothing to pay now. Pay the rider when your order arrives.</p>
+                    </div>
+                    <span className="shrink-0 text-[14px]">Tk {deliveryCharge} delivery</span>
+                  </div>
+                ) : (
+                  // bKash advance: the delivery charge, sent before the order.
+                  <div className="border border-ink bg-[#F6F1E7]">
+                    <div className="px-5 py-4 flex items-start justify-between gap-4 border-b border-black/10">
+                      <div>
+                        <p className="text-[11px] uppercase tracking-[0.16em] text-burgundy">Outside Dhaka · advance payment</p>
+                        <p className="text-[14px] mt-1">Send the delivery charge by bKash to place your order. The rest is cash on delivery.</p>
+                      </div>
+                      <span className="shrink-0 font-heading text-[26px] leading-none">Tk {deliveryCharge}</span>
+                    </div>
+                    <div className="px-5 py-5 space-y-5">
+                      <div className="flex items-center justify-between gap-3 bg-white border border-black/10 px-4 h-14">
+                        <div className="min-w-0">
+                          <p className="text-[11px] uppercase tracking-[0.14em] text-graphite">bKash number · Send money</p>
+                          <p className="text-[16px] tabular-nums tracking-wide">{BKASH_NUMBER}</p>
+                        </div>
+                        <button type="button" onClick={handleCopyNumber}
+                          className="shrink-0 inline-flex items-center gap-1.5 h-9 px-3 border border-ink text-[11px] uppercase tracking-[0.14em] hover:bg-ink hover:text-white transition-colors">
+                          {numberCopied ? <><Check size={13} /> Copied</> : <><Copy size={13} /> Copy</>}
+                        </button>
+                      </div>
+                      <ol className="grid sm:grid-cols-2 gap-x-6 gap-y-2.5 text-[13px] text-graphite">
+                        {['Open the bKash app or dial *247#', 'Choose Send Money', `Send Tk ${deliveryCharge} to the number above`, 'Copy the Transaction ID from the SMS'].map((step, i) => (
+                          <li key={step} className="flex gap-3">
+                            <span className="shrink-0 w-5 h-5 rounded-full bg-ink text-white text-[11px] flex items-center justify-center">{i + 1}</span>
+                            {step}
+                          </li>
+                        ))}
+                      </ol>
+                      <div>
+                        <label htmlFor="co-trx" className="text-[13px] block mb-2">Transaction ID *</label>
+                        <input id="co-trx" type="text" required={isAdvancePay} value={bkashTrxId}
+                          onChange={(e) => setBkashTrxId(e.target.value.toUpperCase().trim())}
+                          placeholder="e.g. K8H7G6F5D4" autoComplete="off"
+                          className="w-full h-12 border border-rule px-4 text-[14px] bg-white outline-none focus:border-ink transition-colors placeholder:text-graphite/60 uppercase tracking-[0.12em]" />
+                        <p className="mt-2 text-[12px] text-graphite">The order can’t be placed without it. We check it before your order ships.</p>
+                      </div>
                     </div>
                   </div>
+                )}
+              </fieldset>
 
-                  <ul className="text-xs text-charcoal/60 space-y-1.5 mb-4 list-disc list-inside">
-                    <li>Dial *247# or open your bKash app</li>
-                    <li>Select "Send Money"</li>
-                    <li>Send Tk {deliveryCharge}.00 to the number above</li>
-                    <li>Enter the Transaction ID you receive by SMS below</li>
-                  </ul>
+              {/* Terms, then the order. */}
+              <div className="space-y-4">
+                <label className="flex items-start gap-3 text-[14px] cursor-pointer">
+                  <input type="checkbox" required className="mt-0.5 w-4 h-4 accent-black" checked={agreed}
+                    onChange={(e) => { setAgreed(e.target.checked); setSubmitError(''); }} />
+                  <span>
+                    I agree to SUNDAY’s{' '}
+                    <Link to="/support/terms" target="_blank" className="underline underline-offset-4">Terms of service</Link>,{' '}
+                    <Link to="/support/refunds" target="_blank" className="underline underline-offset-4">Refund policy</Link> and{' '}
+                    <Link to="/support/privacy" target="_blank" className="underline underline-offset-4">Privacy policy</Link>.
+                  </span>
+                </label>
 
-                  <label className="text-[13px] block mb-2">Transaction ID *</label>
-                  <input
-                    type="text" required={isAdvancePay} value={bkashTrxId}
-                    onChange={e => setBkashTrxId(e.target.value)}
-                    placeholder="TRXID (e.g., K8H7G6F5D4)"
-                    className="w-full border border-rule px-4 py-3 text-sm bg-white outline-none focus:border-ink transition-colors placeholder:text-charcoal/30"
-                  />
-                </div>
-              )}
+                {submitError && <p className="text-[13px] text-coral" role="alert">{submitError}</p>}
 
-              {submitError && <p className="text-[13px] text-coral" role="alert">{submitError}</p>}
-
-              <button
-                type="submit"
-                disabled={submitting}
-                className="w-full h-12 bg-ink text-white text-[13px] hover:bg-ink/85 transition-colors disabled:opacity-50"
-              >
-                {submitting ? 'Placing Order...' : 'Confirm Order'}
-              </button>
+                <button
+                  type="submit"
+                  disabled={submitting || !agreed}
+                  className="w-full h-14 bg-ink text-white text-[13px] uppercase tracking-[0.14em] hover:bg-ink/85 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                >
+                  {submitting ? 'Placing order…' : `Place order · Tk ${total.toLocaleString()}`}
+                </button>
+              </div>
             </form>
           </div>
 
