@@ -5,7 +5,8 @@ import { addToCart, openCartDrawer } from '@/lib/cartStore';
 import { isSizeAvailable, isSoldOut, formatPrice } from '@/lib/catalog';
 import { useLiveSales, withSale } from '@/lib/pricing';
 
-// Grid tile: photo on a quiet ground, name left and price right underneath. Hovering
+// Grid tile: photo on a quiet ground, name left and price right underneath,
+// then its sizes. Hovering
 // shows the second photo and a row of sizes that add straight to the bag.
 // `colours` (optional): the other colours of the same piece (colour group),
 // shown as small swatches under the price.
@@ -89,9 +90,19 @@ export default function ProductCard({ product: raw, colours = [] }) {
         </div>
         {soldOut ? (
           <p className="text-graphite mt-0.5">Sold out</p>
-        ) : colorCount > 1 && colours.length === 0 ? (
-          <p className="text-graphite mt-0.5">{colorCount} colours</p>
-        ) : null}
+        ) : (
+          <>
+            {product.sizes?.length > 0 && (
+              // Every size at a glance; ones out of stock struck through.
+              <p className="mt-1 flex flex-wrap gap-x-2 text-[11px] tracking-wide text-graphite" aria-label="Sizes">
+                {product.sizes.map((size) => (
+                  <span key={size} className={isSizeAvailable(product, size) ? '' : 'line-through opacity-50'}>{size}</span>
+                ))}
+              </p>
+            )}
+            {colorCount > 1 && colours.length === 0 && <p className="text-graphite mt-0.5">{colorCount} colours</p>}
+          </>
+        )}
       </Link>
       {colours.length > 0 && (
         <div className="flex gap-1.5 pt-1">
