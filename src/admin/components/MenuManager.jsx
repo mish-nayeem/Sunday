@@ -6,7 +6,7 @@ import {
   deleteNavCategory,
   reorderNavCategories,
 } from '../lib/navCategories.js'
-import { linkChoices, rowLink, dropLink, DEFAULT_SHOP } from '@/lib/menus'
+import { linkChoices, rowLink, dropOf, lookbookLink, DEFAULT_SHOP } from '@/lib/menus'
 import { IconX } from './Icons.jsx'
 import AdminBox from './AdminBox.jsx'
 import InfoTip from './InfoTip.jsx'
@@ -20,7 +20,7 @@ const TABS = {
   },
   drops: {
     title: 'EXPLORE TAB',
-    intro: 'The EXPLORE tab of the side menu: your drops. Each one opens the shop with only that drop’s products, so customers can shop drop by drop. A lookbook or the About page can go here too.',
+    intro: 'The EXPLORE tab of the side menu: your drops. Each one opens that drop’s lookbook, where every photo shows the products worn in it. A drop you create in Products → Collections appears here by itself. Point a row at Drop · … instead to open the drop’s products in the shop.',
     empty: 'Nothing here yet, so the site lists every drop a product carries, A to Z.',
   },
 }
@@ -35,7 +35,7 @@ export default function MenuManager({ menu, drops = [], products = [] }) {
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
   const [confirmId, setConfirmId] = useState(null)
-  const [draft, setDraft] = useState({ label: '', link: menu === 'drops' && drops[0] ? dropLink(drops[0]) : '/shop' })
+  const [draft, setDraft] = useState({ label: '', link: menu === 'drops' && drops[0] ? lookbookLink(drops[0]) : '/shop' })
 
   async function load() {
     const { categories, error } = await fetchAllNavCategories(menu)
@@ -80,13 +80,13 @@ export default function MenuManager({ menu, drops = [], products = [] }) {
   // The drops products carry that the EXPLORE tab doesn't list yet.
   const missingDrops = useMemo(() => {
     if (menu !== 'drops') return []
-    const listed = new Set(rows.map((r) => rowLink(r)))
-    return drops.filter((d) => !listed.has(dropLink(d)))
+    const listed = new Set(rows.map((r) => dropOf(rowLink(r)).toLowerCase()))
+    return drops.filter((d) => !listed.has(d.toLowerCase()))
   }, [menu, rows, drops])
 
   const counts = useMemo(() => {
     const map = {}
-    for (const p of products) if (p.drop_name) map[dropLink(p.drop_name)] = (map[dropLink(p.drop_name)] || 0) + 1
+    for (const p of products) if (p.drop_name) map[p.drop_name] = (map[p.drop_name] || 0) + 1
     return map
   }, [products])
 
@@ -150,12 +150,12 @@ export default function MenuManager({ menu, drops = [], products = [] }) {
         <div className="cm-suggest mono">
           <span className="ab-label">
             DROPS NOT IN EXPLORE YET
-            <InfoTip>Drops your products carry that this tab doesn’t list. One tap adds it, linked to that drop’s products.</InfoTip>
+            <InfoTip>Drops your products carry that this tab doesn’t list. One tap adds it, linked to that drop’s lookbook.</InfoTip>
           </span>
           <div className="cm-chips">
             {missingDrops.map((d) => (
-              <button key={d} type="button" disabled={busy} onClick={() => run(() => createNavCategory({ label: d.toUpperCase(), link: dropLink(d), sortOrder: rows.length, menu }))}>
-                + {d} <b>{counts[dropLink(d)] || 0}</b>
+              <button key={d} type="button" disabled={busy} onClick={() => run(() => createNavCategory({ label: d.toUpperCase(), link: lookbookLink(d), sortOrder: rows.length, menu }))}>
+                + {d} <b>{counts[d] || 0}</b>
               </button>
             ))}
           </div>

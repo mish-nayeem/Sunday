@@ -26,7 +26,8 @@ function HeroButton({ to, children }) {
 
 // A drop under the hero (Admin → Homepage → Drop sections): a wide photo with
 // the drop's name and a line of text bottom left, SHOP NOW bottom right
-// (→ only that drop's products), then a row of picked photos.
+// (→ only that drop's products), then a row of picked photos, each opening
+// its look in the drop's lookbook.
 function DropFeature({ f, isPhone }) {
   const shop = dropShopLink(f.drop_name);
   const banner = (isPhone && f.mobile_image_url) || f.image_url;
@@ -69,14 +70,17 @@ function DropFeature({ f, isPhone }) {
       {pics.length > 0 && (
         <div className="px-4 md:px-6 pt-4 md:pt-5 grid grid-cols-2 md:grid-cols-4 gap-2 md:gap-4">
           {pics.map((p, i) => {
-            const to = p.product_id ? `/product/${p.product_id}` : shop;
+            // A look opens the drop's lookbook on that photo, with its products.
+            const to = p.look_id
+              ? `/lookbook/${encodeURIComponent(f.drop_name)}?look=${p.look_id}`
+              : p.product_id ? `/product/${p.product_id}` : shop;
             return (
               <Link key={`${p.url}-${i}`} to={to} className="group relative block aspect-[3/4] bg-stone overflow-hidden">
                 <img src={imgUrl(p.url, 700)} alt="" loading="lazy" className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-[1.02]" />
                 <span className="absolute right-3 bottom-3 md:right-4 md:bottom-4 text-white [filter:drop-shadow(0_1px_3px_rgba(0,0,0,0.45))]" aria-hidden="true">
                   <ShoppingBag size={22} strokeWidth={1.25} />
                 </span>
-                <span className="sr-only">{p.product_id ? 'View product' : `Shop ${f.drop_name}`}</span>
+                <span className="sr-only">{p.look_id ? 'Shop this look' : p.product_id ? 'View product' : `Shop ${f.drop_name}`}</span>
               </Link>
             );
           })}

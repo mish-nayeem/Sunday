@@ -647,7 +647,7 @@ export default function ProductForm({ existing, copyFrom = null, allProducts = [
         </Box>
 
         {/* ---- Category ---- */}
-        <Box title="CATEGORY" tip="The product shows under this category's tab in the shop (Shirts, T-shirts, Polos, Trousers). Picking one also fills in the size chart from the last product in that category.">
+        <Box title="CATEGORY" tip="The product shows under this category in the shop: Shirts, T-shirts, Polos, Trousers (formal, cargo, jeans), Jackets, or Accessories (bags, belts, caps, shoes, other). Bags and belts can then be tagged in lookbook photos like any piece. Picking one also fills in the size chart from the last product in that category.">
           <div className="pf-cats">
             {[...new Set([...categories, p.category].filter(Boolean))].sort().map((c) => (
               <button

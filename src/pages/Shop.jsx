@@ -4,7 +4,7 @@ import { X } from 'lucide-react';
 import { supabase } from '@/lib/supabaseClient';
 import ProductCard from '@/components/products/ProductCard';
 import { SECTIONS, COLLECTIONS, SIZE_ORDER, isSizeAvailable, isSoldOut } from '@/lib/catalog';
-import { useMenus } from '@/lib/menus';
+import { useMenus, dropLink } from '@/lib/menus';
 
 // The params that say which list is showing; sort, size and stock only refine it.
 const LIST_KEYS = ['category', 'type', 'drop', 'filter', 'search'];
@@ -43,8 +43,11 @@ export default function Shop() {
   const [loading, setLoading] = useState(true);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const menus = useMenus();
-  // Inside a drop: the other drops (EXPLORE). Anywhere else: the SHOP list.
-  const tabs = (drop ? menus.explore : menus.shop).filter((m) => m.to.startsWith('/shop'));
+  // Inside a drop: the other drops (EXPLORE), each opening its products here.
+  // Anywhere else: the SHOP list.
+  const tabs = drop
+    ? menus.explore.filter((m) => m.drop).map((m) => ({ ...m, to: dropLink(m.drop) }))
+    : menus.shop.filter((m) => m.to.startsWith('/shop'));
 
   const setParam = (key, value) => {
     const next = new URLSearchParams(params);

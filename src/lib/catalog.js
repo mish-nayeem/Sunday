@@ -1,5 +1,5 @@
 // Shared storefront vocabulary: how the database's product categories are
-// grouped into the four sections shoppers browse by, plus small helpers the
+// grouped into the sections shoppers browse by, plus small helpers the
 // grid, product page and quick-add all need to agree on.
 
 // Each shop section groups one or more database categories.
@@ -7,7 +7,9 @@ export const SECTIONS = [
   { key: 'shirt', label: 'Shirts', categories: ['full_sleeve_shirts', 'half_sleeve_shirts', 'formal_shirts'] },
   { key: 't_shirts', label: 'T-shirts', categories: ['t_shirts'] },
   { key: 'polo', label: 'Polos', categories: ['polo'] },
-  { key: 'pant', label: 'Trousers', categories: ['formal_pants', 'cargo'] },
+  { key: 'pant', label: 'Trousers', categories: ['formal_pants', 'cargo', 'jeans'] },
+  { key: 'outerwear', label: 'Jackets', categories: ['jackets'] },
+  { key: 'accessories', label: 'Accessories', categories: ['bags', 'belts', 'caps', 'shoes', 'accessories'] },
 ];
 
 export const CATEGORY_LABELS = {
@@ -18,6 +20,13 @@ export const CATEGORY_LABELS = {
   t_shirts: 'T-shirts',
   cargo: 'Cargo',
   formal_pants: 'Formal trousers',
+  jeans: 'Jeans',
+  jackets: 'Jackets',
+  bags: 'Bags',
+  belts: 'Belts',
+  caps: 'Caps',
+  shoes: 'Shoes',
+  accessories: 'Other accessories',
 };
 
 export const COLLECTIONS = [

@@ -1,17 +1,27 @@
 // The side menu (☰) as Admin → Side menu sets it: a SHOP tab and an EXPLORE
-// tab. Rows live in nav_categories (menu 'shop' / 'drops'), each a label and
+// tab (drops; each opens its lookbook). A drop made in Admin → Products →
+// Collections is an EXPLORE row. Rows live in nav_categories (menu 'shop' / 'drops'), each a label and
 // a link. Until a tab has rows of its own it shows a sensible default.
 import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabaseClient';
 import { SECTIONS, CATEGORY_LABELS, COLLECTIONS } from '@/lib/catalog';
 
 export const dropLink = (name) => `/shop?drop=${encodeURIComponent(name)}`;
+export const lookbookLink = (name) => `/lookbook/${encodeURIComponent(name)}`;
 
-// Where a row goes. Rows saved before links existed: SHOP rows name a
-// category key, EXPLORE rows a drop.
+// The drop a link is about: /shop?drop=X or /lookbook/X → X.
+export function dropOf(link) {
+  if (!link) return '';
+  if (link.startsWith('/lookbook/')) return decodeURIComponent(link.slice('/lookbook/'.length).split(/[?#]/)[0]);
+  if (link.startsWith('/shop?')) return new URLSearchParams(link.split('?')[1]).get('drop') || '';
+  return '';
+}
+
+// Where a row goes. Rows without a link of their own: SHOP rows name a
+// category key; EXPLORE rows name a drop and open its lookbook.
 export function rowLink(row) {
   if (row.link) return row.link;
-  if (row.menu === 'drops') return dropLink(row.label);
+  if (row.menu === 'drops') return lookbookLink(row.label);
   const key = String(row.label || '').toLowerCase();
   const section = SECTIONS.find((s) => s.key === key);
   return section ? `/shop?category=${key}` : `/shop?type=${encodeURIComponent(key)}`;
@@ -53,7 +63,10 @@ async function loadMenus() {
     supabase.from('nav_categories').select('*').eq('active', true).order('sort_order'),
     supabase.from('products').select('drop_name').not('drop_name', 'is', null),
   ]);
-  const toItem = (r) => ({ key: `${r.menu}-${r.id}`, label: rowLabel(r), to: rowLink(r) });
+  const toItem = (r) => {
+    const to = rowLink(r);
+    return { key: `${r.menu}-${r.id}`, label: rowLabel(r), to, drop: r.menu === 'drops' ? dropOf(to) : '' };
+  };
   const shopRows = (rows || []).filter((r) => r.menu === 'shop');
   const exploreRows = (rows || []).filter((r) => r.menu === 'drops');
 
@@ -62,7 +75,7 @@ async function loadMenus() {
     explore: exploreRows.length
       ? exploreRows.map(toItem)
       : [...new Set((drops || []).map((d) => d.drop_name).filter(Boolean))].sort()
-        .map((name) => ({ key: name, label: name, to: dropLink(name) })),
+        .map((name) => ({ key: name, label: name, to: lookbookLink(name), drop: name })),
   };
   return cached;
 }

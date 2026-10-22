@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { supabase } from '../lib/supabaseClient.js'
 import { imgUrl, uploadImage } from '../lib/images.js'
 import { fetchFeatures, createFeature, updateFeature, deleteFeature, reorderFeatures } from '../lib/features.js'
+import { fetchAllLooks, createLook, updateLook } from '../lib/lookbook.js'
 import InfoTip from './InfoTip.jsx'
 import FocusPicker from './FocusPicker.jsx'
 import { IconX } from './Icons.jsx'
@@ -11,13 +12,21 @@ const dropKey = (s) => String(s || '').trim().toLowerCase()
 
 // Admin → Homepage → Drop sections. Each section shows under the main hero:
 // a wide photo with the drop's name, a line of text and SHOP NOW (→ that
-// drop's products), then a row of picked photos. Every change saves at once.
+// drop's products), then a row of picked photos — each one a look in the
+// drop's lookbook, tagged with the products worn in it. Every change saves
+// at once.
 export default function FeatureManager({ drops = [], products = [] }) {
   const [list, setList] = useState([])
   const [loading, setLoading] = useState(true)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
   const [confirmId, setConfirmId] = useState(null)
+  const [looks, setLooks] = useState([])
+
+  async function loadLooks() {
+    const { looks } = await fetchAllLooks()
+    setLooks(looks)
+  }
 
   async function load() {
     const { features, error } = await fetchFeatures({ all: true })
@@ -26,7 +35,7 @@ export default function FeatureManager({ drops = [], products = [] }) {
     setLoading(false)
   }
 
-  useEffect(() => { load() }, [])
+  useEffect(() => { load(); loadLooks() }, [])
 
   async function add() {
     setBusy(true)
@@ -105,6 +114,8 @@ export default function FeatureManager({ drops = [], products = [] }) {
             count={list.length}
             drops={drops}
             products={products}
+            looks={looks}
+            onLooksChanged={loadLooks}
             busy={busy}
             confirm={confirmId === f.id}
             onPatch={(fields) => patch(f, fields)}
@@ -125,7 +136,7 @@ export default function FeatureManager({ drops = [], products = [] }) {
   )
 }
 
-function FeatureCard({ f, index, count, drops, products, busy, confirm, onPatch, onUpload, withBusy, onMove, onAskDelete, onCancelDelete, onDelete }) {
+function FeatureCard({ f, index, count, drops, products, looks, onLooksChanged, busy, confirm, onPatch, onUpload, withBusy, onMove, onAskDelete, onCancelDelete, onDelete }) {
   const pics = Array.isArray(f.pics) ? f.pics : []
   const dropProducts = useMemo(
     () => products.filter((p) => dropKey(p.drop_name) === dropKey(f.drop_name)),
@@ -149,25 +160,57 @@ function FeatureCard({ f, index, count, drops, products, busy, confirm, onPatch,
     }
   }
 
+  // Every best photo is a look in the drop's lookbook: tapping it on the
+  // homepage opens that look with the products worn in it.
+  const dropLooks = useMemo(() => looks.filter((l) => dropKey(l.drop_name) === dropKey(f.drop_name)), [looks, f.drop_name])
+  const lookById = useMemo(() => new Map(looks.map((l) => [String(l.id), l])), [looks])
+
+  async function newLook(url) {
+    const { look, error } = await createLook({ drop_name: f.drop_name, image_url: url, sort_order: dropLooks.length + 100 })
+    if (error || !look) throw new Error("Couldn't add the photo to the lookbook — has the lookbook migration run?")
+    return look
+  }
+
   function addPics(e) {
     const files = [...(e.target.files || [])].slice(0, MAX_PICS - pics.length)
     e.target.value = ''
     if (!files.length) return
     withBusy(async () => {
-      const urls = []
-      for (const file of files) urls.push(await onUpload(file))
-      await setPics([...pics, ...urls.map((url) => ({ url, product_id: null }))])
+      const added = []
+      for (const file of files) {
+        const url = await onUpload(file)
+        const look = await newLook(url)
+        added.push({ url, look_id: look.id })
+      }
+      await setPics([...pics, ...added])
+      await onLooksChanged()
     })
   }
 
-  // One photo from each of the drop's products, linked to that product.
-  function fillFromProducts() {
-    const have = new Set(pics.map((p) => p.product_id).filter(Boolean))
-    const extra = dropProducts
-      .filter((p) => !have.has(p.id) && p.images?.[0])
-      .slice(0, Math.max(0, 4 - pics.length))
-      .map((p) => ({ url: p.images[0], product_id: p.id }))
+  // The drop's lookbook photos not shown here yet.
+  function fillFromLooks() {
+    const have = new Set(pics.map((p) => String(p.look_id)))
+    const extra = dropLooks
+      .filter((l) => l.active && !have.has(String(l.id)))
+      .slice(0, MAX_PICS - pics.length)
+      .map((l) => ({ url: l.image_url, look_id: l.id }))
     if (extra.length) setPics([...pics, ...extra])
+  }
+
+  // Tag or untag a product in a photo. A photo that isn't a look yet (added
+  // before looks) becomes one first.
+  function setTags(i, productIds) {
+    withBusy(async () => {
+      let pic = pics[i]
+      if (!pic.look_id) {
+        const look = await newLook(pic.url)
+        pic = { url: pic.url, look_id: look.id }
+        await setPics(pics.map((x, j) => (j === i ? pic : x)))
+      }
+      const { error } = await updateLook(pic.look_id, { product_ids: productIds.map(String) })
+      if (error) throw new Error("Couldn't save the products in that photo — try again.")
+      await onLooksChanged()
+    })
   }
 
   function movePic(i, dir) {
@@ -277,28 +320,49 @@ function FeatureCard({ f, index, count, drops, products, busy, confirm, onPatch,
         BEST PHOTOS UNDER THE BANNER · {pics.length}/{MAX_PICS}
         <InfoTip>
           <p>Your best photos from this drop, in a row under the banner: 4 to a row on a PC, 2 on a phone. Upload 4 (or 8) tall photos, about 1200 × 1600 px (3:4).</p>
-          <p>Under each photo, <b>Opens</b> picks where a tap goes: one product, or the whole drop. Arrows change the order.</p>
-          <p><b>Use product photos</b> fills empty places with the first photo of the drop’s products, each linked to its product.</p>
+          <p>Each photo is also a look in this drop’s <b>lookbook</b>. Under it, <b>+ Product in this photo</b> tags the pieces worn — shirt, trousers, bag, belt. On the site, tapping the photo opens the drop’s lookbook with this photo in the middle and those products underneath.</p>
+          <p><b>Use lookbook photos</b> adds photos already in the drop’s lookbook. ✕ takes a photo off the homepage; it stays in the lookbook (delete it there under Lookbook).</p>
         </InfoTip>
       </span>
       <div className="fm-pics">
-        {pics.map((p, i) => (
-          <div className="fm-pic" key={`${p.url}-${i}`}>
-            <div className="fm-pic-img"><img src={imgUrl(p.url, { w: 300 })} alt="" /></div>
-            <select className="mono" value={p.product_id || ''} disabled={busy} aria-label="Opens" onChange={(e) => setPics(pics.map((x, j) => (j === i ? { ...x, product_id: e.target.value || null } : x)))}>
-              <option value="">Opens: the whole drop</option>
-              {dropProducts.map((d) => <option key={d.id} value={d.id}>Opens: {d.name}{d.variant ? ` · ${d.variant}` : ''}</option>)}
-              {p.product_id && !dropProducts.some((d) => d.id === p.product_id) && <option value={p.product_id}>Opens: a product outside this drop</option>}
-            </select>
-            <div className="hm-card-row mono">
-              <span className="hm-move">
-                <button type="button" onClick={() => movePic(i, -1)} disabled={i === 0 || busy} aria-label="Earlier">←</button>
-                <button type="button" onClick={() => movePic(i, 1)} disabled={i === pics.length - 1 || busy} aria-label="Later">→</button>
-              </span>
-              <button type="button" className="hm-x" onClick={() => setPics(pics.filter((_, j) => j !== i))} disabled={busy} aria-label="Remove photo"><IconX width="13" height="13" /></button>
+        {pics.map((p, i) => {
+          const look = p.look_id ? lookById.get(String(p.look_id)) : null
+          const tagged = (look?.product_ids || []).map(String)
+          const byId = new Map(products.map((x) => [String(x.id), x]))
+          const others = products.filter((x) => !tagged.includes(String(x.id)))
+          const name = (x) => `${x.name}${x.variant ? ` · ${x.variant}` : ''}`
+          return (
+            <div className="fm-pic" key={`${p.url}-${i}`}>
+              <div className="fm-pic-img"><img src={imgUrl(p.url, { w: 300 })} alt="" /></div>
+              {tagged.length > 0 && (
+                <ul className="fm-tags mono">
+                  {tagged.map((id) => (
+                    <li key={id}>
+                      <span>{byId.get(id) ? name(byId.get(id)) : 'A removed product'}</span>
+                      <button type="button" disabled={busy} aria-label="Untag" onClick={() => setTags(i, tagged.filter((t) => t !== id))}>×</button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+              <select className="mono" value="" disabled={busy} aria-label="Product in this photo" onChange={(e) => e.target.value && setTags(i, [...tagged, e.target.value])}>
+                <option value="">+ Product in this photo</option>
+                <optgroup label="This drop">
+                  {others.filter((x) => dropKey(x.drop_name) === dropKey(f.drop_name)).map((x) => <option key={x.id} value={x.id}>{name(x)}</option>)}
+                </optgroup>
+                <optgroup label="Other products">
+                  {others.filter((x) => dropKey(x.drop_name) !== dropKey(f.drop_name)).map((x) => <option key={x.id} value={x.id}>{name(x)}</option>)}
+                </optgroup>
+              </select>
+              <div className="hm-card-row mono">
+                <span className="hm-move">
+                  <button type="button" onClick={() => movePic(i, -1)} disabled={i === 0 || busy} aria-label="Earlier">←</button>
+                  <button type="button" onClick={() => movePic(i, 1)} disabled={i === pics.length - 1 || busy} aria-label="Later">→</button>
+                </span>
+                <button type="button" className="hm-x" onClick={() => setPics(pics.filter((_, j) => j !== i))} disabled={busy} aria-label="Remove photo"><IconX width="13" height="13" /></button>
+              </div>
             </div>
-          </div>
-        ))}
+          )
+        })}
         {pics.length < MAX_PICS && (
           <label className={`fm-pic-add mono ${busy ? 'busy' : ''}`}>
             <span>{busy ? 'Working…' : '+ Add photos'}</span>
@@ -307,9 +371,9 @@ function FeatureCard({ f, index, count, drops, products, busy, confirm, onPatch,
           </label>
         )}
       </div>
-      {pics.length < 4 && dropProducts.some((p) => p.images?.[0]) && (
+      {pics.length < MAX_PICS && dropLooks.some((l) => l.active && !pics.some((p) => String(p.look_id) === String(l.id))) && (
         <div className="hm-actions">
-          <button type="button" className="courier-btn ghost mono" onClick={fillFromProducts} disabled={busy}>Use product photos</button>
+          <button type="button" className="courier-btn ghost mono" onClick={fillFromLooks} disabled={busy}>Use lookbook photos</button>
         </div>
       )}
     </div>

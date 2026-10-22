@@ -40,9 +40,9 @@ export async function fetchAllLooks() {
 }
 
 export async function createLook(look) {
-  const { error } = await supabase.from('lookbook_looks').insert(look)
+  const { data, error } = await supabase.from('lookbook_looks').insert(look).select('*').single()
   if (error) console.error('[Supabase] createLook failed:', error.message)
-  return { error }
+  return { look: data, error }
 }
 
 export async function updateLook(id, patch) {

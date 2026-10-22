@@ -496,3 +496,9 @@
   padding: 8px;
 }
 .fm-pic-add em { font-style: normal; font-size: 10.5px; color: var(--steel); }
+
+.fm-tags { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 3px; font-size: 10.5px; }
+.fm-tags li { display: flex; align-items: center; justify-content: space-between; gap: 6px; padding: 3px 6px; border: 1px solid var(--steel-line); border-radius: 6px; color: var(--ink); }
+.fm-tags li span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.admin .main .fm-tags button { border: 0; background: none; color: var(--steel); cursor: pointer; font-size: 13px; line-height: 1; padding: 0 2px; }
+.admin .main .fm-tags button:hover { color: var(--signal); }
