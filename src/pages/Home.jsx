@@ -95,9 +95,12 @@ function Hero({ slides, button, countdown }) {
   const [at, setAt] = useState(0);
   const [muted, setMuted] = useState(true);
   const left = useCountdown(countdown?.at);
-  const shown = slides.length ? slidesFor(slides, isPhone) : [{ id: 'default', image_url: heroImage }];
-  const current = shown[at % shown.length];
-  const playing = isVideo(current.image_url);
+  // slides is null while they load: the hero stays dark rather than flash the
+  // built-in photo before the admin's own photo or video arrives. The
+  // built-in photo is only for a shop with no hero set at all.
+  const shown = slides === null ? [] : slides.length ? slidesFor(slides, isPhone) : [{ id: 'default', image_url: heroImage }];
+  const current = shown.length ? shown[at % shown.length] : null;
+  const playing = !!current && isVideo(current.image_url);
   const videoRefs = useRef({});
 
   useEffect(() => {
@@ -117,12 +120,12 @@ function Hero({ slides, button, countdown }) {
   useEffect(() => {
     Object.entries(videoRefs.current).forEach(([id, v]) => {
       if (!v) return;
-      if (String(current.id) === id) {
+      if (current && String(current.id) === id) {
         v.currentTime = 0;
         v.play().catch(() => {});
       } else v.pause();
     });
-  }, [current.id]);
+  }, [current?.id]);
 
   return (
     <section className="relative h-[100svh] min-h-[480px] bg-ink overflow-hidden">
@@ -182,7 +185,7 @@ function Hero({ slides, button, countdown }) {
   );
 }
 export default function Home() {
-  const [slides, setSlides] = useState([]);
+  const [slides, setSlides] = useState(null); // null until loaded
   const [extras, setExtras] = useState({ button: DEFAULT_HERO_BUTTON, countdown: null });
   const [features, setFeatures] = useState([]);
   const [isPhone, setIsPhone] = useState(() => window.matchMedia(PHONE_QUERY).matches);
