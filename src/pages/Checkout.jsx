@@ -1,9 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { supabase } from '@/lib/supabaseClient';
 import { motion } from 'framer-motion';
 import { Truck, ShieldCheck, ArrowLeft, Copy, Check } from 'lucide-react';
-import { getCart, clearCart } from '@/lib/cartStore';
+import { getCart, clearCart, subscribeCart, updateCartItem, changeCartItemSize, removeFromCart } from '@/lib/cartStore';
+import { imgUrl } from '@/lib/storage';
+import { isSizeAvailable } from '@/lib/catalog';
 import { useAuth } from '@/lib/AuthContext';
 import { checkCoupon } from '@/admin/lib/coupons.js';
 import { getAttribution } from '@/lib/attribution';
@@ -38,7 +40,9 @@ const SHIPPING_METHODS = [
 export default function Checkout() {
   const navigate = useNavigate();
   const { isAuthenticated } = useAuth();
-  const [cart, setCart] = useState(getCart());
+  const [bag, setBag] = useState(getCart());
+  const [catalog, setCatalog] = useState(new Map()); // productId → product (with sale)
+  const placed = useRef(false);
   const [form, setForm] = useState({ full_name: '', email: '', mobile: '', address: '', district: '', area: '', notes: '' });
   const [bkashTrxId, setBkashTrxId] = useState('');
   const [numberCopied, setNumberCopied] = useState(false);
@@ -49,20 +53,31 @@ export default function Checkout() {
   const [couponError, setCouponError] = useState('');
   const [checkingCoupon, setCheckingCoupon] = useState(false);
 
+  // The summary follows the bag: changing a size or quantity here (or in the
+  // bag drawer) updates it.
+  useEffect(() => subscribeCart(() => setBag(getCart())), []);
+
   // Bag prices are refreshed from the catalog and any running sale, so the
-  // summary matches what create_order will charge.
+  // summary matches what create_order will charge. The products also give
+  // each line its sizes and photo.
   useEffect(() => {
     const ids = [...new Set(getCart().map((i) => i.productId))];
     if (!ids.length) return;
     Promise.all([supabase.from('products').select('*').in('id', ids), fetchLiveSales()]).then(([{ data }, sales]) => {
       if (!data) return;
-      const byId = new Map(data.map((p) => [p.id, withSale(p, sales)]));
-      setCart((prev) => prev.map((i) => (byId.has(i.productId) ? { ...i, price: byId.get(i.productId).price } : i)));
+      setCatalog(new Map(data.map((p) => [p.id, withSale(p, sales)])));
     });
   }, []);
 
+  const cart = useMemo(
+    () => bag.map((i) => (catalog.has(i.productId) ? { ...i, price: catalog.get(i.productId).price } : i)),
+    [bag, catalog]
+  );
+
   useEffect(() => {
-    if (cart.length === 0) {
+    // An empty bag goes back to the bag page — but not right after an order,
+    // which empties it on the way to the confirmation.
+    if (cart.length === 0 && !placed.current) {
       navigate('/cart');
     }
   }, [cart.length, navigate]);
@@ -201,6 +216,7 @@ export default function Checkout() {
       }
     }
 
+    placed.current = true;
     clearCart();
     navigate(`/order-confirmation/${oid}`);
   };
@@ -364,12 +380,45 @@ export default function Checkout() {
                 Order Summary
               </h3>
               <div className="space-y-3 mb-6">
-                {cart.map(item => (
-                  <div key={`${item.productId}-${item.size}`} className="flex justify-between items-center text-sm py-1">
-                    <span className="text-charcoal/70">{item.name} <span className="text-charcoal/40">× {item.quantity}</span></span>
-                    <span className="font-mono font-medium">Tk {(item.price * item.quantity).toLocaleString()}</span>
-                  </div>
-                ))}
+                {cart.map((item) => {
+                  const product = catalog.get(item.productId);
+                  const photo = item.image || product?.images?.[0];
+                  const sizes = product?.sizes?.length ? product.sizes : [item.size];
+                  return (
+                    <div key={`${item.productId}-${item.size}`} className="flex gap-3 py-1">
+                      <Link to={`/product/${item.productId}`} className="shrink-0 w-14 h-[70px] bg-stone overflow-hidden">
+                        {photo && <img src={imgUrl(photo, 140)} alt="" className="w-full h-full object-cover" />}
+                      </Link>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex justify-between gap-3 text-[13px]">
+                          <span className="min-w-0 truncate">{item.name}</span>
+                          <span className="shrink-0 font-medium">Tk {(item.price * item.quantity).toLocaleString()}</span>
+                        </div>
+                        <div className="mt-2 flex flex-wrap items-center gap-2 text-[12px]">
+                          {/* Size: another size of the same piece, or more of it. */}
+                          <label className="sr-only" htmlFor={`size-${item.productId}-${item.size}`}>Size</label>
+                          <select
+                            id={`size-${item.productId}-${item.size}`}
+                            value={item.size}
+                            onChange={(e) => changeCartItemSize(item.productId, item.size, e.target.value)}
+                            className="h-8 border border-rule bg-white px-2 pr-6 outline-none focus:border-ink"
+                          >
+                            {sizes.map((sz) => {
+                              const ok = !product || isSizeAvailable(product, sz) || sz === item.size;
+                              return <option key={sz} value={sz} disabled={!ok}>Size {sz}{ok ? '' : ' (sold out)'}</option>;
+                            })}
+                          </select>
+                          <div className="flex items-center h-8 border border-rule">
+                            <button type="button" onClick={() => updateCartItem(item.productId, item.size, item.quantity - 1)} className="w-8 h-full hover:bg-stone" aria-label={`One less ${item.name}`}>−</button>
+                            <span className="w-7 text-center tabular-nums" aria-live="polite">{item.quantity}</span>
+                            <button type="button" onClick={() => updateCartItem(item.productId, item.size, item.quantity + 1)} className="w-8 h-full hover:bg-stone" aria-label={`One more ${item.name}`}>+</button>
+                          </div>
+                          <button type="button" onClick={() => removeFromCart(item.productId, item.size)} className="ml-auto text-graphite underline underline-offset-2 hover:text-ink">Remove</button>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
               <div className="h-px bg-black/10 mb-4" />
               <div className="flex justify-between mb-2.5">

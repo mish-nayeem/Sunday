@@ -1,9 +1,8 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { imgUrl } from '@/lib/storage';
-import { addToCart, openCartDrawer } from '@/lib/cartStore';
-import { flyToBag } from '@/lib/flyToBag';
-import { isSizeAvailable, isSoldOut, formatPrice } from '@/lib/catalog';
+import { formatPrice } from '@/lib/catalog';
+import { ProductHeader, ProductDisclosures, useBuyPanel } from '@/components/products/ProductPanels';
 import { useLiveSales, withSale } from '@/lib/pricing';
 
 const WIDE = '(min-width: 1024px)';
@@ -19,20 +18,14 @@ function useWide() {
   return wide;
 }
 
-// Name, colour, price and the words about a piece.
+// The left column of the product page, for one piece of the look: which
+// piece it is, then the same name, price and details as its product page.
 function Details({ product, index, count }) {
-  const onSale = !!product.compare_at;
-  const text = [product.description, product.details, product.care_instructions].filter(Boolean).join('\n\n');
   return (
-    <div>
+    <div className="max-w-sm">
       <p className="text-[11px] uppercase tracking-[0.16em] text-graphite mb-3">Piece {index + 1} of {count}</p>
-      <h2 className="font-heading text-[26px] leading-tight">{product.name}</h2>
-      {product.variant && <p className="text-[14px] text-graphite mt-1">{product.variant}</p>}
-      <p className="mt-2 text-[15px]">
-        {onSale && <span className="text-graphite line-through mr-2">{formatPrice(product.compare_at)}</span>}
-        <span className={onSale ? 'text-coral' : ''}>{formatPrice(product.price)}</span>
-      </p>
-      {text && <p className="mt-5 text-[13px] leading-relaxed text-graphite whitespace-pre-line">{text}</p>}
+      <ProductHeader product={product} as="h2" />
+      <ProductDisclosures product={product} />
       <Link to={`/product/${product.id}`} className="inline-block mt-5 text-[12px] underline underline-offset-4">
         Full product page
       </Link>
@@ -40,57 +33,12 @@ function Details({ product, index, count }) {
   );
 }
 
-// Size and add to bag for one piece.
+// The right column of the product page — colour, size, Notify me, Add to
+// bag, Buy now, wishlist — for one piece. The bag animation starts from the
+// piece's photo.
 function BuyBox({ product }) {
-  const [size, setSize] = useState('');
-  const [error, setError] = useState(false);
-  const buttonRef = useRef(null);
-  const soldOut = isSoldOut(product);
-
-  useEffect(() => {
-    setError(false);
-    setSize(product.sizes?.length === 1 && isSizeAvailable(product, product.sizes[0]) ? product.sizes[0] : '');
-  }, [product.id]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  const add = () => {
-    if (!size) return setError(true);
-    addToCart(product, size, 1);
-    // From the piece's photo on screen, else the button itself.
-    const photo = document.querySelector(`[data-piece="${product.id}"] img`);
-    flyToBag(photo || buttonRef.current, product.images?.[0] && imgUrl(product.images[0], 300)).then(openCartDrawer);
-  };
-
-  return (
-    <div>
-      <p className="text-[13px] mb-2">{error ? <span className="text-coral">Choose a size</span> : 'Size'}</p>
-      <div className="flex flex-wrap gap-2">
-        {(product.sizes || []).map((s) => {
-          const ok = isSizeAvailable(product, s);
-          return (
-            <button
-              key={s}
-              type="button"
-              disabled={!ok}
-              aria-pressed={size === s}
-              onClick={() => { setSize(s); setError(false); }}
-              className={`min-w-12 h-10 px-3 text-[13px] border ${size === s ? 'border-ink bg-ink text-white' : 'border-rule hover:border-ink'} disabled:text-graphite/50 disabled:line-through disabled:hover:border-rule`}
-            >
-              {s}
-            </button>
-          );
-        })}
-      </div>
-      <button
-        ref={buttonRef}
-        type="button"
-        onClick={add}
-        disabled={soldOut}
-        className="mt-4 w-full h-12 bg-ink text-white text-[13px] disabled:bg-graphite/40"
-      >
-        {soldOut ? 'Sold out' : 'Add to bag'}
-      </button>
-    </div>
-  );
+  const { panel } = useBuyPanel(product, { photoSelector: `[data-piece="${product.id}"] img` });
+  return <div className="w-full max-w-sm lg:ml-auto">{panel}</div>;
 }
 
 // One look from a lookbook, shoppable. On a computer: the look's photo, then
@@ -146,7 +94,7 @@ export default function LookView({ look, items: rawItems, drop }) {
   );
 
   return (
-    <div className="lg:grid lg:grid-cols-[minmax(0,300px)_minmax(0,1fr)_minmax(0,300px)] lg:gap-10">
+    <div className="lg:grid lg:grid-cols-[minmax(240px,1fr)_minmax(340px,560px)_minmax(240px,1fr)] lg:gap-10 xl:gap-16">
       {wide && (
         <aside className="sticky top-36 self-start pt-2">
           {current ? (

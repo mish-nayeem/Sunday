@@ -82,6 +82,25 @@ export function updateCartItem(productId, size, newQuantity) {
   saveCart(cart);
 }
 
+// Moves a bag line to another size; if that size is already in the bag the
+// two lines join up.
+export function changeCartItemSize(productId, oldSize, newSize) {
+  if (oldSize === newSize) return;
+  const cart = getCart();
+  const line = cart.find((i) => i.productId === productId && i.size === oldSize);
+  if (!line) return;
+  const same = cart.find((i) => i.productId === productId && i.size === newSize);
+  let next;
+  if (same) {
+    same.quantity += line.quantity;
+    next = cart.filter((i) => i !== line);
+  } else {
+    line.size = newSize;
+    next = cart;
+  }
+  saveCart(next);
+}
+
 export function removeFromCart(productId, size) {
   const cart = getCart().filter((i) => !(i.productId === productId && i.size === size));
   saveCart(cart);

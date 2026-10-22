@@ -16,9 +16,10 @@ const sentence = (text) => (text ? text[0].toUpperCase() + text.slice(1).toLower
 // video plays to its end, then the next slide comes. Videos start muted
 // (browsers only autoplay muted) — the speaker button bottom left turns the
 // sound on. With nothing set yet, the campaign photo stands in.
-// Square-edged white outline button over a photo: SHOP NOW, A CLOSER LOOK.
+// Square-edged button over a photo — SHOP NOW, A CLOSER LOOK: a cream
+// outline with the text in the logo's orange (coral); fills cream on hover.
 function HeroButton({ to, children }) {
-  const cls = 'inline-flex items-center justify-center h-10 md:h-11 px-5 md:px-6 border border-white text-white text-[11px] md:text-[12px] font-semibold uppercase tracking-[0.08em] hover:bg-white hover:text-ink transition-colors';
+  const cls = 'inline-flex items-center justify-center h-10 md:h-11 px-5 md:px-6 border border-[#F6F1E7] text-coral text-[11px] md:text-[12px] font-semibold uppercase tracking-[0.08em] [text-shadow:0_1px_6px_rgba(0,0,0,0.25)] hover:bg-[#F6F1E7] hover:[text-shadow:none] transition-colors';
   return /^https?:/.test(to)
     ? <a href={to} target="_blank" rel="noreferrer" className={cls}>{children}</a>
     : <Link to={to} className={cls}>{children}</Link>;

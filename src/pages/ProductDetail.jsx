@@ -1,56 +1,13 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useParams, Link, useNavigate } from 'react-router-dom';
+import { useParams, Link } from 'react-router-dom';
 import { supabase } from '@/lib/supabaseClient';
 import { imgUrl } from '@/lib/storage';
-import { addToCart, openCartDrawer, addRecentlyViewed, getRecentlyViewed, isInWishlist, toggleWishlist } from '@/lib/cartStore';
-import { CATEGORY_LABELS, DELIVERY, sectionFor, isSizeAvailable, isSoldOut, formatPrice } from '@/lib/catalog';
+import { addRecentlyViewed, getRecentlyViewed } from '@/lib/cartStore';
+import { sectionFor, isSoldOut, formatPrice } from '@/lib/catalog';
 import ProductCard from '@/components/products/ProductCard';
-import SizeChartPopup, { SizeTable } from '@/components/products/SizeChartPopup';
+import { ProductHeader, ProductDisclosures, useBuyPanel } from '@/components/products/ProductPanels';
 import Lightbox from '@/components/products/Lightbox';
-import { flyToBag } from '@/lib/flyToBag';
 import { useLiveSales, withSale } from '@/lib/pricing';
-import { timeLeft } from '@/admin/lib/sales.js';
-import { joinWishlist, hasJoined, savedEmail } from '@/admin/lib/wishlist.js';
-
-// "Email me when it's back" for one sold-out size. The admin panel's
-// Customers → Wishlist lists the requests, and restocking the size mails them.
-function RestockForm({ product, size }) {
-  const [email, setEmail] = useState(savedEmail());
-  const [state, setState] = useState(hasJoined(product.id, size) ? 'done' : 'idle');
-
-  if (state === 'done') {
-    return <p className="mt-3 text-[13px]">We’ll email you when size {size} is back.</p>;
-  }
-
-  const submit = async (e) => {
-    e.preventDefault();
-    setState('sending');
-    const { error } = await joinWishlist({ product, size, email });
-    setState(error ? 'error' : 'done');
-  };
-
-  return (
-    <form onSubmit={submit} className="mt-3">
-      <p className="text-[13px] mb-2">Size {size} is sold out. Get an email when it’s back.</p>
-      <div className="flex border-b border-ink">
-        <label htmlFor="restock-email" className="sr-only">Email address</label>
-        <input
-          id="restock-email"
-          type="email"
-          required
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          placeholder="Email address"
-          className="flex-1 min-w-0 bg-transparent py-2 text-[13px] outline-none placeholder:text-graphite"
-        />
-        <button type="submit" disabled={state === 'sending'} className="pl-4 text-[13px] hover:underline underline-offset-4">
-          Notify me
-        </button>
-      </div>
-      {state === 'error' && <p className="mt-2 text-[12px] text-coral">That didn’t go through. Check the address and try again.</p>}
-    </form>
-  );
-}
 
 // Three scrolling columns need room; below this the page stacks.
 const WIDE = '(min-width: 1024px)';
@@ -82,50 +39,13 @@ function useOwnWheel(ref, enabled) {
   }, [ref, enabled]);
 }
 
-function SaleCountdown({ endsAt }) {
-  const [, tick] = useState(0);
-  useEffect(() => {
-    const t = setInterval(() => tick((n) => n + 1), 1000);
-    return () => clearInterval(t);
-  }, []);
-  const left = timeLeft(endsAt);
-  return left ? <span className="text-graphite"> · ends in {left}</span> : null;
-}
-
-function Disclosure({ title, children }) {
-  const [open, setOpen] = useState(false);
-  if (!children) return null;
-  return (
-    <div className="border-t border-rule">
-      <button
-        type="button"
-        onClick={() => setOpen(!open)}
-        aria-expanded={open}
-        className="w-full flex items-center justify-between py-4 text-left text-[13px]"
-      >
-        {title}
-        <span aria-hidden="true" className="text-[16px] leading-none">{open ? '−' : '+'}</span>
-      </button>
-      {open && <div className="pb-5 text-[13px] leading-relaxed text-graphite whitespace-pre-line">{children}</div>}
-    </div>
-  );
-}
-
 export default function ProductDetail() {
   const { id } = useParams();
-  const navigate = useNavigate();
   const [raw, setRaw] = useState(null);
-  const [colours, setColours] = useState([]);
-  const [waitSize, setWaitSize] = useState('');
   const sales = useLiveSales();
   const product = withSale(raw, sales);
   const [related, setRelated] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [size, setSize] = useState('');
-  const [color, setColor] = useState('');
-  const [sizeError, setSizeError] = useState(false);
-  const [wishlisted, setWishlisted] = useState(false);
-  const [sizeChartOpen, setSizeChartOpen] = useState(false);
   const [slide, setSlide] = useState(0);
   const [look, setLook] = useState([]);
   const [recent, setRecent] = useState([]);
@@ -134,6 +54,7 @@ export default function ProductDetail() {
   const leftRef = useRef(null);
   const rightRef = useRef(null);
   const wide = useWide();
+  const buy = useBuyPanel(product);
   useOwnWheel(leftRef, wide && !loading);
   useOwnWheel(rightRef, wide && !loading);
 
@@ -141,22 +62,11 @@ export default function ProductDetail() {
     let cancelled = false;
     const load = async () => {
       setLoading(true);
-      setSize('');
-      setWaitSize('');
-      setSizeError(false);
       setSlide(0);
       const { data: p } = await supabase.from('products').select('*').eq('id', id).single();
       if (cancelled) return;
       if (!p) { setRaw(null); setLoading(false); return; }
       setRaw(p);
-      // The same piece in its other colours (Admin: colour group).
-      if (p.colour_group) {
-        const { data: sibs } = await supabase.from('products').select('id,name,variant,images')
-          .eq('colour_group', p.colour_group).neq('id', p.id);
-        if (!cancelled) setColours(sibs || []);
-      } else {
-        setColours([]);
-      }
       // Shop the look: the other pieces in any lookbook photo this one is in.
       const { data: looks } = await supabase.from('lookbook_looks').select('product_ids').contains('product_ids', [p.id]);
       const others = [...new Set((looks || []).flatMap((l) => l.product_ids || []))].filter((x) => x !== p.id).slice(0, 4);
@@ -174,10 +84,6 @@ export default function ProductDetail() {
       } else if (!cancelled) {
         setRecent([]);
       }
-      setWishlisted(isInWishlist(p.id));
-      setColor(p.colors?.[0] || '');
-      // A single-size product needs no choice.
-      if (p.sizes?.length === 1 && isSizeAvailable(p, p.sizes[0])) setSize(p.sizes[0]);
       addRecentlyViewed(p.id);
 
       // Same section first, then anything newest, to fill four slots.
@@ -200,30 +106,6 @@ export default function ProductDetail() {
     window.scrollTo(0, 0);
     return () => { cancelled = true; };
   }, [id]);
-
-  const requireSize = () => {
-    if (size) return true;
-    setSizeError(true);
-    return false;
-  };
-
-  const handleAdd = () => {
-    if (!requireSize()) return;
-    addToCart(product, size, 1);
-    // From the product photo on screen into the bag, then the bag opens.
-    const photo = [...document.querySelectorAll('[data-pdp-photo]')].find((el) => {
-      const r = el.getBoundingClientRect();
-      return r.bottom > 0 && r.top < window.innerHeight && r.width > 0;
-    });
-    const first = (product.images || []).find(Boolean);
-    flyToBag(photo, first && imgUrl(first, 300)).then(openCartDrawer);
-  };
-
-  const handleBuyNow = () => {
-    if (!requireSize()) return;
-    addToCart(product, size, 1);
-    navigate('/checkout');
-  };
 
   const onRailScroll = () => {
     const el = railRef.current;
@@ -249,52 +131,8 @@ export default function ProductDetail() {
 
   const images = (product.images || []).filter(Boolean);
   const soldOut = isSoldOut(product);
-  const onSale = !!product.compare_at;
-  const section = sectionFor(product.category);
-
-  const header = (
-    <>
-      <nav className="text-[12px] text-graphite mb-4" aria-label="Breadcrumb">
-        <Link to="/shop" className="hover:text-ink">Shop</Link>
-        {section && (
-          <>
-            <span className="mx-1.5">/</span>
-            <Link to={`/shop?category=${section.key}`} className="hover:text-ink">{section.label}</Link>
-          </>
-        )}
-      </nav>
-      <h1 className="font-heading text-[28px] lg:text-[26px] leading-tight">{product.name}</h1>
-      {product.variant && <p className="text-[14px] text-graphite mt-1">{product.variant}</p>}
-      <p className="mt-2 text-[15px]">
-        {onSale && <span className="text-graphite line-through mr-2">{formatPrice(product.compare_at)}</span>}
-        <span className={onSale ? 'text-coral' : ''}>{formatPrice(product.price)}</span>
-      </p>
-      {product.sale && (
-        <p className="mt-1 text-[13px] text-coral">
-          {product.sale.percent}% off{product.sale.name ? `, ${product.sale.name}` : ''}
-          <SaleCountdown endsAt={product.sale.endsAt} />
-        </p>
-      )}
-    </>
-  );
-
-  const disclosures = (
-    <>
-      <Disclosure title="Product details">
-        {[product.description, product.details, product.care_instructions, product.sku && `Style no. ${product.sku}`]
-          .filter(Boolean).join('\n\n')}
-      </Disclosure>
-      <Disclosure title="Sizing">
-        <div className="text-ink whitespace-normal">
-          <SizeTable chart={product.size_chart} />
-          <Link to="/support/size-guide" className="inline-block mt-3 underline underline-offset-4">Full size guide</Link>
-        </div>
-      </Disclosure>
-      <Disclosure title="Delivery and returns">
-        {`Inside Dhaka: ${formatPrice(DELIVERY.insideDhaka)}, cash on delivery.\nOutside Dhaka: ${formatPrice(DELIVERY.outsideDhaka)}, paid in advance by bKash.\n\nExchanges within 3 days of delivery, see the return and exchange page.`}
-      </Disclosure>
-    </>
-  );
+  const header = <ProductHeader product={product} />;
+  const disclosures = <ProductDisclosures product={product} />;
 
   // Pieces worn with this one in a lookbook photo (Admin → Lookbook).
   const shopTheLook = look.length > 0 && (
@@ -311,120 +149,6 @@ export default function ProductDetail() {
           </Link>
         ))}
       </div>
-    </div>
-  );
-
-  // The same piece in other colours (Admin: colour group), this one ringed.
-  const swatches = colours.length > 0 ? [{ id: product.id, name: product.name, variant: product.variant, images: product.images }, ...colours] : [];
-  const colourPicker = swatches.length > 0 ? (
-    <div className="mt-6 lg:mt-0 mb-6">
-      <p className="text-[13px] mb-2">Colour: <span className="text-graphite">{product.variant || product.name}</span></p>
-      <div className="flex flex-wrap gap-2">
-        {swatches.map((c) => (
-          <Link
-            key={c.id}
-            to={`/product/${c.id}`}
-            aria-current={c.id === product.id ? 'true' : undefined}
-            title={c.variant || c.name}
-            className={`w-12 h-12 p-0.5 border ${c.id === product.id ? 'border-ink' : 'border-rule hover:border-graphite'}`}
-          >
-            <span className="block w-full h-full bg-stone overflow-hidden">
-              {c.images?.[0] && <img src={imgUrl(c.images[0], 120)} alt={c.variant || c.name} className="w-full h-full object-cover" />}
-            </span>
-          </Link>
-        ))}
-      </div>
-    </div>
-  ) : product.colors?.length > 0 ? (
-    <div className="mt-6 lg:mt-0 mb-6">
-      <p className="text-[13px] mb-2">Colour: <span className="text-graphite">{color}</span></p>
-      <div className="flex flex-wrap gap-2">
-        {product.colors.map((c) => (
-          <button
-            key={c}
-            type="button"
-            onClick={() => setColor(c)}
-            aria-pressed={color === c}
-            className={`h-10 px-4 text-[13px] border ${color === c ? 'border-ink' : 'border-rule hover:border-graphite'}`}
-          >
-            {c}
-          </button>
-        ))}
-      </div>
-    </div>
-  ) : null;
-
-  const pickSize = (s) => {
-    if (!s) return;
-    if (isSizeAvailable(product, s)) { setSize(s); setWaitSize(''); setSizeError(false); }
-    else { setSize(''); setWaitSize(s); }
-  };
-
-  // Desktop: one "Select size" menu, like the colour row above it. Phones:
-  // a row of size buttons, easier to hit with a thumb.
-  const sizePicker = product.sizes?.length > 0 && (
-    <div className="mt-6 lg:mt-0">
-      <div className="flex items-center justify-between mb-2">
-        <p className={`text-[13px] ${sizeError ? 'text-coral' : ''}`}>
-          {sizeError ? 'Choose a size to continue' : <>Size{size && <span className="text-graphite">: {size}</span>}</>}
-        </p>
-        <button type="button" onClick={() => setSizeChartOpen(true)} className="text-[13px] underline underline-offset-4">
-          Size guide
-        </button>
-      </div>
-      {/* Big size buttons. A sold-out size says Notify me: tapping it opens
-          the email form below, which lands in Admin → Customers → Wishlist. */}
-      <div className="grid grid-cols-4 gap-2">
-        {product.sizes.map((s) => {
-          const ok = isSizeAvailable(product, s);
-          const on = ok ? size === s : waitSize === s;
-          return (
-            <button
-              key={s}
-              type="button"
-              aria-pressed={on}
-              aria-label={ok ? `Size ${s}` : `Size ${s}, sold out. Notify me when it's back`}
-              onClick={() => (ok ? pickSize(s) : setWaitSize(waitSize === s ? '' : s))}
-              className={`h-14 flex flex-col items-center justify-center border transition-colors ${
-                !ok
-                  ? `text-graphite ${on ? 'border-ink' : 'border-rule border-dashed hover:border-graphite'}`
-                  : on
-                    ? 'border-ink bg-ink text-white'
-                    : `${sizeError ? 'border-coral' : 'border-rule'} hover:border-ink`
-              }`}
-            >
-              <span className={`text-[14px] leading-none ${ok ? '' : 'line-through opacity-60'}`}>{s}</span>
-              {!ok && <span className="mt-1 text-[9px] uppercase tracking-[0.12em] text-burgundy">Notify me</span>}
-            </button>
-          );
-        })}
-      </div>
-      {waitSize && <RestockForm key={waitSize} product={product} size={waitSize} />}
-    </div>
-  );
-
-  const actions = (
-    <div className="mt-5 space-y-2">
-      <button
-        type="button"
-        onClick={handleAdd}
-        disabled={soldOut}
-        className="w-full h-12 bg-ink text-white text-[13px] hover:bg-ink/85 disabled:bg-stone disabled:text-graphite disabled:cursor-not-allowed"
-      >
-        {soldOut ? 'Sold out' : 'Add to bag'}
-      </button>
-      {!soldOut && (
-        <button type="button" onClick={handleBuyNow} className="w-full h-12 border border-ink text-[13px] hover:bg-stone">
-          Buy now
-        </button>
-      )}
-      <button
-        type="button"
-        onClick={() => setWishlisted(toggleWishlist(product.id))}
-        className="w-full pt-2 text-[13px] underline underline-offset-4"
-      >
-        {wishlisted ? 'Saved to wishlist' : 'Save to wishlist'}
-      </button>
     </div>
   );
 
@@ -454,7 +178,7 @@ export default function ProductDetail() {
           <div ref={leftRef} className="h-full overflow-y-auto hide-scrollbar py-10">
             <div className="max-w-sm">
               {header}
-              <div className="mt-8 border-b border-rule">{disclosures}</div>
+              {disclosures}
               {shopTheLook}
             </div>
           </div>
@@ -478,9 +202,7 @@ export default function ProductDetail() {
           </div>
           <div ref={rightRef} className="h-full overflow-y-auto hide-scrollbar py-10 flex">
             <div className="w-full max-w-sm ml-auto my-auto">
-              {colourPicker}
-              {sizePicker}
-              {actions}
+              {buy.panel}
             </div>
           </div>
         </div>
@@ -520,10 +242,8 @@ export default function ProductDetail() {
           <div className="px-4 md:px-8 pt-6 md:pt-10 pb-12">
             <div className="md:sticky md:top-24">
               {header}
-              {colourPicker}
-              {sizePicker}
-              {actions}
-              <div className="mt-8 border-b border-rule">{disclosures}</div>
+              {buy.panel}
+              {disclosures}
               {shopTheLook}
             </div>
           </div>
@@ -555,13 +275,12 @@ export default function ProductDetail() {
       {/* Phone: keep the main action in reach while reading or scrolling photos */}
       {!soldOut && (
         <div className="md:hidden fixed inset-x-0 bottom-0 z-40 bg-white border-t border-rule p-3">
-          <button type="button" onClick={handleAdd} className="w-full h-12 bg-ink text-white text-[13px]">
-            {size ? `Add size ${size} to bag` : 'Add to bag'}, {formatPrice(product.price)}
+          <button type="button" onClick={buy.add} className="w-full h-12 bg-ink text-white text-[13px]">
+            {buy.size ? `Add size ${buy.size} to bag` : 'Add to bag'}, {formatPrice(product.price)}
           </button>
         </div>
       )}
 
-      <SizeChartPopup open={sizeChartOpen} onClose={() => setSizeChartOpen(false)} category={product.category} chart={product.size_chart} />
     </div>
   );
 }
