@@ -15,6 +15,7 @@ import { useCountdown } from './DropCountdown.jsx'
 import InfoTip from './InfoTip.jsx'
 import FocusPicker from './FocusPicker.jsx'
 import FeatureManager from './FeatureManager.jsx'
+import SharePreviewsBox from './SharePreviewsBox.jsx'
 import { IconX } from './Icons.jsx'
 import './hero-manager.css'
 
@@ -264,6 +265,9 @@ export default function HeroManager({ drops = [], products = [] }) {
         </div>
       </Box>
 
+
+      {/* ---- Link previews for shared links ---- */}
+      <SharePreviewsBox />
     </div>
   )
 }

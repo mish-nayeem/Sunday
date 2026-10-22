@@ -1,11 +1,15 @@
 {
-  // Cloudflare Workers static-assets deploy: `npm run build` writes ./dist,
-  // `npx wrangler deploy` uploads it. No server code — every unknown path
-  // falls back to index.html so React Router handles it.
+  // Cloudflare Workers deploy: `npm run build` writes ./dist, `npx wrangler
+  // deploy` uploads it. Every unknown path falls back to index.html so React
+  // Router handles it. Product and lookbook pages go through worker/index.js
+  // first, which gives shared links their own preview (title, text, photo).
   "name": "sunday",
   "compatibility_date": "2026-09-23",
+  "main": "./worker/index.js",
   "assets": {
     "directory": "./dist",
-    "not_found_handling": "single-page-application"
+    "binding": "ASSETS",
+    "not_found_handling": "single-page-application",
+    "run_worker_first": ["/product/*", "/lookbook/*"]
   }
 }

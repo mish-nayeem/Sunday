@@ -133,6 +133,79 @@ async function shrink(file) {
 
 // `folder` only keeps the bucket tidy (products/, hero/, about/). A random
 // name means two photos called IMG_0001.jpg never overwrite each other.
+// ---------- Share copies ----------
+
+// Beside every photo the admin uploads sits a small copy, <name>.share.jpg
+// (1200 px at most, under ~280 KB): link previews on WhatsApp skip large
+// images, so the preview worker (worker/index.js) points them at this copy.
+const SHARE_MAX_BYTES = 280 * 1024
+const SHARE_STEPS = [[1200, 0.82], [1200, 0.72], [1000, 0.72], [800, 0.7], [640, 0.65]]
+
+export const shareUrlFor = (url) => String(url).replace(/\.[a-z0-9]+(\?.*)?$/i, '.share.jpg')
+
+async function shareCopy(blob) {
+  if (typeof createImageBitmap !== 'function') return null
+  let bitmap
+  try {
+    bitmap = await createImageBitmap(blob)
+  } catch {
+    return null // a video, or a format the browser can't open
+  }
+  const longSide = Math.max(bitmap.width, bitmap.height)
+  const canvas = document.createElement('canvas')
+  const ctx = canvas.getContext('2d')
+  let out = null
+  for (const [side, quality] of SHARE_STEPS) {
+    const scale = Math.min(1, side / longSide)
+    canvas.width = Math.round(bitmap.width * scale)
+    canvas.height = Math.round(bitmap.height * scale)
+    ctx.fillStyle = '#fff' // see-through PNGs get a white ground, not black
+    ctx.fillRect(0, 0, canvas.width, canvas.height)
+    ctx.imageSmoothingQuality = 'high'
+    ctx.drawImage(bitmap, 0, 0, canvas.width, canvas.height)
+    out = await new Promise((resolve) => canvas.toBlob(resolve, 'image/jpeg', quality))
+    if (out && out.size <= SHARE_MAX_BYTES) break
+  }
+  bitmap.close?.()
+  return out
+}
+
+async function putShareCopy(supabase, path, blob) {
+  const small = await shareCopy(blob)
+  if (!small) return false
+  const { error } = await supabase.storage.from(IMAGE_BUCKET).upload(path.replace(/\.[a-z0-9]+$/i, '.share.jpg'), small, {
+    contentType: 'image/jpeg',
+    cacheControl: '31536000',
+    upsert: true,
+  })
+  return !error
+}
+
+// For photos uploaded before share copies existed: makes the missing ones.
+// `urls` are public URLs from the images bucket (others are skipped).
+// Reports progress as (done, total). Returns { made, skipped, failed }.
+export async function makeMissingShareCopies(urls, supabase, onProgress = () => {}) {
+  const marker = `/storage/v1/object/public/${IMAGE_BUCKET}/`
+  const list = [...new Set(urls.filter((u) => typeof u === 'string' && u.includes(marker) && !u.includes('.share.') && !/\.(mp4|webm|mov)(\?|$)/i.test(u)))]
+  const result = { made: 0, skipped: 0, failed: 0 }
+  for (let i = 0; i < list.length; i++) {
+    const url = list[i].split('?')[0]
+    try {
+      const head = await fetch(shareUrlFor(url), { method: 'HEAD' })
+      if (head.ok) result.skipped++
+      else {
+        const res = await fetch(url)
+        const ok = res.ok && (await putShareCopy(supabase, decodeURIComponent(url.split(marker)[1]), await res.blob()))
+        result[ok ? 'made' : 'failed']++
+      }
+    } catch {
+      result.failed++
+    }
+    onProgress(i + 1, list.length)
+  }
+  return result
+}
+
 export async function uploadImage(original, supabase, folder = 'uploads') {
   const file = await shrink(original)
   const ext = (file.name.split('.').pop() || 'jpg').toLowerCase().replace(/[^a-z0-9]/g, '') || 'jpg'
@@ -146,6 +219,9 @@ export async function uploadImage(original, supabase, folder = 'uploads') {
   })
 
   if (error) throw new Error(error.message)
+
+  // The small copy for link previews; a failure here never fails the upload.
+  try { await putShareCopy(supabase, path, file) } catch { /* preview falls back to the photo */ }
 
   return supabase.storage.from(IMAGE_BUCKET).getPublicUrl(path).data.publicUrl
 }

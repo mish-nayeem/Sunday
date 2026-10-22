@@ -22,8 +22,24 @@ export default defineConfig(({ command, mode }) => {
     transformIndexHtml: (html) => html.replaceAll('__SITE_URL__', siteUrl),
   }
 
+  // For the link-preview worker (worker/index.js): where to look products
+  // up. The anon key is public (it's in the site's own bundle too); row
+  // security decides what it can read.
+  const ogConfigPlugin = {
+    name: 'og-config',
+    apply: 'build',
+    generateBundle() {
+      const env = loadEnv(mode, process.cwd(), '')
+      this.emitFile({
+        type: 'asset',
+        fileName: 'og-config.json',
+        source: JSON.stringify({ url: (env.VITE_SUPABASE_URL || '').replace(/\/rest\/v1\/?$/, '').replace(/\/+$/, ''), key: env.VITE_SUPABASE_ANON_KEY || '' }),
+      })
+    },
+  }
+
   return {
-    plugins: [react(), siteUrlPlugin],
+    plugins: [react(), siteUrlPlugin, ogConfigPlugin],
     resolve: {
       alias: {
         '@': '/src',
