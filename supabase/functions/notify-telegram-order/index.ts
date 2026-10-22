@@ -46,9 +46,15 @@ Deno.serve(async (req) => {
       ? order.items.map((it: any) => `  • ${it.name} (${it.size ?? "-"}) × ${it.quantity} — ৳${it.price}`).join("\n")
       : "-";
 
-    const paymentLine = order.payment_method === "bkash_advance"
-      ? `bKash Advance (TrxID: ${order.bkash_transaction_id ?? "-"})`
-      : "Cash on Delivery";
+    const total = Number(order.total) || 0;
+    const advance = order.advance_amount != null
+      ? Number(order.advance_amount) || 0
+      : order.payment_method === "bkash_advance" ? Number(order.delivery_charge) || 0 : 0;
+    const paymentLine = order.payment_method === "bkash_full"
+      ? `Paid in full by bKash ৳${total} (TrxID: ${order.bkash_transaction_id ?? "-"})`
+      : advance > 0
+        ? `bKash ৳${advance} paid (TrxID: ${order.bkash_transaction_id ?? "-"}) · collect ৳${total - advance}`
+        : `Cash on Delivery · collect ৳${total}`;
 
     const text =
       `🛍️ *New Order — ${order.order_id}*\n\n` +

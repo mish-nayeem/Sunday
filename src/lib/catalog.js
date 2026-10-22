@@ -36,7 +36,8 @@ export const COLLECTIONS = [
 
 export const SIZE_ORDER = ['XS', 'S', 'M', 'L', 'XL', 'XXL', '3XL'];
 
-export const DELIVERY = { insideDhaka: 80, outsideDhaka: 200 };
+// Outside Dhaka also pays Tk 200 up front by bKash (see Checkout).
+export const DELIVERY = { insideDhaka: 80, outsideDhaka: 120, outsideAdvance: 200 };
 
 export function sectionFor(category) {
   return SECTIONS.find((s) => s.categories.includes(category));

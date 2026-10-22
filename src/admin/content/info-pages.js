@@ -61,13 +61,13 @@ export const INFO_PAGES = {
         head: ['AREA', 'TIME', 'CHARGE', 'PAYMENT'],
         rows: [
           ['Inside Dhaka', '1–3 business days', 'Tk 80', 'Cash on delivery'],
-          ['Outside Dhaka', '3–7 business days', 'Tk 200', 'Delivery charge by bKash in advance, the rest in cash'],
+          ['Outside Dhaka', '3–7 business days', 'Tk 120', 'Tk 200 by bKash in advance, the rest in cash'],
         ],
       },
       {
         type: 'text',
         heading: 'bKash advance',
-        body: 'For orders outside Dhaka, send the delivery charge by bKash and enter the Transaction ID at checkout. An incorrect or unverifiable Transaction ID may delay or cancel the order.',
+        body: 'For orders outside Dhaka, send Tk 200 by bKash and enter the Transaction ID at checkout; the rest is paid in cash on delivery. Anyone can instead pay the whole order by bKash at checkout. An incorrect or unverifiable Transaction ID may delay or cancel the order.',
       },
       {
         type: 'text',
@@ -169,7 +169,7 @@ export const INFO_PAGES = {
       {
         type: 'text',
         heading: 'Payment',
-        body: 'Inside Dhaka: cash on delivery for the full amount. Outside Dhaka: the delivery charge in advance by bKash, the rest in cash on delivery.',
+        body: 'Inside Dhaka: cash on delivery for the full amount, or pay it all by bKash at checkout. Outside Dhaka: Tk 200 in advance by bKash and the rest in cash on delivery, or pay it all by bKash at checkout.',
       },
       {
         type: 'text',

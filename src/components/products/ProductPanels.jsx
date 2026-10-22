@@ -189,7 +189,7 @@ export function ProductDisclosures({ product }) {
         </div>
       </Disclosure>
       <Disclosure title="Delivery and returns">
-        {`Inside Dhaka: ${formatPrice(DELIVERY.insideDhaka)}, cash on delivery.\nOutside Dhaka: ${formatPrice(DELIVERY.outsideDhaka)}, paid in advance by bKash.\n\nExchanges within 3 days of delivery, see the return and exchange page.`}
+        {`Inside Dhaka: ${formatPrice(DELIVERY.insideDhaka)} delivery, cash on delivery.\nOutside Dhaka: ${formatPrice(DELIVERY.outsideDhaka)} delivery; ${formatPrice(DELIVERY.outsideAdvance)} paid in advance by bKash, the rest on delivery.\nOr pay the whole order by bKash at checkout.\n\nExchanges within 3 days of delivery, see the return and exchange page.`}
       </Disclosure>
     </div>
   );

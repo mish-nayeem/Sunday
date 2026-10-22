@@ -1,8 +1,10 @@
 // Delivery zones, districts, and the advance-payment rule that hangs off them.
 //
-// Dhaka district is plain cash on delivery. Everywhere else pays the delivery
-// charge in advance by bKash (SUNDAY's checkout rule), and the rider collects
-// the rest at the door.
+// Dhaka district: Tk 80 delivery, cash on delivery. Everywhere else: Tk 120
+// delivery, Tk 200 paid in advance by bKash, and the rider collects the
+// rest at the door. Either can instead pay the whole order by bKash.
+// create_order (supabase/migrations/20261023000200_payment_options.sql)
+// does the same sums.
 //
 // Checkout, the confirmation page and the admin panel all read these numbers
 // from here, so what the customer is told and what the rider collects can't
@@ -24,7 +26,7 @@ export const ZONES = [
   {
     key: 'outside',
     label: 'Outside Dhaka',
-    fee: 200,
+    fee: 120,
     advance: 200,
     title: 'OUTSIDE DHAKA — ADVANCE PAY',
     note: 'bKash advance payment required',

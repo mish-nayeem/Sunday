@@ -83,6 +83,18 @@ export default function OrderConfirmation() {
               <span className="font-medium">Total</span>
               <span className="text-lg font-mono font-medium">Tk {order.total?.toLocaleString()}</span>
             </div>
+            {Number(order.advance_amount) > 0 && (
+              <div className="mt-3 pt-3 border-t border-black/10 space-y-1.5 text-sm">
+                <div className="flex justify-between">
+                  <span>Paid by bKash</span>
+                  <span className="font-mono">Tk {Number(order.advance_amount).toLocaleString()}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Pay on delivery</span>
+                  <span className="font-mono">Tk {Math.max(0, Number(order.total) - Number(order.advance_amount)).toLocaleString()}</span>
+                </div>
+              </div>
+            )}
           </div>
 
           <div className="flex flex-col sm:flex-row gap-3">

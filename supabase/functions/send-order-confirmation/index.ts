@@ -16,6 +16,18 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2?target=deno
 import { jsPDF } from "https://esm.sh/jspdf@4.2.1?target=deno&bundle";
 import { encodeBase64 } from "https://deno.land/std@0.224.0/encoding/base64.ts";
 
+// How the order is paid, in words: bKash up front and the rest on delivery,
+// all by bKash, or all cash on delivery.
+function paymentText(order: any): string {
+  const total = Number(order.total) || 0;
+  const advance = order.advance_amount != null
+    ? Number(order.advance_amount) || 0
+    : order.payment_method === "bkash_advance" ? Number(order.delivery_charge) || 0 : 0;
+  if (order.payment_method === "bkash_full" || (advance > 0 && advance >= total)) return `Paid in full by bKash (৳${total})`;
+  if (advance > 0) return `৳${advance} paid by bKash · ৳${total - advance} on delivery`;
+  return "Cash on Delivery";
+}
+
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
@@ -148,7 +160,7 @@ function buildEmailHtml(order: any): string {
       </tr>
       <tr>
         <td>Payment</td>
-        <td style="text-align:right;">${order.payment_method === "bkash_advance" ? "bKash (Advance Paid)" : "Cash on Delivery"}</td>
+        <td style="text-align:right;">${paymentText(order)}</td>
       </tr>
     </table>
 

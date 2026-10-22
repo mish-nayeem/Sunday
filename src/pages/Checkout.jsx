@@ -46,10 +46,15 @@ function savedInfo() {
   try { return JSON.parse(localStorage.getItem(SAVED_INFO_KEY)) || null; } catch { return null; }
 }
 
+// Delivery and payment (the same rule as create_order):
+//   Dhaka          Tk 80 delivery — cash on delivery, or all by bKash now.
+//   Outside Dhaka  Tk 120 delivery — Tk 200 by bKash now and the rest on
+//                  delivery, or all by bKash now.
 const SHIPPING_METHODS = [
   { key: 'inside_dhaka', label: 'Inside Dhaka', price: 80 },
-  { key: 'outside_dhaka_advance', label: 'Outside Dhaka — Advance Pay', price: 200 },
+  { key: 'outside_dhaka_advance', label: 'Outside Dhaka', price: 120 },
 ];
+const OUTSIDE_ADVANCE = 200;
 
 export default function Checkout() {
   const navigate = useNavigate();
@@ -65,6 +70,7 @@ export default function Checkout() {
   const [saveInfo, setSaveInfo] = useState(() => !!savedInfo());
   const [agreed, setAgreed] = useState(false);
   const [bkashTrxId, setBkashTrxId] = useState('');
+  const [payOption, setPayOption] = useState('cod'); // cod | advance | full
   const [numberCopied, setNumberCopied] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState('');
@@ -135,7 +141,13 @@ export default function Checkout() {
     if (error) { setCoupon(null); setCouponError(error.replace(/৳ ?/g, 'Tk ')); return; }
     setCoupon(c);
   };
-  const isAdvancePay = shippingMethod === 'outside_dhaka_advance' && !!form.district;
+  // Outside Dhaka can't be all cash on delivery; Dhaka has no part advance.
+  const outside = !!form.district && form.district !== 'Dhaka';
+  const pay = !form.district ? 'cod' : outside ? (payOption === 'full' ? 'full' : 'advance') : (payOption === 'full' ? 'full' : 'cod');
+  const isAdvancePay = pay !== 'cod'; // a bKash payment (part or whole) is needed
+  const payNow = pay === 'full' ? total : pay === 'advance' ? Math.min(OUTSIDE_ADVANCE, total) : 0;
+  const payLater = total - payNow;
+  const paymentMethod = pay === 'full' ? 'bkash_full' : pay === 'advance' ? 'bkash_advance' : 'cod';
 
   const handleCopyNumber = async () => {
     try {
@@ -172,7 +184,7 @@ export default function Checkout() {
       p_area: form.area,
       p_notes: form.notes,
       p_items: cartItems,
-      p_payment_method: isAdvancePay ? 'bkash_advance' : 'cod',
+      p_payment_method: paymentMethod,
       p_bkash_transaction_id: isAdvancePay ? bkashTrxId.trim() : null,
     };
     let { data: result, error: orderError } = await supabase.rpc('create_order', {
@@ -218,7 +230,8 @@ export default function Checkout() {
           coupon_code: coupon?.code || null,
           delivery_charge: result[0].delivery_charge,
           total: result[0].total,
-          payment_method: isAdvancePay ? 'bkash_advance' : 'cod',
+          payment_method: paymentMethod,
+          advance_amount: payNow,
           bkash_transaction_id: isAdvancePay ? bkashTrxId.trim() : null,
         },
       });
@@ -322,7 +335,7 @@ export default function Checkout() {
                     <optgroup label="Inside Dhaka · cash on delivery">
                       <option value="Dhaka">Dhaka</option>
                     </optgroup>
-                    <optgroup label="Outside Dhaka · Tk 200 delivery paid in advance by bKash">
+                    <optgroup label="Outside Dhaka · Tk 120 delivery, Tk 200 advance by bKash">
                       {OUTSIDE_DHAKA.map((d) => <option key={d} value={d}>{d}</option>)}
                     </optgroup>
                   </select>
@@ -364,52 +377,70 @@ export default function Checkout() {
                 <legend className="font-heading text-[24px] mb-4">Payment</legend>
                 {!form.district ? (
                   <p className="border border-rule px-4 py-4 text-[13px] text-graphite bg-white">Choose your district above to see how you’ll pay.</p>
-                ) : !isAdvancePay ? (
-                  <div className="border border-ink px-5 py-4 bg-white flex items-start justify-between gap-4">
-                    <div>
-                      <p className="text-[14px]">Cash on delivery</p>
-                      <p className="text-[13px] text-graphite mt-1">Inside Dhaka — nothing to pay now. Pay the rider when your order arrives.</p>
-                    </div>
-                    <span className="shrink-0 text-[14px]">Tk {deliveryCharge} delivery</span>
-                  </div>
                 ) : (
-                  // bKash advance: the delivery charge, sent before the order.
-                  <div className="border border-ink bg-[#F6F1E7]">
-                    <div className="px-5 py-4 flex items-start justify-between gap-4 border-b border-black/10">
-                      <div>
-                        <p className="text-[11px] uppercase tracking-[0.16em] text-burgundy">Outside Dhaka · advance payment</p>
-                        <p className="text-[14px] mt-1">Send the delivery charge by bKash to place your order. The rest is cash on delivery.</p>
-                      </div>
-                      <span className="shrink-0 font-heading text-[26px] leading-none">Tk {deliveryCharge}</span>
-                    </div>
-                    <div className="px-5 py-5 space-y-5">
-                      <div className="flex items-center justify-between gap-3 bg-white border border-black/10 px-4 h-14">
-                        <div className="min-w-0">
-                          <p className="text-[11px] uppercase tracking-[0.14em] text-graphite">bKash number · Send money</p>
-                          <p className="text-[16px] tabular-nums tracking-wide">{BKASH_NUMBER}</p>
+                  <div className="space-y-3">
+                    {/* The two ways to pay for this district. */}
+                    {(outside
+                      ? [
+                          ['advance', `Tk ${Math.min(OUTSIDE_ADVANCE, total).toLocaleString()} now by bKash, the rest on delivery`, `Outside Dhaka needs Tk ${OUTSIDE_ADVANCE} up front. Pay the rider Tk ${(total - Math.min(OUTSIDE_ADVANCE, total)).toLocaleString()} when your order arrives.`],
+                          ['full', `Pay the full Tk ${total.toLocaleString()} now by bKash`, 'Products and delivery paid now — nothing to pay when it arrives.'],
+                        ]
+                      : [
+                          ['cod', 'Cash on delivery', `Nothing to pay now. Pay the rider Tk ${total.toLocaleString()} when your order arrives.`],
+                          ['full', `Pay the full Tk ${total.toLocaleString()} now by bKash`, 'Products and delivery paid now — nothing to pay when it arrives.'],
+                        ]
+                    ).map(([key, title, note]) => (
+                      <label key={key} className={`flex items-start gap-3 border px-4 py-4 bg-white cursor-pointer transition-colors ${pay === key ? 'border-ink' : 'border-rule hover:border-graphite'}`}>
+                        <input type="radio" name="pay" className="mt-1 accent-black" checked={pay === key} onChange={() => setPayOption(key)} />
+                        <span>
+                          <span className="block text-[14px]">{title}</span>
+                          <span className="block text-[13px] text-graphite mt-1">{note}</span>
+                        </span>
+                      </label>
+                    ))}
+
+                    {isAdvancePay && (
+                      // bKash: what to send, where, and the Transaction ID.
+                      <div className="border border-ink bg-[#F6F1E7]">
+                        <div className="px-5 py-4 flex items-start justify-between gap-4 border-b border-black/10">
+                          <div>
+                            <p className="text-[11px] uppercase tracking-[0.16em] text-burgundy">{pay === 'full' ? 'Full payment by bKash' : 'Outside Dhaka · advance payment'}</p>
+                            <p className="text-[14px] mt-1">
+                              {pay === 'full' ? 'Send the whole order by bKash to place it.' : `Send Tk ${payNow.toLocaleString()} by bKash to place your order. Tk ${payLater.toLocaleString()} is paid on delivery.`}
+                            </p>
+                          </div>
+                          <span className="shrink-0 font-heading text-[26px] leading-none">Tk {payNow.toLocaleString()}</span>
                         </div>
-                        <button type="button" onClick={handleCopyNumber}
-                          className="shrink-0 inline-flex items-center gap-1.5 h-9 px-3 border border-ink text-[11px] uppercase tracking-[0.14em] hover:bg-ink hover:text-white transition-colors">
-                          {numberCopied ? <><Check size={13} /> Copied</> : <><Copy size={13} /> Copy</>}
-                        </button>
+                        <div className="px-5 py-5 space-y-5">
+                          <div className="flex items-center justify-between gap-3 bg-white border border-black/10 px-4 h-14">
+                            <div className="min-w-0">
+                              <p className="text-[11px] uppercase tracking-[0.14em] text-graphite">bKash number · Send money</p>
+                              <p className="text-[16px] tabular-nums tracking-wide">{BKASH_NUMBER}</p>
+                            </div>
+                            <button type="button" onClick={handleCopyNumber}
+                              className="shrink-0 inline-flex items-center gap-1.5 h-9 px-3 border border-ink text-[11px] uppercase tracking-[0.14em] hover:bg-ink hover:text-white transition-colors">
+                              {numberCopied ? <><Check size={13} /> Copied</> : <><Copy size={13} /> Copy</>}
+                            </button>
+                          </div>
+                          <ol className="grid sm:grid-cols-2 gap-x-6 gap-y-2.5 text-[13px] text-graphite">
+                            {['Open the bKash app or dial *247#', 'Choose Send Money', `Send Tk ${payNow.toLocaleString()} to the number above`, 'Copy the Transaction ID from the SMS'].map((step, i) => (
+                              <li key={step} className="flex gap-3">
+                                <span className="shrink-0 w-5 h-5 rounded-full bg-ink text-white text-[11px] flex items-center justify-center">{i + 1}</span>
+                                {step}
+                              </li>
+                            ))}
+                          </ol>
+                          <div>
+                            <label htmlFor="co-trx" className="text-[13px] block mb-2">Transaction ID *</label>
+                            <input id="co-trx" type="text" required={isAdvancePay} value={bkashTrxId}
+                              onChange={(e) => setBkashTrxId(e.target.value.toUpperCase().trim())}
+                              placeholder="e.g. K8H7G6F5D4" autoComplete="off"
+                              className="w-full h-12 border border-rule px-4 text-[14px] bg-white outline-none focus:border-ink transition-colors placeholder:text-graphite/60 uppercase tracking-[0.12em]" />
+                            <p className="mt-2 text-[12px] text-graphite">The order can’t be placed without it. We check it before your order ships.</p>
+                          </div>
+                        </div>
                       </div>
-                      <ol className="grid sm:grid-cols-2 gap-x-6 gap-y-2.5 text-[13px] text-graphite">
-                        {['Open the bKash app or dial *247#', 'Choose Send Money', `Send Tk ${deliveryCharge} to the number above`, 'Copy the Transaction ID from the SMS'].map((step, i) => (
-                          <li key={step} className="flex gap-3">
-                            <span className="shrink-0 w-5 h-5 rounded-full bg-ink text-white text-[11px] flex items-center justify-center">{i + 1}</span>
-                            {step}
-                          </li>
-                        ))}
-                      </ol>
-                      <div>
-                        <label htmlFor="co-trx" className="text-[13px] block mb-2">Transaction ID *</label>
-                        <input id="co-trx" type="text" required={isAdvancePay} value={bkashTrxId}
-                          onChange={(e) => setBkashTrxId(e.target.value.toUpperCase().trim())}
-                          placeholder="e.g. K8H7G6F5D4" autoComplete="off"
-                          className="w-full h-12 border border-rule px-4 text-[14px] bg-white outline-none focus:border-ink transition-colors placeholder:text-graphite/60 uppercase tracking-[0.12em]" />
-                        <p className="mt-2 text-[12px] text-graphite">The order can’t be placed without it. We check it before your order ships.</p>
-                      </div>
-                    </div>
+                    )}
                   </div>
                 )}
               </fieldset>
@@ -527,10 +558,22 @@ export default function Checkout() {
                 </div>
               )}
 
-              <div className="flex justify-between items-center bg-stone px-4 py-4 mb-6">
+              <div className="flex justify-between items-center bg-stone px-4 py-4 mb-3">
                 <span className="font-semibold text-black">Total</span>
                 <span className="text-xl font-mono font-bold text-black">Tk {total.toLocaleString()}</span>
               </div>
+              {form.district && (
+                <div className="mb-6 px-1 space-y-1.5 text-[13px]">
+                  <div className="flex justify-between">
+                    <span className="text-graphite">Pay now by bKash</span>
+                    <span>Tk {payNow.toLocaleString()}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-graphite">Pay on delivery</span>
+                    <span>Tk {payLater.toLocaleString()}</span>
+                  </div>
+                </div>
+              )}
 
               {selectedMethod && form.district && (
                 <div className="bg-stone p-4 flex items-center gap-3 mb-4">
@@ -540,7 +583,7 @@ export default function Checkout() {
                   <div>
                     <p className="text-sm font-medium text-black">{selectedMethod?.label}</p>
                     <p className="text-xs text-charcoal/50">
-                      {isAdvancePay ? 'Advance payment via bKash required' : 'Pay when you receive your order'}
+                      {pay === 'full' ? 'Paid in full by bKash' : pay === 'advance' ? `Tk ${payNow.toLocaleString()} by bKash now, Tk ${payLater.toLocaleString()} on delivery` : 'Pay when you receive your order'}
                     </p>
                   </div>
                 </div>

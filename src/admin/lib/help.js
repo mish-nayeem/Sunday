@@ -7,7 +7,7 @@ export const PAGE_HELP = {
   'overview:recent': 'Where orders came from: the link a customer clicked before buying (Instagram, Facebook, a tracked link from Marketing → Tracked links). Orders typed in from DMs show as their source.',
 
   'orders:list': 'Every order, newest first. Tap a card to open it: change its status (pending → shipped → delivered), call or WhatsApp the customer, send it to a courier or print a packing slip. Marking an order Delivered takes its pieces off stock and emails the customer. + New order is for orders taken over Instagram, Facebook or phone.',
-  'orders:bkash': 'Outside-Dhaka orders pay the delivery charge by bKash first. Copy the TrxID from your bKash app, paste it here and press Verify: the matching order is marked paid and the customer gets their confirmation email.',
+  'orders:bkash': 'Orders paid by bKash at checkout: outside Dhaka pays Tk 200 up front (the rider collects the rest), and anyone can pay the whole order. Copy the TrxID from your bKash app, paste it here and press Verify: the matching order is marked checked and the customer gets their confirmation email.',
   'orders:abandoned': 'People who started checkout and typed a name or phone but never placed the order, with what was in their bag. Call or message them to help finish the order.',
   'orders:security': 'Order attempts the shop blocked because one connection tried to place too many orders too fast (more than 10 an hour). Real customers almost never show up here.',
 

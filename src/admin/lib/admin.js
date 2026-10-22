@@ -72,7 +72,11 @@ const OPEN_STATUSES = ['pending', 'confirmed', 'processing']
 
 export function toPanelOrder(o) {
   const items = Array.isArray(o.items) ? o.items : []
-  const advance = o.payment_method === 'bkash_advance' ? Number(o.delivery_charge) || 0 : 0
+  // What was paid up front by bKash (orders.advance_amount); orders saved
+  // before that column existed paid their delivery charge.
+  const advance = o.advance_amount != null
+    ? Number(o.advance_amount) || 0
+    : o.payment_method === 'bkash_advance' ? Number(o.delivery_charge) || 0 : 0
   return {
     ...o,
     uuid: o.id,

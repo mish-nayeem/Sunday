@@ -31,7 +31,9 @@ export function toPauseOrder(o: Record<string, any>) {
     customer_area: o.district,
     customer_note: o.notes,
     delivery_fee: o.delivery_charge,
-    advance_amount: o.payment_method === 'bkash_advance' ? Number(o.delivery_charge) || 0 : 0,
+    advance_amount: o.advance_amount != null
+      ? Number(o.advance_amount) || 0
+      : o.payment_method === 'bkash_advance' ? Number(o.delivery_charge) || 0 : 0,
     advance_trx_id: o.bkash_transaction_id,
     order_items: items.map((it: Record<string, any>) => ({
       product_id: it.product_id ?? it.productId,
