@@ -14,17 +14,35 @@ import { useLiveSales, withSale } from '@/lib/pricing';
 export default function ProductCard({ product: raw, colours = [] }) {
   const product = withSale(raw, useLiveSales());
   const [added, setAdded] = useState('');
+  // Hover slideshow. `slide` fades in on top of `under`, which stays fully
+  // shown beneath it, so there's never a blank frame between photos; the
+  // next photo is loaded before it's switched to.
   const [slide, setSlide] = useState(0);
+  const [under, setUnder] = useState(0);
+  const [hovered, setHovered] = useState(false);
   const timer = useRef(null);
+  const showing = useRef(0);
+  const go = (next) => {
+    const src = imgUrl(images[next], 600);
+    const pre = new Image();
+    pre.src = src;
+    (pre.decode ? pre.decode() : Promise.resolve()).catch(() => {}).then(() => {
+      if (!timer.current && next !== 0) return; // pointer left meanwhile
+      setUnder(showing.current);
+      setSlide(next);
+      showing.current = next;
+    });
+  };
   const startSlides = () => {
     if (images.length < 2 || timer.current) return;
-    setSlide(1);
-    timer.current = setInterval(() => setSlide((n) => (n + 1) % images.length), 1800);
+    setHovered(true);
+    timer.current = setInterval(() => go((showing.current + 1) % images.length), 1800);
+    go(1);
   };
   const stopSlides = () => {
     clearInterval(timer.current);
     timer.current = null;
-    setSlide(0);
+    if (showing.current !== 0) go(0);
   };
   useEffect(() => () => clearInterval(timer.current), []);
   const images = (product.images || []).filter(Boolean);
@@ -52,16 +70,18 @@ export default function ProductCard({ product: raw, colours = [] }) {
           onMouseLeave={stopSlides}
         >
           {/* While the pointer rests on the photo, the product's photos cross-
-              fade one after another, slowly. Only the photo showing and the
-              next one are loaded. */}
-          {images.map((src, i) => (i === 0 || i === slide || i === (slide + 1) % images.length) && (
+              fade one after another, slowly: the new one on top, the last one
+              still showing underneath. Other photos load on first hover. */}
+          {images.map((src, i) => (i === 0 || hovered) && (
             <img
               key={src}
               src={imgUrl(src, 600)}
               alt={i === 0 ? product.name : ''}
-              loading="lazy"
+              loading={i === 0 ? 'lazy' : 'eager'}
               decoding="async"
-              className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-700 ${i === slide ? 'opacity-100' : 'opacity-0'}`}
+              className={`absolute inset-0 w-full h-full object-cover ${
+                i === slide ? 'z-[2] opacity-100 transition-opacity duration-700' : i === under ? 'z-[1] opacity-100' : 'z-0 opacity-0'
+              }`}
             />
           ))}
         </Link>
