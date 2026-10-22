@@ -105,7 +105,7 @@ export default function LookView({ look, items: rawItems, drop }) {
   return (
     <div className="lg:grid lg:grid-cols-[minmax(240px,1fr)_minmax(340px,560px)_minmax(240px,1fr)] lg:gap-10 xl:gap-16">
       {wide && (
-        <aside className="sticky top-36 self-start pt-2">
+        <aside className="sticky top-36 self-start bg-shell p-6">
           {current ? (
             <>
               <Details product={current} index={shown} count={items.length} />
@@ -149,7 +149,7 @@ export default function LookView({ look, items: rawItems, drop }) {
               ))}
             </div>
             {!wide && (
-              <div className="pt-5 pb-4 space-y-5">
+              <div className="mt-3 p-5 bg-shell space-y-5">
                 <Details product={p} index={i} count={items.length} />
                 <BuyBox product={p} />
               </div>
@@ -159,7 +159,7 @@ export default function LookView({ look, items: rawItems, drop }) {
       </div>
 
       {wide && (
-        <aside className="sticky top-36 self-start pt-2">
+        <aside className="sticky top-36 self-start bg-shell p-6">
           {current && <BuyBox product={current} />}
         </aside>
       )}
