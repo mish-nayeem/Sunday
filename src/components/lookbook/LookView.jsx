@@ -74,7 +74,11 @@ export default function LookView({ look, items: rawItems, drop }) {
     blocks.current.get(i)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
   };
 
-  const current = active >= 0 ? items[active] : null;
+  // The piece described on the left and bought on the right: the one in
+  // view, or the first piece while the look photo itself is on screen — so
+  // the details and Add to bag are there from the moment the look opens.
+  const shown = Math.max(active, 0);
+  const current = items[shown] || null;
   const block = (index) => (el) => {
     if (el) blocks.current.set(index, el);
     else blocks.current.delete(index);
@@ -84,7 +88,12 @@ export default function LookView({ look, items: rawItems, drop }) {
     <ul className="space-y-2 text-[13px]">
       {items.map((p, i) => (
         <li key={p.id}>
-          <button type="button" onClick={() => jumpTo(i)} className="w-full flex justify-between gap-3 text-left hover:underline underline-offset-4">
+          <button
+            type="button"
+            onClick={() => jumpTo(i)}
+            aria-current={i === shown ? 'true' : undefined}
+            className={`w-full flex justify-between gap-3 text-left hover:underline underline-offset-4 ${i === shown ? 'text-ink' : 'text-graphite'}`}
+          >
             <span className="min-w-0 truncate">{p.name}</span>
             <span className="shrink-0 text-graphite">{formatPrice(p.price)}</span>
           </button>
@@ -98,7 +107,15 @@ export default function LookView({ look, items: rawItems, drop }) {
       {wide && (
         <aside className="sticky top-36 self-start pt-2">
           {current ? (
-            <Details product={current} index={active} count={items.length} />
+            <>
+              <Details product={current} index={shown} count={items.length} />
+              {items.length > 1 && (
+                <div className="max-w-sm mt-8">
+                  <p className="mb-3 text-[11px] uppercase tracking-[0.16em] text-graphite">In this look</p>
+                  {pieceList}
+                </div>
+              )}
+            </>
           ) : (
             <div>
               <p className="text-[11px] uppercase tracking-[0.16em] text-graphite mb-3">{drop}</p>
@@ -143,16 +160,7 @@ export default function LookView({ look, items: rawItems, drop }) {
 
       {wide && (
         <aside className="sticky top-36 self-start pt-2">
-          {current ? (
-            <BuyBox product={current} />
-          ) : items.length > 0 ? (
-            <div>
-              <p className="text-[13px] leading-relaxed text-graphite">Scroll down through the pieces — each one’s details show on the left, and you can add it to your bag here.</p>
-              <button type="button" onClick={() => jumpTo(0)} className="mt-4 w-full h-12 border border-ink text-[13px] hover:bg-ink hover:text-white transition-colors">
-                Shop the look
-              </button>
-            </div>
-          ) : null}
+          {current && <BuyBox product={current} />}
         </aside>
       )}
     </div>
