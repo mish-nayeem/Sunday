@@ -5,6 +5,7 @@ import { supabase } from '@/lib/supabaseClient';
 import ProductCard from '@/components/products/ProductCard';
 import { SECTIONS, COLLECTIONS, SIZE_ORDER, isSizeAvailable, isSoldOut } from '@/lib/catalog';
 import { useMenus, dropLink } from '@/lib/menus';
+import { dropKey } from '@/admin/lib/lookbook.js';
 
 // The params that say which list is showing; sort, size and stock only refine it.
 const LIST_KEYS = ['category', 'type', 'drop', 'filter', 'search'];
@@ -13,7 +14,8 @@ const LIST_KEYS = ['category', 'type', 'drop', 'filter', 'search'];
 function isCurrent(to, params) {
   if (!to.startsWith('/shop')) return false;
   const want = new URLSearchParams(to.split('?')[1] || '');
-  return LIST_KEYS.every((k) => (want.get(k) || '').toLowerCase() === (params.get(k) || '').toLowerCase());
+  const norm = (v) => (v || '').trim().replace(/\s+/g, ' ').toLowerCase();
+  return LIST_KEYS.every((k) => norm(want.get(k)) === norm(params.get(k)));
 }
 
 const SORTS = [
@@ -67,8 +69,9 @@ export default function Shop() {
         const section = SECTIONS.find((s) => s.key === category);
         if (section) query = query.in('category', section.categories);
         if (type) query = query.eq('category', type);
-        // Any capitalisation: menus store drop names in capitals.
-        if (drop) query = query.ilike('drop_name', drop.replace(/[\\%_]/g, (c) => `\\${c}`));
+        // The drop itself is matched below, by dropKey: the same drop can be
+        // typed "EID 2026", "eid 2026" or "EID 2026 " in different places.
+        if (drop) query = query.not('drop_name', 'is', null);
         const collection = COLLECTIONS.find((c) => c.key === filter);
         if (collection) query = query.eq(collection.column, true);
         // Characters PostgREST reads as filter syntax are dropped from the term.
@@ -79,14 +82,16 @@ export default function Shop() {
       const ordered = sortDef.value === 'featured'
         ? filtered().order('shop_position', { ascending: true, nullsFirst: true }).order('created_at', { ascending: false })
         : filtered().order(sortDef.column, { ascending: sortDef.ascending });
-      let { data, error } = await ordered.limit(200);
+      const limit = drop ? 1000 : 200;
+      let { data, error } = await ordered.limit(limit);
       // Before the admin-panel migration has run there is no shop_position;
       // fall back to newest first rather than an empty shop.
       if (error && sortDef.value === 'featured') {
-        ({ data } = await filtered().order('created_at', { ascending: false }).limit(200));
+        ({ data } = await filtered().order('created_at', { ascending: false }).limit(limit));
       }
+      const rows = drop ? (data || []).filter((p) => dropKey(p.drop_name) === dropKey(drop)) : data || [];
       if (!cancelled) {
-        setProducts(data || []);
+        setProducts(rows);
         setLoading(false);
       }
     };
