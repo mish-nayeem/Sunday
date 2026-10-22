@@ -3,11 +3,14 @@ import { Link } from 'react-router-dom';
 import { getCart, updateCartItem, removeFromCart, subscribeCart } from '@/lib/cartStore';
 import { imgUrl } from '@/lib/storage';
 import { DELIVERY, formatPrice } from '@/lib/catalog';
+import AddOneMore, { useBagCatalog } from '@/components/cart/AddOneMore';
 
 export default function Cart() {
   const [cart, setCart] = useState(getCart());
 
   useEffect(() => subscribeCart(() => setCart(getCart())), []);
+  const catalog = useBagCatalog(cart);
+  const [asking, setAsking] = useState(''); // the line whose + is asking for a size
 
   const subtotal = cart.reduce((s, i) => s + i.price * i.quantity, 0);
 
@@ -25,8 +28,10 @@ export default function Cart() {
       <div>
         <h1 className="font-heading text-[32px] md:text-[44px] leading-none mb-8">Bag</h1>
         <ul className="border-t border-rule divide-y divide-rule">
-          {cart.map((item) => (
-            <li key={`${item.productId}-${item.size}`} className="flex gap-4 md:gap-6 py-5 text-[13px]">
+          {cart.map((item) => {
+            const key = `${item.productId}-${item.size}`;
+            return (
+            <li key={key} className="flex gap-4 md:gap-6 py-5 text-[13px]">
               <Link to={`/product/${item.productId}`} className="w-24 md:w-32 shrink-0 aspect-[4/5] bg-stone">
                 {item.image && <img src={imgUrl(item.image, 300)} alt="" className="w-full h-full object-cover" />}
               </Link>
@@ -40,15 +45,17 @@ export default function Cart() {
                   <div className="flex items-center border border-rule">
                     <button type="button" onClick={() => updateCartItem(item.productId, item.size, item.quantity - 1)} className="w-9 h-9" aria-label="Decrease quantity">−</button>
                     <span className="w-6 text-center">{item.quantity}</span>
-                    <button type="button" onClick={() => updateCartItem(item.productId, item.size, item.quantity + 1)} className="w-9 h-9" aria-label="Increase quantity">+</button>
+                    <button type="button" onClick={() => setAsking(asking === key ? '' : key)} className={`w-9 h-9 ${asking === key ? 'bg-ink text-white' : ''}`} aria-label="Add one more" aria-expanded={asking === key}>+</button>
                   </div>
                   <button type="button" onClick={() => removeFromCart(item.productId, item.size)} className="text-graphite underline underline-offset-2 hover:text-ink">
                     Remove
                   </button>
                 </div>
+                {asking === key && <AddOneMore item={item} product={catalog.get(item.productId)} onDone={() => setAsking('')} />}
               </div>
             </li>
-          ))}
+            );
+          })}
         </ul>
       </div>
 

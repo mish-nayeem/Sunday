@@ -11,12 +11,14 @@ import {
   updateCartItem,
   removeFromCart,
 } from '@/lib/cartStore';
+import AddOneMore, { useBagCatalog } from '@/components/cart/AddOneMore';
 
 // The bag slides in from the right whenever something is added or the
 // header's bag link is used, so shoppers never leave the page they're on.
 export default function CartDrawer() {
   const [open, setOpen] = useState(false);
   const [cart, setCart] = useState(getCart());
+  const [asking, setAsking] = useState(''); // the line whose + is asking for a size
 
   useEffect(() => {
     const unsubDrawer = subscribeCartDrawer(setOpen);
@@ -34,6 +36,9 @@ export default function CartDrawer() {
       window.removeEventListener('keydown', onKey);
     };
   }, [open]);
+
+  const catalog = useBagCatalog(cart, open);
+  useEffect(() => { if (!open) setAsking(''); }, [open]);
 
   const count = cart.reduce((sum, i) => sum + i.quantity, 0);
   const subtotal = cart.reduce((sum, i) => sum + i.price * i.quantity, 0);
@@ -73,8 +78,11 @@ export default function CartDrawer() {
         ) : (
           <>
             <ul className="flex-1 overflow-y-auto px-5 divide-y divide-rule">
-              {cart.map((item) => (
-                <li key={`${item.productId}-${item.size}`} className="flex gap-4 py-5">
+              {cart.map((item) => {
+                const key = `${item.productId}-${item.size}`;
+                const product = catalog.get(item.productId);
+                return (
+                <li key={key} className="flex gap-4 py-5">
                   <Link to={`/product/${item.productId}`} onClick={closeCartDrawer} className="w-20 shrink-0 aspect-[4/5] bg-stone">
                     {item.image && <img src={imgUrl(item.image, 200)} alt="" className="w-full h-full object-cover" />}
                   </Link>
@@ -99,9 +107,10 @@ export default function CartDrawer() {
                         <span className="w-6 text-center" aria-live="polite">{item.quantity}</span>
                         <button
                           type="button"
-                          onClick={() => updateCartItem(item.productId, item.size, item.quantity + 1)}
-                          className="w-8 h-8"
-                          aria-label="Increase quantity"
+                          onClick={() => setAsking(asking === key ? '' : key)}
+                          className={`w-8 h-8 ${asking === key ? 'bg-ink text-white' : ''}`}
+                          aria-label="Add one more"
+                          aria-expanded={asking === key}
                         >
                           +
                         </button>
@@ -114,9 +123,11 @@ export default function CartDrawer() {
                         Remove
                       </button>
                     </div>
+                    {asking === key && <AddOneMore item={item} product={product} onDone={() => setAsking('')} />}
                   </div>
                 </li>
-              ))}
+                );
+              })}
             </ul>
 
             <div className="px-5 pt-4 pb-5 border-t border-rule shrink-0">
