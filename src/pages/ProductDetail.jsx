@@ -172,10 +172,10 @@ export default function ProductDetail() {
       {wide ? (
         // Desktop: details | photos | buy box. Each column scrolls on its own
         // under the pointer; the photos are the long one.
-        <div className="grid grid-cols-[minmax(240px,1fr)_minmax(340px,480px)_minmax(240px,1fr)] gap-10 xl:gap-16 h-[calc(100vh-4rem)]">
+        <div className="grid grid-cols-[minmax(240px,1fr)_minmax(340px,480px)_minmax(240px,1fr)] gap-10 xl:gap-16 px-6 h-[calc(100vh-4rem)]">
           {/* The side columns keep the wheel to themselves; the photos column
               runs on into the page (You may also like, footer) at its end. */}
-          <div ref={leftRef} className="h-full overflow-y-auto hide-scrollbar py-10 px-6 bg-shell">
+          <div ref={leftRef} className="h-full overflow-y-auto hide-scrollbar py-10">
             <div className="max-w-sm">
               {header}
               {disclosures}
@@ -200,7 +200,7 @@ export default function ProductDetail() {
               </div>
             ))}
           </div>
-          <div ref={rightRef} className="h-full overflow-y-auto hide-scrollbar py-10 px-6 bg-shell flex">
+          <div ref={rightRef} className="h-full overflow-y-auto hide-scrollbar py-10 flex">
             <div className="w-full max-w-sm ml-auto my-auto">
               {buy.panel}
             </div>
@@ -239,7 +239,7 @@ export default function ProductDetail() {
             )}
           </div>
 
-          <div className="px-4 md:px-8 pt-6 md:pt-10 pb-12 bg-shell">
+          <div className="px-4 md:px-8 pt-6 md:pt-10 pb-12">
             <div className="md:sticky md:top-24">
               {header}
               {buy.panel}
@@ -275,7 +275,7 @@ export default function ProductDetail() {
       {/* Phone: keep the main action in reach while reading or scrolling photos */}
       {!soldOut && (
         <div className="md:hidden fixed inset-x-0 bottom-0 z-40 bg-white border-t border-rule p-3">
-          <button type="button" onClick={buy.add} className="w-full h-12 bg-coral text-white text-[13px]">
+          <button type="button" onClick={buy.add} className="w-full h-12 bg-ink text-white text-[13px]">
             {buy.size ? `Add size ${buy.size} to bag` : 'Add to bag'}, {formatPrice(product.price)}
           </button>
         </div>

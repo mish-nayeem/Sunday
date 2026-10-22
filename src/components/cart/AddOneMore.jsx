@@ -26,7 +26,7 @@ export default function AddOneMore({ item, product, onDone }) {
     onDone();
   };
   return (
-    <div className="mt-3 p-3 bg-shell">
+    <div className="mt-3 p-3 bg-stone">
       <div className="flex items-center justify-between mb-2">
         <p className="text-[12px]">Add one more — which size?</p>
         <button type="button" onClick={onDone} className="text-[12px] text-graphite hover:text-ink" aria-label="Cancel">Cancel</button>
@@ -40,7 +40,7 @@ export default function AddOneMore({ item, product, onDone }) {
               type="button"
               disabled={!ok}
               onClick={() => pick(sz)}
-              className={`min-w-10 h-9 px-2 text-[12px] border bg-white ${sz === item.size ? 'border-coral' : 'border-coral/25'} hover:border-coral disabled:opacity-40 disabled:line-through disabled:cursor-not-allowed`}
+              className={`min-w-10 h-9 px-2 text-[12px] border bg-white ${sz === item.size ? 'border-ink' : 'border-rule'} hover:border-ink disabled:opacity-40 disabled:line-through disabled:cursor-not-allowed`}
               aria-label={ok ? `Add one in size ${sz}` : `Size ${sz} sold out`}
             >
               {sz}

@@ -12,8 +12,6 @@ import { joinWishlist, hasJoined, savedEmail } from '@/admin/lib/wishlist.js';
 // The product page's two side columns, shared with the lookbook's look view
 // so buying from either looks and works the same: ProductInfo (name, price,
 // details) on the left, BuyPanel (colour, size, add to bag) on the right.
-// Brand colours: the columns sit on cream (bg-shell, set by the page), with
-// orange (coral) for lines, chosen sizes and the buttons; text stays ink.
 
 // "Email me when it's back" for one sold-out size. The admin panel's
 // Customers → Wishlist lists the requests, and restocking the size mails them.
@@ -35,7 +33,7 @@ export function RestockForm({ product, size }) {
   return (
     <form onSubmit={submit} className="mt-3">
       <p className="text-[13px] mb-2">Size {size} is sold out. Get an email when it’s back.</p>
-      <div className="flex border-b border-coral">
+      <div className="flex border-b border-ink">
         <label htmlFor={`restock-email-${product.id}`} className="sr-only">Email address</label>
         <input
           id={`restock-email-${product.id}`}
@@ -69,7 +67,7 @@ function Disclosure({ title, children }) {
   const [open, setOpen] = useState(false);
   if (!children) return null;
   return (
-    <div className="border-t border-coral/30">
+    <div className="border-t border-rule">
       <button
         type="button"
         onClick={() => setOpen(!open)}
@@ -121,7 +119,7 @@ export function ProductHeader({ product, as: Heading = 'h1', kicker }) {
 // Product details, sizing and delivery, each folded.
 export function ProductDisclosures({ product }) {
   return (
-    <div className="mt-8 border-b border-coral/30">
+    <div className="mt-8 border-b border-rule">
       <Disclosure title="Product details">
         {[product.description, product.details, product.care_instructions, product.sku && `Style no. ${product.sku}`]
           .filter(Boolean).join('\n\n')}
@@ -222,7 +220,7 @@ export function useBuyPanel(product, { photoSelector = '[data-pdp-photo]' } = {}
             to={`/product/${c.id}`}
             aria-current={c.id === product.id ? 'true' : undefined}
             title={c.variant || c.name}
-            className={`w-12 h-12 p-0.5 border bg-white ${c.id === product.id ? 'border-coral' : 'border-coral/25 hover:border-coral'}`}
+            className={`w-12 h-12 p-0.5 border ${c.id === product.id ? 'border-ink' : 'border-rule hover:border-graphite'}`}
           >
             <span className="block w-full h-full bg-stone overflow-hidden">
               {c.images?.[0] && <img src={imgUrl(c.images[0], 120)} alt={c.variant || c.name} className="w-full h-full object-cover" />}
@@ -241,7 +239,7 @@ export function useBuyPanel(product, { photoSelector = '[data-pdp-photo]' } = {}
             type="button"
             onClick={() => setColor(c)}
             aria-pressed={color === c}
-            className={`h-10 px-4 text-[13px] border bg-white ${color === c ? 'border-coral' : 'border-coral/25 hover:border-coral'}`}
+            className={`h-10 px-4 text-[13px] border ${color === c ? 'border-ink' : 'border-rule hover:border-graphite'}`}
           >
             {c}
           </button>
@@ -275,10 +273,10 @@ export function useBuyPanel(product, { photoSelector = '[data-pdp-photo]' } = {}
               onClick={() => pickSize(s)}
               className={`h-14 flex flex-col items-center justify-center border transition-colors ${
                 !ok
-                  ? `text-graphite bg-white/60 ${on ? 'border-coral' : 'border-coral/30 border-dashed hover:border-coral'}`
+                  ? `text-graphite ${on ? 'border-ink' : 'border-rule border-dashed hover:border-graphite'}`
                   : on
-                    ? 'border-coral bg-coral text-white'
-                    : `bg-white ${sizeError ? 'border-coral' : 'border-coral/25'} hover:border-coral`
+                    ? 'border-ink bg-ink text-white'
+                    : `${sizeError ? 'border-coral' : 'border-rule'} hover:border-ink`
               }`}
             >
               <span className={`text-[14px] leading-none ${ok ? '' : 'line-through opacity-60'}`}>{s}</span>
@@ -297,12 +295,12 @@ export function useBuyPanel(product, { photoSelector = '[data-pdp-photo]' } = {}
         type="button"
         onClick={add}
         disabled={soldOut}
-        className="w-full h-12 bg-coral text-white text-[13px] hover:bg-[#F2603F] transition-colors disabled:bg-coral/25 disabled:text-graphite disabled:cursor-not-allowed"
+        className="w-full h-12 bg-ink text-white text-[13px] hover:bg-ink/85 disabled:bg-stone disabled:text-graphite disabled:cursor-not-allowed"
       >
         {soldOut ? 'Sold out' : 'Add to bag'}
       </button>
       {!soldOut && (
-        <button type="button" onClick={buyNow} className="w-full h-12 border border-coral bg-white text-[13px] hover:bg-shell transition-colors">
+        <button type="button" onClick={buyNow} className="w-full h-12 border border-ink text-[13px] hover:bg-stone">
           Buy now
         </button>
       )}

@@ -15,8 +15,6 @@ module.exports = {
   			graphite: '#6E6E6E',
   			rule: '#E4E2DF',
   			coral: '#FF7254',
-  			// The brand's cream (icons, share image, product page panels).
-  			shell: '#FFEFD6',
   			ivory: '#F7F5F2',
   			charcoal: '#1C1C1C',
   			wine: '#561C24',
