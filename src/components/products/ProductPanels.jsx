@@ -306,49 +306,72 @@ export function useBuyPanel(product, { photoSelector = '[data-pdp-photo]' } = {}
     </div>
   ) : null;
 
+  const pickedAt = product.sizes?.indexOf(size || waitSize) ?? -1;
+  const stock = product.size_stock || product.stock;
+  const left = size && stock && Object.keys(stock).length ? Number(stock[size]) || 0 : null;
+
   const sizePicker = product.sizes?.length > 0 && (
     <div className="mt-6 lg:mt-0">
-      <div className="flex items-center justify-between mb-2">
+      <div className="flex items-center justify-between mb-2.5">
         <p className={`text-[13px] ${sizeError ? 'text-coral' : ''}`}>
           {sizeError ? 'Choose a size to continue' : <>Size{size && <span className="text-graphite">: {size}</span>}</>}
         </p>
-        <button type="button" onClick={() => setChartOpen(true)} className="text-[13px] underline underline-offset-4">
+        <button type="button" onClick={() => setChartOpen(true)} className="text-[12px] text-graphite underline underline-offset-4 hover:text-ink">
           Size guide
         </button>
       </div>
-      {/* Big size buttons. A sold-out size says Notify me: tapping it opens
-          the email form below, which lands in Admin → Customers → Wishlist. */}
-      <div className="grid grid-cols-4 gap-2">
-        {product.sizes.map((s) => {
+      {/* One slim segmented bar; a dark pill slides to the size picked. A
+          sold-out size is struck through with a dot: tapping it opens the
+          Notify me form below (Admin → Customers → Wishlist). */}
+      <div
+        role="radiogroup"
+        aria-label="Size"
+        className={`relative grid p-1 rounded-full border transition-colors ${sizeError ? 'border-coral' : 'border-rule'}`}
+        style={{ gridTemplateColumns: `repeat(${product.sizes.length}, minmax(0, 1fr))` }}
+      >
+        {pickedAt >= 0 && (
+          <span
+            aria-hidden="true"
+            className={`absolute top-1 bottom-1 left-1 rounded-full transition-[transform,background-color] ${waitSize ? "bg-graphite" : "bg-ink"} duration-300 ease-[cubic-bezier(.2,.8,.2,1)]`}
+            style={{ width: `calc((100% - 0.5rem) / ${product.sizes.length})`, transform: `translateX(${pickedAt * 100}%)` }}
+          />
+        )}
+        {product.sizes.map((s, i) => {
           const ok = isSizeAvailable(product, s);
-          const on = ok ? size === s : waitSize === s;
+          const on = i === pickedAt;
           return (
             <button
               key={s}
               type="button"
-              aria-pressed={on}
+              role="radio"
+              aria-checked={on}
               aria-label={ok ? `Size ${s}` : `Size ${s}, sold out. Notify me when it's back`}
               onClick={() => pickSize(s)}
-              className={`h-14 flex flex-col items-center justify-center border transition-colors ${
-                !ok
-                  ? `text-graphite ${on ? 'border-ink' : 'border-rule border-dashed hover:border-graphite'}`
-                  : on
-                    ? 'border-ink bg-ink text-white'
-                    : `${sizeError ? 'border-coral' : 'border-rule'} hover:border-ink`
+              className={`relative z-[1] h-10 rounded-full text-[13px] tracking-[0.04em] transition-colors duration-200 ${
+                on ? (ok ? 'text-white' : 'text-white/80') : ok ? 'text-ink hover:bg-stone/70' : 'text-graphite/60 hover:text-graphite'
               }`}
             >
-              <span className={`text-[14px] leading-none ${ok ? '' : 'line-through opacity-60'}`}>{s}</span>
-              {!ok && <span className="mt-1 text-[9px] uppercase tracking-[0.12em] text-burgundy">Notify me</span>}
+              <span className={ok ? '' : 'line-through decoration-1'}>{s}</span>
+              {!ok && <span aria-hidden="true" className={`absolute top-2 right-[22%] w-1 h-1 rounded-full ${on ? 'bg-white/70' : 'bg-coral'}`} />}
             </button>
           );
         })}
       </div>
+      <p className="mt-2 text-[12px] text-graphite empty:hidden">
+        {waitSize
+          ? null
+          : size && left != null && left <= 3
+            ? <span className="text-coral">Only {left} left in {size}</span>
+            : product.sizes.some((x) => !isSizeAvailable(product, x))
+              ? <><span className="inline-block w-1 h-1 mr-1.5 align-middle rounded-full bg-coral" />Sold out — tap to be told when it’s back</>
+              : null}
+      </p>
       {waitSize && <RestockForm key={waitSize} product={product} size={waitSize} />}
     </div>
   );
 
   const actions = (
-    <div className="mt-5 space-y-2">
+    <div className="mt-4 space-y-2">
       <button
         type="button"
         onClick={add}
