@@ -18,6 +18,74 @@ function itemsNet(o) {
   return Number(o.subtotal) - (Number(o.discount_amount) || 0)
 }
 
+// Orders that never became a sale: cancelled, or returned by the courier
+// (the customer couldn't be reached or refused at the door). Neither counts
+// toward units, sales or revenue, and both put the stock back.
+export const UNSOLD = ['cancelled', 'returned']
+
+export function unsold(o) {
+  return UNSOLD.includes(o?.status)
+}
+
+// ---------- What reaches the shop ----------
+// The courier (Steadfast, RedX…) keeps the whole delivery charge, and takes
+// COD_FEE_RATE of the product amount it collects — on a 1000 taka piece with
+// 80 delivery, the rider collects 1080, the courier keeps 80 + 10, and 990
+// is ours. Change the rate here if the courier's does.
+export const COD_FEE_RATE = 0.01
+
+// A returned parcel still costs its delivery charge. Paid (the bKash advance
+// covered it, or the customer paid it after): costs us nothing. Unpaid: it
+// comes off our revenue. Set by the admin on the order; until then, paid
+// when the advance was enough to cover the charge.
+export function returnFeePaid(o) {
+  if (o.return_fee_paid != null) return Boolean(o.return_fee_paid)
+  return (Number(o.advance_amount) || 0) >= (Number(o.delivery_fee) || 0)
+}
+
+// One order's money, split three ways: what the customer paid for the
+// products, what the courier keeps, and what's left for us. Only delivered
+// and returned orders have any — the rest haven't settled yet.
+export function orderMoney(o) {
+  const fee = Number(o.delivery_fee) || 0
+  if (o.status === 'delivered') {
+    const items = itemsNet(o)
+    // The courier's 1% was taken on what the rider collected — before any
+    // refund given back later — so it's worked out on that, not on what's
+    // left after the refund.
+    const collected = items + (Number(o.refunded) || 0)
+    const codFee = Math.round(collected * COD_FEE_RATE * 100) / 100
+    // An exchange's second parcel: its delivery charge is the courier's
+    // too. Paid by the customer it passes straight through; paid by us
+    // (exchange_fee_unpaid) it comes off what we keep.
+    const exchange = Number(o.exchange_fees) || 0
+    const exchangeUnpaid = Number(o.exchange_fee_unpaid) || 0
+    return {
+      items,
+      collected,
+      delivery: fee,
+      codFee,
+      exchange,
+      exchangeUnpaid,
+      courier: fee + codFee + exchange,
+      toShop: items - codFee - exchangeUnpaid,
+      receivable: items - codFee - exchangeUnpaid,
+    }
+  }
+  // Not delivered yet: what will reach us once it is — the receivable.
+  // Nothing counts toward revenue until then.
+  if (o.status === 'pending' || o.status === 'shipped') {
+    const items = itemsNet(o)
+    const codFee = Math.round(items * COD_FEE_RATE * 100) / 100
+    return { items, delivery: fee, codFee, courier: 0, toShop: 0, receivable: items - codFee, expected: true }
+  }
+  if (o.status === 'returned') {
+    const paid = returnFeePaid(o)
+    return { items: 0, delivery: fee, codFee: 0, courier: fee, toShop: paid ? 0 : -fee, returnFeePaid: paid }
+  }
+  return { items: 0, delivery: 0, codFee: 0, courier: 0, toShop: 0 }
+}
+
 // ---------- Auth ----------
 
 export async function signOut() {

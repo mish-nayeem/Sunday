@@ -3,6 +3,7 @@ import { supabase } from '../lib/supabaseClient.js'
 import { imgUrl } from '../lib/images.js'
 import InfoTip from './InfoTip.jsx'
 import './analytics-manager.css'
+import { unsold } from '../lib/admin.js'
 
 const MIGRATION = 'has supabase-migration-analytics-v2.sql been run?'
 
@@ -107,7 +108,7 @@ export default function AnalyticsManager({ sub, orders, products }) {
     const now = Date.now()
     const since = now - days * 86400000
     const prevSince = now - days * 2 * 86400000
-    const live = orders.filter((o) => o.status !== 'cancelled')
+    const live = orders.filter((o) => !unsold(o))
     const inRange = live.filter((o) => new Date(o.created_at).getTime() >= since)
     const prev = live.filter((o) => {
       const t = new Date(o.created_at).getTime()

@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { supabase } from '../lib/supabaseClient.js'
 import { dropKey } from '../lib/lookbook.js'
 import './audience-manager.css'
+import { unsold } from '../lib/admin.js'
 
 function taka(n) {
   return '৳ ' + Number(n || 0).toLocaleString()
@@ -30,7 +31,7 @@ export default function AudienceManager({ orders, products }) {
       .from('newsletter_subscribers')
       .select('*')
       .then(({ data, error }) => {
-        if (error) setSubsError("Couldn't load the mailing list — has supabase-migration-audience.sql been run?")
+        if (error) setSubsError("Couldn't load the mailing list — try again.")
         setSubs(data || [])
       })
   }, [])
@@ -50,7 +51,7 @@ export default function AudienceManager({ orders, products }) {
       }
       if (o.customer_email && !row.email) row.email = o.customer_email.trim().toLowerCase()
       if (!row.last || o.created_at > row.last) { row.last = o.created_at; row.name = o.customer_name || row.name }
-      if (o.status !== 'cancelled') {
+      if (!unsold(o)) {
         row.orders += 1
         row.spent += Number(o.total ?? o.subtotal) || 0
         for (const it of o.order_items || []) {

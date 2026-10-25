@@ -23,13 +23,15 @@ export const PAGE_HELP = {
   'customers:wishlist': 'Customers waiting for a sold-out size. Raising that size’s stock from 0 emails them automatically; Email them sends it again by hand.',
 
   'marketing:audience': 'Everyone who ordered or joined the email list, with what they spent. Copy the emails to use in an email tool or for Facebook/Instagram ads.',
-  'marketing:adspend': 'Type in what you spent on each ad channel and what it brought in, to see return on ad spend (ROAS). Nothing is pulled from Facebook automatically.',
-  'marketing:email': 'Type in each email campaign’s open and click rates to keep a record of what worked.',
-  'marketing:social': 'Type in follower counts and engagement now and then to track growth.',
+  'marketing:adspend': 'What the ads cost and what they brought in. Facebook / Instagram spend comes in by itself from Meta (Sync now, or the daily sync); orders are matched to ads by their tracked link. ROAS = sales ÷ spend, per campaign and per day.',
+  'marketing:email': 'Write an email (heading, text, photo, button), send yourself a test, then send it through Brevo to newsletter subscribers and/or customers. Opens and clicks come back from Brevo; orders from the button’s link show under the campaign.',
+  'marketing:social': 'Instagram and Facebook followers, counted once a day by the Meta sync, with the change over 7 and 30 days. You can still type a count in by hand.',
   'marketing:sales': 'A percentage off for a set time — the whole shop, one drop, or chosen products. The sale price, a “% off” tag and a countdown show on the shop and product pages, and checkout charges it. The biggest sale wins if two overlap.',
   'marketing:coupons': 'Discount codes customers type at checkout: % off or taka off, with an optional minimum order, limit and dates. Only switched-on codes work; a cancelled order gives the use back.',
+  'marketing:setup': 'The steps that switch on the automatic marketing: the database and function go out by themselves on push; you add the Brevo and Meta keys in Supabase → Edge Functions → Secrets. Ticks show what is already working.',
   'marketing:links': 'Make a tracked link for a post, story or ad. When someone buys after clicking it, the order shows where it came from (Overview → Order sources).',
 
+  'analytics:report': 'A clean report to send investors or partners: sales, money collected, pieces, customers and stock for a period or one drop, with your own note. Print it or save as PDF.',
   analytics: 'Visitors to the shop: how many, from where, on which pages, at what times and from which districts, and how many went on to buy. Your own visits to /admin are not counted.',
 
   hero: 'The home page, top to bottom. MAIN HERO: full-screen photos or videos (wide for computers, tall for phones) with a SHOP NOW button that opens every product. DROP SECTIONS: under the hero, one banner per drop — photo, drop name, a line of text and SHOP NOW (opens only that drop’s products) — with a row of your best photos from the drop beneath it. Then the hero button and an optional drop countdown.',
