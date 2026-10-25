@@ -24,7 +24,7 @@ import {
   emailCampaignsApi,
   socialStatsApi,
 } from '../lib/admin.js'
-import { sendStatusUpdate, sendRestockAlert } from '../lib/email.js'
+import { sendStatusUpdate, sendRestockAlert, sendOrderConfirmation } from '../lib/email.js'
 import { imgUrl } from '../lib/images.js'
 import ImageMigration from '../components/ImageMigration.jsx'
 import BkashCheck from '../components/BkashCheck.jsx'
@@ -91,6 +91,34 @@ import './admin-theme.css'
 import './admin-mobile.css'
 
 const STATUSES = ['pending', 'shipped', 'delivered', 'cancelled']
+
+// Order sheet → send (or resend) the order confirmation email, showing
+// Brevo's own answer when it fails — a missing secret, an unverified sender.
+function ConfirmationMail({ orderId }) {
+  const [state, setState] = useState(null) // null | 'busy' | { ok, text }
+  return (
+    <div className="orow">
+      <span className="dim">Confirmation</span>
+      <span className="mono">
+        <button
+          type="button"
+          style={{ background: "none", border: 0, padding: 0, textDecoration: "underline", cursor: "pointer", color: "inherit", font: "inherit" }}
+          disabled={state === 'busy'}
+          onClick={async () => {
+            setState('busy')
+            const r = await sendOrderConfirmation(orderId)
+            setState(r.sent.customer ? { ok: true, text: 'Sent ✓' } : { ok: false, text: r.error || "Couldn't send" })
+          }}
+        >
+          {state === 'busy' ? 'Sending…' : 'Send email again'}
+        </button>
+        {state && state !== 'busy' && (
+          <span style={{ display: 'block', marginTop: 4, color: state.ok ? 'var(--green, #1baf7a)' : 'var(--red, #d33)', whiteSpace: 'normal' }}>{state.text}</span>
+        )}
+      </span>
+    </div>
+  )
+}
 
 // The storefront's own pages, grouped under one sidebar entry ("Website")
 // with a tab each — every one works exactly as it did on its own.
@@ -779,6 +807,7 @@ export default function Admin() {
             </span>
           </div>
           {o.customer_email && <div className="orow"><span className="dim">Email</span><span className="mono oemail">{o.customer_email}</span></div>}
+          {o.customer_email && <ConfirmationMail orderId={o.id} />}
           <div className="oaddr">
             <span className="dim">Address</span>
             <span>{o.customer_address}</span>

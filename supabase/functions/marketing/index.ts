@@ -167,9 +167,9 @@ async function metaSync(db: ReturnType<typeof createClient>, days: number) {
 
 function brevo() {
   const key = env('BREVO_API_KEY')
-  const from = env('BREVO_FROM_EMAIL')
+  const from = env('BREVO_FROM_EMAIL') || env('BREVO_SENDER_EMAIL')
   if (!key || !from) notConfigured('brevo')
-  return { key: key!, sender: { email: from!, name: env('BREVO_FROM_NAME') || 'SUNDAY' } }
+  return { key: key!, sender: { email: from!, name: env('BREVO_FROM_NAME') || env('BREVO_SENDER_NAME') || 'SUNDAY' } }
 }
 
 async function bv(path: string, init: RequestInit = {}) {

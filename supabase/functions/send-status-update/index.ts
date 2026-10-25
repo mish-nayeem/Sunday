@@ -121,11 +121,11 @@ Deno.serve(async (req: Request) => {
     if (!BREVO_API_KEY) {
       return jsonResponse({ error: "BREVO_API_KEY secret is not configured" }, 500);
     }
-    const SENDER_EMAIL = Deno.env.get("BREVO_SENDER_EMAIL");
+    const SENDER_EMAIL = Deno.env.get("BREVO_SENDER_EMAIL") || Deno.env.get("BREVO_FROM_EMAIL");
     if (!SENDER_EMAIL) {
-      return jsonResponse({ error: "BREVO_SENDER_EMAIL secret is not configured" }, 500);
+      return jsonResponse({ error: "BREVO_SENDER_EMAIL (or BREVO_FROM_EMAIL) secret is not configured" }, 500);
     }
-    const SENDER_NAME = Deno.env.get("BREVO_SENDER_NAME") || "SUNDAY";
+    const SENDER_NAME = Deno.env.get("BREVO_SENDER_NAME") || Deno.env.get("BREVO_FROM_NAME") || "SUNDAY";
     // Reply-To: where customer replies actually land. Falls back to the sender
     // email if not set, but on Brevo's free tier the sender is often a technical
     // @xxxxxbrevosend.com address, so BREVO_REPLY_TO_EMAIL (e.g. sundayclothin@gmail.com)

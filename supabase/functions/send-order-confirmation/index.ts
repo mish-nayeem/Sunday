@@ -6,7 +6,7 @@
 //
 // Required secrets (set with `supabase secrets set KEY=value`):
 //   BREVO_API_KEY        - your Brevo API v3 key
-//   BREVO_SENDER_EMAIL    - a sender verified in Brevo (e.g. orders@yourdomain.com)
+//   BREVO_SENDER_EMAIL    - a sender verified in Brevo (or BREVO_FROM_EMAIL, as the marketing function names it)
 //   BREVO_SENDER_NAME     - display name, defaults to "SUNDAY"
 //
 // SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY are injected automatically by the
@@ -239,11 +239,11 @@ Deno.serve(async (req: Request) => {
     if (!BREVO_API_KEY) {
       return jsonResponse({ error: "BREVO_API_KEY secret is not configured" }, 500);
     }
-    const SENDER_EMAIL = Deno.env.get("BREVO_SENDER_EMAIL");
+    const SENDER_EMAIL = Deno.env.get("BREVO_SENDER_EMAIL") || Deno.env.get("BREVO_FROM_EMAIL");
     if (!SENDER_EMAIL) {
-      return jsonResponse({ error: "BREVO_SENDER_EMAIL secret is not configured" }, 500);
+      return jsonResponse({ error: "BREVO_SENDER_EMAIL (or BREVO_FROM_EMAIL) secret is not configured" }, 500);
     }
-    const SENDER_NAME = Deno.env.get("BREVO_SENDER_NAME") || "SUNDAY";
+    const SENDER_NAME = Deno.env.get("BREVO_SENDER_NAME") || Deno.env.get("BREVO_FROM_NAME") || "SUNDAY";
 
     const pdfBase64 = buildInvoicePdfBase64({
       invoice_number: order.invoice_number,

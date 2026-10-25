@@ -245,7 +245,8 @@ export default function Checkout() {
     // Still never blocks the order itself — a failure here is only logged, not thrown.
     if (form.email) {
       try {
-        await supabase.functions.invoke('send-order-confirmation', { body: { order_id: oid } });
+        const { error: mailError } = await supabase.functions.invoke('send-order-confirmation', { body: { order_id: oid } });
+        if (mailError) console.error('Order confirmation email failed:', await mailError.context?.clone?.().text?.().catch(() => '') || mailError.message);
       } catch (e) {
         console.error('Order confirmation email failed:', e);
       }

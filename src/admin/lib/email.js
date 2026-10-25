@@ -4,6 +4,18 @@ import { supabase } from './supabaseClient.js'
 // is already saved in Supabase — an email problem must never surface to the
 // customer as a failed checkout, or to the admin as a failed status change.
 
+// The function's own { error } text, even when supabase-js only reports
+// "non-2xx status code".
+async function functionError(error) {
+  try {
+    const body = await error?.context?.clone?.().json()
+    if (body?.error) return String(body.error)
+  } catch { /* not JSON */ }
+  return error?.message || 'Unknown error'
+}
+
+// { sent: { customer }, error }: SUNDAY's function answers { success } or
+// { skipped }; sent.customer is the shape the panel (from PAUSE) reads.
 export async function sendOrderConfirmation(orderId) {
   try {
     const { data, error } = await supabase.functions.invoke('send-order-confirmation', {
@@ -12,14 +24,15 @@ export async function sendOrderConfirmation(orderId) {
     })
 
     if (error) {
-      console.warn('[Email] send-order-confirmation failed:', error.message)
-      return { sent: null }
+      const message = await functionError(error)
+      console.warn('[Email] send-order-confirmation failed:', message)
+      return { sent: { customer: false }, error: message }
     }
 
-    return data
+    return { ...data, sent: { customer: Boolean(data?.success) }, error: data?.skipped ? data.reason : null }
   } catch (err) {
     console.warn('[Email] send-order-confirmation unreachable:', err.message)
-    return { sent: null }
+    return { sent: { customer: false }, error: err.message }
   }
 }
 

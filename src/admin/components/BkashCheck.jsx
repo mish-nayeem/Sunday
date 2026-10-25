@@ -166,7 +166,7 @@ export default function BkashCheck({ orders, onChange }) {
                         setResult(
                           r?.sent?.customer
                             ? { ok: true, text: `Confirmation email sent to ${o.customer_email}.` }
-                            : { ok: false, text: "Still couldn't send — check Brevo." }
+                            : { ok: false, text: `Still couldn't send: ${r?.error || 'check Brevo'}` }
                         )
                         if (r?.sent?.customer) onChange(o.id, { customer_mail_sent_at: new Date().toISOString() })
                       }}
