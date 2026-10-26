@@ -1,0 +1,67 @@
+# Deploys the website (the Worker and its static assets) to Cloudflare on
+# every push to main. Cloudflare's own Workers Builds got stuck account-wide
+# (every build "Queued", then "Skipped"), so the site goes out from here, the
+# same way as PAUSE.
+#
+# One-time setup — GitHub → Settings → Secrets and variables → Actions:
+#   secrets  CLOUDFLARE_API_TOKEN   (Cloudflare → My Profile → API Tokens,
+#                                    "Edit Cloudflare Workers" template)
+#            CLOUDFLARE_ACCOUNT_ID
+#            VITE_SUPABASE_ANON_KEY (Supabase → Settings → API → anon public;
+#                                    it ends up in the browser anyway)
+#   optional variables (Variables tab): VITE_SUPABASE_IMAGE_TRANSFORM,
+#            VITE_SITE_URL — the same as in Cloudflare's Build variables.
+# Without the token and the anon key this workflow says so and stops.
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check the secrets are set
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY || vars.VITE_SUPABASE_ANON_KEY }}
+        run: |
+          missing=""
+          [ -z "$CLOUDFLARE_API_TOKEN" ] && missing="$missing CLOUDFLARE_API_TOKEN"
+          [ -z "$CLOUDFLARE_ACCOUNT_ID" ] && missing="$missing CLOUDFLARE_ACCOUNT_ID"
+          [ -z "$VITE_SUPABASE_ANON_KEY" ] && missing="$missing VITE_SUPABASE_ANON_KEY"
+          if [ -n "$missing" ]; then
+            echo "::error::Add these under Settings → Secrets and variables → Actions:$missing"
+            exit 1
+          fi
+
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - name: Build
+        run: npm run build
+        env:
+          # Public: they're in the site's JavaScript for every visitor.
+          VITE_SUPABASE_URL: https://qgvadxivqtlgobfzbdxt.supabase.co
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY || vars.VITE_SUPABASE_ANON_KEY }}
+          VITE_SUPABASE_IMAGE_TRANSFORM: ${{ vars.VITE_SUPABASE_IMAGE_TRANSFORM }}
+          VITE_SITE_URL: ${{ vars.VITE_SITE_URL }}
+
+      - name: wrangler deploy
+        run: npx --yes wrangler@4 deploy
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
