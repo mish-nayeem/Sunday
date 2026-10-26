@@ -13,6 +13,7 @@ import { saveAbandonedCart, markCartConverted } from '@/lib/abandonedCart';
 import { fetchLiveSales } from '@/admin/lib/sales.js';
 import { withSale } from '@/lib/pricing';
 import { BKASH_NUMBER } from '@/admin/lib/delivery.js';
+import { bdPhone } from '@/lib/phone';
 
 // create_order's tagged errors, said plainly.
 function orderErrorMessage(error) {
@@ -21,6 +22,9 @@ function orderErrorMessage(error) {
   if ((m = raw.match(/SOLD_OUT:(.*):(.*)/))) return `${m[1]} in size ${m[2]} has just sold out. Remove it from your bag to continue.`;
   if ((m = raw.match(/UNAVAILABLE:(.*)/))) return `${m[1]} isn’t available yet. Remove it from your bag to continue.`;
   if (raw.includes('RATE_LIMITED')) return 'Too many orders from this connection. Wait a few minutes and try again.';
+  if (raw.includes('INVALID_PHONE')) return 'Enter a Bangladeshi mobile number, like 01712345678.';
+  if (raw.includes('BLOCKED')) return 'We couldn’t take this order online. Please call or message us to order.';
+  if (raw.includes('ADVANCE_REQUIRED')) return 'This number needs Tk 200 paid by bKash up front. Choose that option and add the Transaction ID.';
   if (raw.includes('COUPON_')) return 'That code can’t be used on this order any more. Remove it and try again.';
   return 'The order didn’t go through. Check your details and try again.';
 }
@@ -71,6 +75,10 @@ export default function Checkout() {
   const [agreed, setAgreed] = useState(false);
   const [bkashTrxId, setBkashTrxId] = useState('');
   const [payOption, setPayOption] = useState('cod'); // cod | advance | full
+  const [phoneTouched, setPhoneTouched] = useState(false);
+  // A number whose parcels came back pays Tk 200 up front even in Dhaka
+  // (Admin → Orders → Security); asked once the number is complete.
+  const [mustAdvance, setMustAdvance] = useState(false);
   const [numberCopied, setNumberCopied] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState('');
@@ -141,9 +149,21 @@ export default function Checkout() {
     if (error) { setCoupon(null); setCouponError(error.replace(/৳ ?/g, 'Tk ')); return; }
     setCoupon(c);
   };
-  // Outside Dhaka can't be all cash on delivery; Dhaka has no part advance.
+  const phone = bdPhone(form.mobile);
+  const phoneError = phoneTouched && form.mobile.trim() && !phone;
+  useEffect(() => {
+    if (!phone) { setMustAdvance(false); return; }
+    let cancelled = false;
+    supabase.rpc('checkout_phone_check', { p_mobile: phone })
+      .then(({ data }) => { if (!cancelled) setMustAdvance(Boolean(data?.needs_advance)); }, () => {});
+    return () => { cancelled = true; };
+  }, [phone]);
+
+  // Outside Dhaka (or a number that must pay up front) can't be all cash on
+  // delivery; otherwise Dhaka has no part advance.
   const outside = !!form.district && form.district !== 'Dhaka';
-  const pay = !form.district ? 'cod' : outside ? (payOption === 'full' ? 'full' : 'advance') : (payOption === 'full' ? 'full' : 'cod');
+  const advanceOnly = outside || mustAdvance;
+  const pay = !form.district ? 'cod' : advanceOnly ? (payOption === 'full' ? 'full' : 'advance') : (payOption === 'full' ? 'full' : 'cod');
   const isAdvancePay = pay !== 'cod'; // a bKash payment (part or whole) is needed
   const payNow = pay === 'full' ? total : pay === 'advance' ? Math.min(OUTSIDE_ADVANCE, total) : 0;
   const payLater = total - payNow;
@@ -159,6 +179,7 @@ export default function Checkout() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (!phone) { setPhoneTouched(true); setSubmitError('Enter a Bangladeshi mobile number, like 01712345678.'); return; }
     if (isAdvancePay && !bkashTrxId.trim()) return;
     if (!agreed) { setSubmitError('Tick the box to agree to the terms before placing the order.'); return; }
     setSubmitting(true);
@@ -177,7 +198,7 @@ export default function Checkout() {
     const base = {
       p_full_name: form.full_name,
       p_email: form.email,
-      p_mobile: form.mobile,
+      p_mobile: phone,
       // No postal code column on orders: it rides at the end of the address.
       p_address: form.postal.trim() ? `${form.address.trim()}, ${form.postal.trim()}` : form.address,
       p_district: form.district,
@@ -200,6 +221,11 @@ export default function Checkout() {
       ({ data: result, error: orderError } = await supabase.rpc('create_order', base));
     }
 
+    // Turned away (too many tries, or on the block list): create_order says
+    // so in the order number, so its log line isn't undone by an error.
+    if (!orderError && String(result?.[0]?.order_id || '').startsWith('ERR:')) {
+      orderError = { message: result[0].order_id };
+    }
     if (orderError || !result?.[0]) {
       console.error('Order creation failed:', orderError);
       setSubmitError(orderErrorMessage(orderError));
@@ -314,9 +340,13 @@ export default function Checkout() {
                 </label>
                 <div>
                   <label htmlFor="co-mobile" className="text-[13px] block mb-2">Mobile number *</label>
-                  <input id="co-mobile" type="tel" required autoComplete="tel" value={form.mobile}
+                  <input id="co-mobile" type="tel" required autoComplete="tel" inputMode="tel" value={form.mobile}
                     onChange={(e) => setForm({ ...form, mobile: e.target.value })}
-                    placeholder="01XXXXXXXXX" className="w-full h-12 border border-rule px-4 text-[14px] bg-white outline-none focus:border-ink transition-colors placeholder:text-graphite/60" />
+                    onBlur={() => setPhoneTouched(true)}
+                    aria-invalid={phoneError || undefined}
+                    aria-describedby={phoneError ? 'co-mobile-err' : undefined}
+                    placeholder="01XXXXXXXXX" className={`w-full h-12 border px-4 text-[14px] bg-white outline-none transition-colors placeholder:text-graphite/60 ${phoneError ? 'border-coral' : 'border-rule focus:border-ink'}`} />
+                  {phoneError && <p id="co-mobile-err" className="mt-2 text-[12px] text-coral">Enter a Bangladeshi mobile number, 11 digits starting with 01.</p>}
                 </div>
               </fieldset>
 
@@ -381,9 +411,9 @@ export default function Checkout() {
                 ) : (
                   <div className="space-y-3">
                     {/* The two ways to pay for this district. */}
-                    {(outside
+                    {(advanceOnly
                       ? [
-                          ['advance', `Tk ${Math.min(OUTSIDE_ADVANCE, total).toLocaleString()} now by bKash, the rest on delivery`, `Outside Dhaka needs Tk ${OUTSIDE_ADVANCE} up front. Pay the rider Tk ${(total - Math.min(OUTSIDE_ADVANCE, total)).toLocaleString()} when your order arrives.`],
+                          ['advance', `Tk ${Math.min(OUTSIDE_ADVANCE, total).toLocaleString()} now by bKash, the rest on delivery`, `${outside ? 'Outside Dhaka' : 'This order'} needs Tk ${OUTSIDE_ADVANCE} up front. Pay the rider Tk ${(total - Math.min(OUTSIDE_ADVANCE, total)).toLocaleString()} when your order arrives.`],
                           ['full', `Pay the full Tk ${total.toLocaleString()} now by bKash`, 'Products and delivery paid now — nothing to pay when it arrives.'],
                         ]
                       : [
@@ -405,7 +435,7 @@ export default function Checkout() {
                       <div className="border border-ink bg-[#F6F1E7]">
                         <div className="px-5 py-4 flex items-start justify-between gap-4 border-b border-black/10">
                           <div>
-                            <p className="text-[11px] uppercase tracking-[0.16em] text-burgundy">{pay === 'full' ? 'Full payment by bKash' : 'Outside Dhaka · advance payment'}</p>
+                            <p className="text-[11px] uppercase tracking-[0.16em] text-burgundy">{pay === 'full' ? 'Full payment by bKash' : outside ? 'Outside Dhaka · advance payment' : 'Advance payment'}</p>
                             <p className="text-[14px] mt-1">
                               {pay === 'full' ? 'Send the whole order by bKash to place it.' : `Send Tk ${payNow.toLocaleString()} by bKash to place your order. Tk ${payLater.toLocaleString()} is paid on delivery.`}
                             </p>

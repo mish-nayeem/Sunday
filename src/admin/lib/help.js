@@ -9,7 +9,7 @@ export const PAGE_HELP = {
   'orders:list': 'Every order, newest first. Tap a card to open it: change its status (pending → shipped → delivered), call or WhatsApp the customer, send it to a courier or print a packing slip. Marking an order Delivered takes its pieces off stock and emails the customer. + New order is for orders taken over Instagram, Facebook or phone.',
   'orders:bkash': 'Orders paid by bKash at checkout: outside Dhaka pays Tk 200 up front (the rider collects the rest), and anyone can pay the whole order. Copy the TrxID from your bKash app, paste it here and press Verify: the matching order is marked checked and the customer gets their confirmation email.',
   'orders:abandoned': 'People who started checkout and typed a name or phone but never placed the order, with what was in their bag. Call or message them to help finish the order.',
-  'orders:security': 'Order attempts the shop blocked because one connection tried to place too many orders too fast (more than 10 an hour). Real customers almost never show up here.',
+  'orders:security': 'Keeping fake orders out. Checkout already accepts only Bangladeshi mobile numbers, at most 10 orders an hour from one connection, and Tk 200 up front outside Dhaka. Here: make risky numbers (refused before) pay Tk 200 first in Dhaka too, block a phone number or internet connection, and see every order that was turned away.',
 
   'products:catalog': 'All products. + Add product to upload a new one; tap a product to edit it. Drag a row by its handle to change the order of the Shop page (Shop all → Featured). Photos upload to Supabase Storage.',
   'products:stock': 'Pieces left in every size of every product, lowest first, so you know what to restock. Change counts inside the product.',

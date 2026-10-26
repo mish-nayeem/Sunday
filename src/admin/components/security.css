@@ -1,0 +1,36 @@
+/* Orders → Security (SecurityManager.jsx). */
+.sec-checks { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; font-size: 13px; }
+.sec-checks li { display: flex; align-items: center; gap: 10px; }
+.sec-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--steel-line); flex: none; }
+.sec-dot.on { background: #1baf7a; }
+
+.sec-switch { display: inline-flex; align-items: center; gap: 10px; cursor: pointer; font-size: 13px; margin-bottom: 14px; }
+.sec-switch input { position: absolute; opacity: 0; pointer-events: none; }
+.sec-track { width: 38px; height: 22px; border-radius: 999px; background: var(--steel-line); position: relative; transition: background 0.2s; flex: none; }
+.sec-track::after { content: ''; position: absolute; top: 3px; left: 3px; width: 16px; height: 16px; border-radius: 50%; background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,0.2); transition: transform 0.2s; }
+.sec-switch input:checked + .sec-track { background: var(--cobalt); }
+.sec-switch input:checked + .sec-track::after { transform: translateX(16px); }
+.sec-switch input:focus-visible + .sec-track { outline: 2px solid var(--cobalt); outline-offset: 2px; }
+
+.sec-form { display: grid; grid-template-columns: 170px minmax(0, 1fr) auto; gap: 8px; margin-bottom: 12px; }
+.sec-form .sec-reason { grid-column: 1 / 3; }
+.sec-form input, .sec-form select { min-width: 0; font: inherit; }
+
+.sec-list { display: flex; flex-direction: column; gap: 4px; }
+.sec-row {
+  display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  padding: 8px 10px; border: 1px solid var(--order-edge, var(--steel-line)); border-radius: 10px; font-size: 12.5px;
+}
+.sec-row > div { min-width: 0; }
+.sec-row .dim { font-size: 11px; color: var(--steel); margin-top: 3px; overflow-wrap: anywhere; }
+.sec-row .ab-btn { padding: 6px 12px; font-size: 12px; flex: none; }
+.sec-tag, .sec-why { font-size: 10px; letter-spacing: 0.08em; color: var(--signal, #c0392b); flex: none; }
+.sec-why { margin-left: 8px; color: var(--steel); }
+.sec-why.blocked { color: var(--signal, #c0392b); }
+.sec-err { font-size: 12px; color: var(--signal, #c0392b); margin-bottom: 10px; }
+.sec-note { grid-column: 1 / -1; font-size: 12px; color: var(--cobalt); display: flex; align-items: center; gap: 6px; }
+
+@media (max-width: 860px) {
+  .sec-form { grid-template-columns: 1fr; }
+  .sec-form .sec-reason { grid-column: auto; }
+}

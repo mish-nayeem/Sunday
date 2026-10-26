@@ -80,6 +80,9 @@ import DropProfit from '../components/DropProfit.jsx'
 import InstallAppButton from '../components/InstallAppButton.jsx'
 import NotifyButton from '../components/NotifyButton.jsx'
 import { startAdminApp } from '../lib/adminApp.js'
+import SecurityManager from '../components/SecurityManager.jsx'
+import { fetchBlockList, blockCustomer, unblockCustomer, isBlockedPhone } from '../lib/safety.js'
+import { bdPhone } from '../../lib/phone.js'
 import AdsRoas from '../components/AdsRoas.jsx'
 import EmailCampaigns from '../components/EmailCampaigns.jsx'
 import SocialTracking from '../components/SocialTracking.jsx'
@@ -546,6 +549,9 @@ export default function Admin() {
   const [ordersSub, setOrdersSub] = useState(() => savedPlace('ordersSub', 'list', ORDERS_SUBS))
   const [returns, setReturns] = useState([])
   const [abandonedCarts, setAbandonedCarts] = useState([])
+  // Orders → Security → Block list (phones and IPs that can't order).
+  const [blockList, setBlockList] = useState([])
+  const [blockListError, setBlockListError] = useState('')
   const [blockedAttempts, setBlockedAttempts] = useState([])
   const [analyticsSub, setAnalyticsSub] = useState(() => savedPlace('analyticsSub', 'summary', ANALYTICS_SUBS))
   const [supportSub, setSupportSub] = useState(() => savedPlace('supportSub', 'requests', SUPPORT_SUBS))
@@ -647,6 +653,7 @@ export default function Admin() {
     setSocialStats(ss.rows)
     setBlockedAttempts(ba.attempts)
     setLoading(false)
+    fetchBlockList().then(({ rows, error }) => { setBlockList(rows); setBlockListError(error || '') })
   }, [])
 
   useEffect(() => {
@@ -901,6 +908,34 @@ export default function Admin() {
               </div>
             </>
           )}
+          {bdPhone(o.customer_phone) && (() => {
+            const entry = blockList.find((b) => b.kind === 'phone' && b.value === bdPhone(o.customer_phone))
+            return (
+              <div className="orow" style={{ marginTop: '8px' }}>
+                <span className="dim">
+                  {entry ? 'Blocked' : 'Block list'}
+                  <InfoTip>A blocked number can't place orders on the website (they're asked to call or message you instead). Orders you type in yourself still work. Manage the list in Orders → Security.</InfoTip>
+                </span>
+                <button
+                  type="button"
+                  className="mono"
+                  style={{ background: 'none', border: 0, padding: 0, textDecoration: 'underline', cursor: 'pointer', color: entry ? 'inherit' : 'var(--signal, #c0392b)', font: 'inherit' }}
+                  onClick={async () => {
+                    if (entry) {
+                      const { error } = await unblockCustomer(entry.id)
+                      if (!error) setBlockList((list) => list.filter((b) => b.id !== entry.id))
+                      return
+                    }
+                    if (!window.confirm(`Block ${bdPhone(o.customer_phone)}? It won't be able to order on the website.`)) return
+                    const { row } = await blockCustomer('phone', o.customer_phone, `From order ${o.id}`)
+                    if (row) setBlockList((list) => [row, ...list])
+                  }}
+                >
+                  {entry ? 'Unblock' : 'Block this number'}
+                </button>
+              </div>
+            )
+          })()}
           {o.utm_source && (
             <div className="orow" style={{ marginTop: '8px' }}>
               <span className="dim">Came from</span>
@@ -1570,8 +1605,10 @@ export default function Admin() {
                       >
                         {o.customer_name}
                       </span>
-                      {risk.level === 'risk' && (
-                        <span className="risk-tag mono">{risk.cancelled} CANCELLED</span>
+                      {isBlockedPhone(blockList, o.customer_phone) ? (
+                        <span className="risk-tag mono" title="On the block list (Orders → Security)">BLOCKED</span>
+                      ) : risk.level === 'risk' && (
+                        <span className="risk-tag mono" title="Refused or cancelled before — this number pays Tk 200 first on new orders">{risk.cancelled} CANCELLED</span>
                       )}
                     </div>
 
@@ -1681,36 +1718,13 @@ export default function Admin() {
           )}
 
           {ordersSub === 'security' && (
-            <section className="panel">
-              <div className="panel-label mono" style={{ marginBottom: '6px' }}>
-                BLOCKED ORDER ATTEMPTS
-              <InfoTip>{PANEL_HELP['BLOCKED ORDER ATTEMPTS']}</InfoTip></div>
-              <div className="panel-note" style={{ marginBottom: '18px' }}>
-                place_order refuses more than 8 orders an hour from the same
-                IP (see supabase-migration-rate-limiting.sql) — every one it
-                turned away shows up here with whatever phone, email and name
-                it was made up with, so a burst of fake orders is something
-                you can actually see instead of just a blocked customer you
-                never hear about.
-              </div>
-              {blockedAttempts.length === 0 && (
-                <div className="empty mono">No blocked attempts — nothing's tripped the limit.</div>
-              )}
-              {blockedAttempts.map((a) => (
-                <div className="mini-row" key={a.id}>
-                  <div>
-                    <div className="mini-name">{a.name || 'No name given'}</div>
-                    <div className="mini-id mono" style={{ marginTop: '3px' }}>
-                      {a.phone || '—'}{a.email ? ` · ${a.email}` : ''}
-                    </div>
-                  </div>
-                  <div className="mini-right">
-                    <div className="mono">{a.ip || 'unknown IP'}</div>
-                    <div className="mono dim">{shortDate(a.created_at)}</div>
-                  </div>
-                </div>
-              ))}
-            </section>
+            <SecurityManager
+              orders={orders}
+              blockList={blockList}
+              setBlockList={setBlockList}
+              attempts={blockedAttempts}
+              listError={blockListError}
+            />
           )}
           </>
         )}
