@@ -374,6 +374,7 @@ export function useBuyPanel(product, { photoSelector = '[data-pdp-photo]' } = {}
     <div className="mt-4 space-y-2">
       <button
         type="button"
+        data-buy-add
         onClick={add}
         disabled={soldOut}
         className="w-full h-12 bg-ink text-white text-[13px] hover:bg-ink/85 disabled:bg-stone disabled:text-graphite disabled:cursor-not-allowed"

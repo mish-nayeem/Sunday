@@ -55,7 +55,18 @@ export default function ProductDetail() {
   const rightRef = useRef(null);
   const wide = useWide();
   const buy = useBuyPanel(product);
+  // Phone: the bar at the bottom slides away while the Add to bag under the
+  // price is on screen, and comes back once it scrolls out of view.
+  const panelRef = useRef(null);
+  const [inlineAddVisible, setInlineAddVisible] = useState(false);
   useOwnWheel(leftRef, wide && !loading);
+  useEffect(() => {
+    const el = panelRef.current?.querySelector('[data-buy-add]');
+    if (wide || !el) return;
+    const io = new IntersectionObserver(([e]) => setInlineAddVisible(e.isIntersecting));
+    io.observe(el);
+    return () => { io.disconnect(); setInlineAddVisible(false); };
+  }, [wide, loading, product?.id]);
   useOwnWheel(rightRef, wide && !loading);
 
   useEffect(() => {
@@ -242,7 +253,7 @@ export default function ProductDetail() {
           <div className="px-4 md:px-8 pt-6 md:pt-10 pb-12">
             <div className="md:sticky md:top-24">
               {header}
-              {buy.panel}
+              <div ref={panelRef}>{buy.panel}</div>
               {disclosures}
               {shopTheLook}
             </div>
@@ -274,7 +285,10 @@ export default function ProductDetail() {
 
       {/* Phone: keep the main action in reach while reading or scrolling photos */}
       {!soldOut && (
-        <div className="md:hidden fixed inset-x-0 bottom-0 z-40 bg-white border-t border-rule p-3">
+        <div
+          aria-hidden={inlineAddVisible || undefined}
+          className={`md:hidden fixed inset-x-0 bottom-0 z-40 bg-white border-t border-rule p-3 transition-transform duration-300 ease-out ${inlineAddVisible ? 'translate-y-full pointer-events-none' : 'translate-y-0'}`}
+        >
           <button type="button" onClick={buy.add} className="w-full h-12 bg-ink text-white text-[13px]">
             {buy.size ? `Add size ${buy.size} to bag` : 'Add to bag'}, {formatPrice(product.price)}
           </button>
