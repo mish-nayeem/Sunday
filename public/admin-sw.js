@@ -7,7 +7,7 @@
 // It also shows the "New order" notifications the notify edge function
 // sends (supabase/functions/notify), and opens that order when one is tapped.
 
-const CACHE = 'sunday-admin-v4'
+const CACHE = 'sunday-admin-v5'
 const OFFLINE = '/admin-offline.html'
 
 self.addEventListener('install', (event) => {
@@ -43,7 +43,9 @@ self.addEventListener('push', (event) => {
       body: msg.body || '',
       // A new order: the first piece's photo, small; anything else: the app icon.
       icon: msg.icon || '/admin-icon-192.png',
-      badge: '/admin-icon-192.png',
+      // Android draws the badge as a white silhouette of its opaque parts:
+      // the sun mark's ring and dot on a transparent ground.
+      badge: '/admin-badge-96.png',
       tag: msg.tag,
       renotify: Boolean(msg.tag),
       data: { url: msg.url || '/admin' },
