@@ -77,6 +77,9 @@ import ReturnsManager from '../components/ReturnsManager.jsx'
 import AnalyticsManager from '../components/AnalyticsManager.jsx'
 import InvestorReport from '../components/InvestorReport.jsx'
 import DropProfit from '../components/DropProfit.jsx'
+import InstallAppButton from '../components/InstallAppButton.jsx'
+import NotifyButton from '../components/NotifyButton.jsx'
+import { startAdminApp } from '../lib/adminApp.js'
 import AdsRoas from '../components/AdsRoas.jsx'
 import EmailCampaigns from '../components/EmailCampaigns.jsx'
 import SocialTracking from '../components/SocialTracking.jsx'
@@ -484,13 +487,29 @@ function PackingSlip({ order }) {
   )
 }
 
+// Where the panel was (section, sub-tabs, open collection), kept for this
+// browser session so a reload lands back there.
+const PLACE_KEY = 'sunday_admin_place'
+// `options`: the tabs it can be — a saved one that's gone falls back.
+function savedPlace(key, fallback, options) {
+  try {
+    const v = JSON.parse(sessionStorage.getItem(PLACE_KEY) || '{}')[key]
+    if (v === undefined || (options && !options.some((o) => o.key === v))) return fallback
+    return v
+  } catch {
+    return fallback
+  }
+}
+
 export default function Admin() {
+  // Installable as SUNDAY Admin while this page is open (lib/adminApp.js).
+  useEffect(() => startAdminApp(), [])
   useAdminFonts()
   const [session, setSession] = useState(null)
   const [theme, setTheme] = useState(savedTheme)
   const [checkingAuth, setCheckingAuth] = useState(true)
 
-  const [tab, setTab] = useState('overview')
+  const [tab, setTab] = useState(() => savedPlace('tab', 'overview', Object.keys(TAB_LABELS).map((key) => ({ key }))))
   const [orders, setOrders] = useState([])
   const [products, setProducts] = useState([])
   const [navCategories, setNavCategories] = useState([])
@@ -511,7 +530,7 @@ export default function Admin() {
   const [copyFrom, setCopyFrom] = useState(null)
   // Products → Collections: the collection open, and the one a new product
   // is being added to (prefills its Drop).
-  const [openCollection, setOpenCollection] = useState(null)
+  const [openCollection, setOpenCollection] = useState(() => savedPlace('openCollection', null))
   const [newProductDrop, setNewProductDrop] = useState('')
   // A product added to a collection whose launch is scheduled starts with
   // the same launch time.
@@ -523,19 +542,19 @@ export default function Admin() {
   const [bulkBusy, setBulkBusy] = useState(false)
   const [selecting, setSelecting] = useState(false)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
-  const [overviewSub, setOverviewSub] = useState('stats')
-  const [ordersSub, setOrdersSub] = useState('list')
+  const [overviewSub, setOverviewSub] = useState(() => savedPlace('overviewSub', 'stats', OVERVIEW_SUBS))
+  const [ordersSub, setOrdersSub] = useState(() => savedPlace('ordersSub', 'list', ORDERS_SUBS))
   const [returns, setReturns] = useState([])
   const [abandonedCarts, setAbandonedCarts] = useState([])
   const [blockedAttempts, setBlockedAttempts] = useState([])
-  const [analyticsSub, setAnalyticsSub] = useState('summary')
-  const [supportSub, setSupportSub] = useState('requests')
-  const [productsSub, setProductsSub] = useState('catalog')
-  const [customersSub, setCustomersSub] = useState('repeat')
+  const [analyticsSub, setAnalyticsSub] = useState(() => savedPlace('analyticsSub', 'summary', ANALYTICS_SUBS))
+  const [supportSub, setSupportSub] = useState(() => savedPlace('supportSub', 'requests', SUPPORT_SUBS))
+  const [productsSub, setProductsSub] = useState(() => savedPlace('productsSub', 'catalog', PRODUCTS_SUBS))
+  const [customersSub, setCustomersSub] = useState(() => savedPlace('customersSub', 'repeat', CUSTOMERS_SUBS))
   const [allReviews, setAllReviews] = useState([])
-  const [marketingSub, setMarketingSub] = useState('audience')
-  const [lastSiteTab, setLastSiteTab] = useState('hero')
-  const [marginView, setMarginView] = useState('product')
+  const [marketingSub, setMarketingSub] = useState(() => savedPlace('marketingSub', 'audience', MARKETING_SUBS))
+  const [lastSiteTab, setLastSiteTab] = useState(() => savedPlace('lastSiteTab', 'hero', SITE_TABS))
+  const [marginView, setMarginView] = useState(() => savedPlace('marginView', 'product'))
   const [adSpend, setAdSpend] = useState([])
   const [emailCampaigns, setEmailCampaigns] = useState([])
   const [socialStats, setSocialStats] = useState([])
@@ -574,6 +593,14 @@ export default function Admin() {
       setMobileMenuOpen(false)
     }
   )
+
+  // A reload (or the app reopened in the same session) comes back to the same
+  // section and sub-tab instead of Overview.
+  useEffect(() => {
+    try {
+      sessionStorage.setItem(PLACE_KEY, JSON.stringify({ tab, lastSiteTab, overviewSub, ordersSub, analyticsSub, supportSub, productsSub, marginView, customersSub, marketingSub, openCollection }))
+    } catch { /* storage blocked — it just opens on Overview */ }
+  }, [tab, lastSiteTab, overviewSub, ordersSub, analyticsSub, supportSub, productsSub, marginView, customersSub, marketingSub, openCollection])
 
   useEffect(() => {
     getSession().then((s) => {
@@ -626,6 +653,37 @@ export default function Admin() {
     if (!session) return
     reload()
   }, [session, reload])
+
+  // New orders without a reload: the lists that change on their own
+  // (orders, returns, abandoned carts) are fetched again quietly — no
+  // loading screen — every minute while the admin is on screen, the moment
+  // it's opened again (the installed app has no refresh), and when a
+  // notification arrives. Products and the rest only change from here.
+  const [refreshing, setRefreshing] = useState(false)
+  const lastRefresh = useRef(0)
+  const refreshLive = useCallback(async () => {
+    lastRefresh.current = Date.now()
+    setRefreshing(true)
+    const [o, r, ac] = await Promise.all([fetchOrders(), fetchReturns(), fetchAbandonedCarts()])
+    setRefreshing(false)
+    if (!o.error) setOrders(o.orders)
+    if (!r.error) setReturns(r.returns)
+    if (!ac.error) setAbandonedCarts(ac.carts)
+  }, [])
+
+  useEffect(() => {
+    if (!session) return
+    lastRefresh.current = Date.now()
+    const soon = () => { if (document.visibilityState === 'visible' && Date.now() - lastRefresh.current > 10_000) refreshLive() }
+    const timer = setInterval(() => { if (document.visibilityState === 'visible') refreshLive() }, 60_000)
+    document.addEventListener('visibilitychange', soon)
+    window.addEventListener('focus', soon)
+    return () => {
+      clearInterval(timer)
+      document.removeEventListener('visibilitychange', soon)
+      window.removeEventListener('focus', soon)
+    }
+  }, [session, refreshLive])
 
 
   const stats = useMemo(() => computeStats(orders), [orders])
@@ -1061,6 +1119,32 @@ export default function Admin() {
     setProducts([])
   }
 
+  // A tapped "New order" notification: /admin?order=SND… when the app opens
+  // on it, or a message from the service worker when the admin is already
+  // open. (Set to openOrder further down, once it exists.)
+  const openOrderRef = useRef(null)
+  const refreshLiveRef = useRef(refreshLive)
+  refreshLiveRef.current = refreshLive
+  useEffect(() => {
+    if (loading || !session) return
+    const id = new URLSearchParams(window.location.search).get('order')
+    if (id) {
+      openOrderRef.current?.(id)
+      window.history.replaceState(window.history.state, '', '/admin')
+    }
+  }, [loading, session])
+  useEffect(() => {
+    if (!('serviceWorker' in navigator)) return
+    const onMsg = (e) => {
+      if (e.data?.type === 'refresh') return refreshLiveRef.current?.()
+      if (e.data?.type !== 'open') return
+      const id = new URL(e.data.url, window.location.origin).searchParams.get('order')
+      if (id) openOrderRef.current?.(id)
+    }
+    navigator.serviceWorker.addEventListener('message', onMsg)
+    return () => navigator.serviceWorker.removeEventListener('message', onMsg)
+  }, [])
+
   if (checkingAuth) {
     return <div className="admin-boot mono">Checking access…</div>
   }
@@ -1094,6 +1178,8 @@ export default function Admin() {
     setExpanded(id)
     setTab('orders')
   }
+
+  openOrderRef.current = openOrder
 
   function openRequests() {
     setSupportSub('requests')
@@ -1171,6 +1257,8 @@ export default function Admin() {
         </nav>
 
         <div className="side-foot mono">
+          <NotifyButton />
+          <InstallAppButton />
           <Link to="/"><IconExternal width="13" height="13" />View storefront</Link>
           <button onClick={handleSignOut} className="signout">
             <IconLogout width="13" height="13" />Sign out
@@ -1206,6 +1294,10 @@ export default function Admin() {
             <div className="top-sub mono">{session.user?.email}</div>
           </div>
           <div className="top-right">
+            <button type="button" className="top-refresh mono" onClick={refreshLive} disabled={refreshing} title="Check for new orders">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" aria-hidden="true" className={refreshing ? 'spin' : ''}><path d="M21 12a9 9 0 1 1-2.6-6.4M21 4v5h-5" /></svg>
+              {refreshing ? 'Checking…' : 'Refresh'}
+            </button>
             {THEMES.length > 1 && (
             <div className="theme-picker" role="radiogroup" aria-label="Dashboard theme">
               <span className="theme-picker-label">Theme</span>

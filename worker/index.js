@@ -9,6 +9,12 @@
 //
 // The Supabase URL and public anon key come from /og-config.json, written
 // at build time from the same VITE_ variables the site uses.
+//
+// It also makes the admin installable as an app: /admin pages get the
+// manifest, the iPhone home-screen tags and the admin icon, so Android offers
+// "Install" and iPhone's "Add to Home Screen" makes SUNDAY Admin. The shop's
+// own pages never carry them (src/admin/lib/adminApp.js adds the same tags
+// when the admin is reached from inside the shop without a reload).
 
 const SHARE_SUFFIX = '.share.jpg';
 
@@ -17,6 +23,7 @@ export default {
     const url = new URL(request.url);
     const page = await env.ASSETS.fetch(request);
     if (request.method !== 'GET' || !(page.headers.get('content-type') || '').includes('text/html')) return page;
+    if (url.pathname === '/admin' || url.pathname.startsWith('/admin/')) return adminApp(page);
 
     try {
       const meta = await previewFor(url, env);
@@ -26,6 +33,23 @@ export default {
     }
   },
 };
+
+const ADMIN_APP_HEAD = `
+    <link rel="manifest" href="/admin.webmanifest" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-title" content="SUNDAY Admin" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  </head>`;
+
+async function adminApp(page) {
+  const body = (await page.text())
+    .replace(/<link rel="manifest"[^>]*>/, '')
+    .replace('href="/apple-touch-icon.png"', 'href="/admin-apple-touch-icon.png"')
+    .replace(/<title>[^<]*<\/title>/, '<title>SUNDAY Admin</title>')
+    .replace('</head>', ADMIN_APP_HEAD);
+  return new Response(body, page);
+}
 
 async function previewFor(url, env) {
   const product = url.pathname.match(/^\/product\/([^/]+)\/?$/);

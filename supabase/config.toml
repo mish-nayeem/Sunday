@@ -418,3 +418,8 @@ enabled = true
 # sync (pg_cron, with x-cron-secret) reach it without a user's token.
 [functions.marketing]
 verify_jwt = false
+
+# The database calls notify for every new order without a login; its
+# admin-only actions check the admin themselves.
+[functions.notify]
+verify_jwt = false

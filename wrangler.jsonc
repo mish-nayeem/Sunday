@@ -2,7 +2,8 @@
   // Cloudflare Workers deploy: `npm run build` writes ./dist, `npx wrangler
   // deploy` uploads it. Every unknown path falls back to index.html so React
   // Router handles it. Product and lookbook pages go through worker/index.js
-  // first, which gives shared links their own preview (title, text, photo).
+  // first, which gives shared links their own preview (title, text, photo);
+  // /admin too, for the installable admin app's tags.
   "name": "sunday",
   "compatibility_date": "2026-09-23",
   "main": "./worker/index.js",
@@ -10,6 +11,6 @@
     "directory": "./dist",
     "binding": "ASSETS",
     "not_found_handling": "single-page-application",
-    "run_worker_first": ["/product/*", "/lookbook/*"]
+    "run_worker_first": ["/product/*", "/lookbook/*", "/admin", "/admin/*"]
   }
 }
