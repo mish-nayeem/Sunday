@@ -33,12 +33,14 @@ jobs:
       - uses: actions/checkout@v4
         if: steps.token.outputs.ok == 'true'
 
-      - uses: supabase/setup-cli@v1
+      # The CLI from npm, pinned to 2.x: supabase/setup-cli asks GitHub's API
+      # for the "latest" release, which failed on its rate limit.
+      - uses: actions/setup-node@v4
         if: steps.token.outputs.ok == 'true'
         with:
-          version: latest
+          node-version: 22
 
       # Every folder under supabase/functions except _shared (code they import).
       - name: Deploy
         if: steps.token.outputs.ok == 'true'
-        run: supabase functions deploy --project-ref "$PROJECT_REF"
+        run: npx --yes supabase@2 functions deploy --project-ref "$PROJECT_REF"
