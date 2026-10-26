@@ -178,8 +178,12 @@ async function newOrder(db: Db, orderId: string) {
   const items = lines
     .map((it: Record<string, unknown>) => `${it.name ?? it.product_name ?? ''} ${it.size ?? ''} ×${it.quantity ?? it.qty ?? 1}`.trim())
     .join(', ')
+  // The piece picked first (the order keeps the bag's order) — its photo
+  // shows small beside the notification.
+  const photo = String(lines[0]?.image ?? '')
   return pushAll(db, {
     title: `🛍 New order · ${taka(o.total ?? o.subtotal)}`,
+    icon: /^https:\/\//.test(photo) ? photo : undefined,
     body: [o.full_name, items, o.district].filter(Boolean).join(' · ').slice(0, 180),
     url: `/admin?order=${encodeURIComponent(o.order_id)}`,
     tag: `order-${o.order_id}`,
