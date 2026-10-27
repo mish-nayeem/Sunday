@@ -55,15 +55,16 @@ export default function ProductDetail() {
   const rightRef = useRef(null);
   const wide = useWide();
   const buy = useBuyPanel(product);
-  // Phone: the bar at the bottom slides away while the Add to bag under the
-  // price is on screen, and comes back once it scrolls out of view.
+  // Phone: the bar at the bottom shows only until the Add to bag under the
+  // price comes up; on screen or scrolled past, it stays away. Back above
+  // that button, it returns.
   const panelRef = useRef(null);
   const [inlineAddVisible, setInlineAddVisible] = useState(false);
   useOwnWheel(leftRef, wide && !loading);
   useEffect(() => {
     const el = panelRef.current?.querySelector('[data-buy-add]');
     if (wide || !el) return;
-    const io = new IntersectionObserver(([e]) => setInlineAddVisible(e.isIntersecting));
+    const io = new IntersectionObserver(([e]) => setInlineAddVisible(e.isIntersecting || e.boundingClientRect.top < 0));
     io.observe(el);
     return () => { io.disconnect(); setInlineAddVisible(false); };
   }, [wide, loading, product?.id]);
