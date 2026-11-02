@@ -15,6 +15,7 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2?target=deno";
 import { jsPDF } from "https://esm.sh/jspdf@4.2.1?target=deno&bundle";
 import { encodeBase64 } from "https://deno.land/std@0.224.0/encoding/base64.ts";
+import { isAdminRequest } from "../_shared/admin.ts";
 
 // How the order is paid, in words: bKash up front and the rest on delivery,
 // all by bKash, or all cash on delivery.
@@ -235,12 +236,37 @@ Deno.serve(async (req: Request) => {
       return jsonResponse({ skipped: true, reason: "no email on order" });
     }
 
+    // Anyone can call this without logging in (checkout does, right after
+    // the order), so it mails a new order once, in its first half hour —
+    // never the same customer's invoice again and again on request. The
+    // admin (bKash check, manual orders) can send it whenever.
+    const admin = await isAdminRequest(req, supabase);
+    let claimed = false;
+    if (!admin) {
+      const fresh = Date.now() - new Date(order.created_at).getTime() < 30 * 60 * 1000;
+      if (!fresh) return jsonResponse({ skipped: true, reason: "not a new order" });
+      const { data: claim } = await supabase
+        .from("orders")
+        .update({ confirmation_sent_at: new Date().toISOString() })
+        .eq("order_id", order.order_id)
+        .is("confirmation_sent_at", null)
+        .select("order_id");
+      if (!claim?.length) return jsonResponse({ skipped: true, reason: "already sent" });
+      claimed = true;
+    }
+    // Not sent after all: free the claim, so it can be tried again.
+    const release = async () => {
+      if (claimed) await supabase.from("orders").update({ confirmation_sent_at: null }).eq("order_id", order.order_id);
+    };
+
     const BREVO_API_KEY = Deno.env.get("BREVO_API_KEY");
     if (!BREVO_API_KEY) {
+      await release();
       return jsonResponse({ error: "BREVO_API_KEY secret is not configured" }, 500);
     }
     const SENDER_EMAIL = Deno.env.get("BREVO_SENDER_EMAIL") || Deno.env.get("BREVO_FROM_EMAIL");
     if (!SENDER_EMAIL) {
+      await release();
       return jsonResponse({ error: "BREVO_SENDER_EMAIL (or BREVO_FROM_EMAIL) secret is not configured" }, 500);
     }
     const SENDER_NAME = Deno.env.get("BREVO_SENDER_NAME") || Deno.env.get("BREVO_FROM_NAME") || "SUNDAY";
@@ -281,6 +307,7 @@ Deno.serve(async (req: Request) => {
 
     if (!brevoRes.ok) {
       const errText = await brevoRes.text();
+      await release();
       return jsonResponse({ error: `Brevo send failed (${brevoRes.status}): ${errText}` }, 502);
     }
 

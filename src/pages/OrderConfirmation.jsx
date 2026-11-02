@@ -1,18 +1,26 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useLocation } from 'react-router-dom';
 import { supabase } from '@/lib/supabaseClient';
 import { motion } from 'framer-motion';
 import { CheckCircle2, Package, MessageCircle } from 'lucide-react';
 
 export default function OrderConfirmation() {
   const { orderId } = useParams();
+  const location = useLocation();
   const [order, setOrder] = useState(null);
   const [loading, setLoading] = useState(true);
   const [settings, setSettings] = useState(null);
 
   useEffect(() => {
     const load = async () => {
-      const { data } = await supabase.rpc('track_order', { p_order_id: orderId, p_mobile: null });
+      // The phone it was placed with, from checkout (track_order needs both).
+      let mobile = location.state?.mobile || null;
+      if (!mobile) {
+        try { mobile = sessionStorage.getItem(`sunday_order_mobile:${orderId}`); } catch { /* storage off */ }
+      }
+      const { data } = mobile
+        ? await supabase.rpc('track_order', { p_order_id: orderId, p_mobile: mobile })
+        : { data: null };
       if (data && data.length > 0) setOrder(data[0]);
       const { data: s } = await supabase.from('settings').select('*').limit(1);
       if (s && s.length > 0) setSettings(s[0]);
@@ -32,7 +40,10 @@ export default function OrderConfirmation() {
   if (!order) {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen text-center px-5">
-        <p className="text-charcoal/50 mb-4">We couldn't find that order.</p>
+        <p className="text-charcoal/50 mb-4">
+          Order <span className="font-mono">{orderId}</span> — track it with its number and the mobile number you ordered with.
+        </p>
+        <Link to="/order-tracking" className="text-sm underline mb-3">Track your order</Link>
         <Link to="/" className="text-sm underline">Back to home</Link>
       </div>
     );

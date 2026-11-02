@@ -292,7 +292,11 @@ export default function Checkout() {
 
     placed.current = true;
     clearCart();
-    navigate(`/order-confirmation/${oid}`);
+    // The confirmation page looks the order up with its number and the phone
+    // it was placed with (track_order needs both) — kept for this tab, so a
+    // reload of that page still finds it.
+    try { sessionStorage.setItem(`sunday_order_mobile:${oid}`, form.mobile); } catch { /* storage off */ }
+    navigate(`/order-confirmation/${oid}`, { state: { mobile: form.mobile } });
   };
 
   return (
