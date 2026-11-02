@@ -12,6 +12,13 @@
 // Required secrets (set with `supabase secrets set KEY=value`):
 //   TELEGRAM_BOT_TOKEN   - token from @BotFather
 //   TELEGRAM_CHAT_ID     - your personal/group chat id (see setup steps)
+//
+// Anyone can reach this URL, so whatever it's sent is only used for its
+// order number: the order itself is read from the database, it has to be
+// one placed in the last 15 minutes, and each order is announced once
+// (push_sent, key tg:<order>) — whether the webhook, checkout, or both call.
+
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2?target=deno";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -39,8 +46,17 @@ Deno.serve(async (req) => {
     }
 
     // Database Webhooks send the payload as { type, table, record, old_record }
-    const payload = await req.json();
-    const order = payload.record ?? payload; // fall back if called manually with just the order
+    const payload = await req.json().catch(() => ({}));
+    const orderId = String(payload?.record?.order_id ?? payload?.order_id ?? "").trim();
+    if (!orderId) return jsonResponse({ skipped: "no order" });
+
+    const db = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
+    const { data: order } = await db.from("orders").select("*").eq("order_id", orderId).maybeSingle();
+    if (!order || Date.now() - new Date(order.created_at).getTime() > 15 * 60 * 1000) {
+      return jsonResponse({ skipped: "not a new order" });
+    }
+    const { error: once } = await db.from("push_sent").insert({ order_id: `tg:${order.order_id}` });
+    if (once) return jsonResponse({ skipped: "already sent" });
 
     const itemsList = Array.isArray(order.items)
       ? order.items.map((it: any) => `  • ${it.name} (${it.size ?? "-"}) × ${it.quantity} — ৳${it.price}`).join("\n")
@@ -80,6 +96,7 @@ Deno.serve(async (req) => {
     if (!tgRes.ok) {
       const errBody = await tgRes.text();
       console.error("Telegram API error:", errBody);
+      await db.from("push_sent").delete().eq("order_id", `tg:${order.order_id}`);
       return jsonResponse({ error: "Telegram send failed", detail: errBody }, 502);
     }
 

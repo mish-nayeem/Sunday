@@ -1,0 +1,51 @@
+# The live database's structure, written into this repo — by hand:
+# Actions → Schema snapshot → Run workflow.
+#
+# The tables, columns, policies, functions and triggers as they are on the
+# live project right now go into db/live_schema.sql on the branch
+# schema-snapshot, for review and for comparing with supabase/migrations
+# (some columns were added in the dashboard and are in no migration). It is
+# a reference copy only — it's outside supabase/, so the Supabase GitHub
+# integration never runs it.
+#
+# Needs repository secrets: SUPABASE_ACCESS_TOKEN, SUPABASE_DB_PASSWORD.
+
+name: Schema snapshot
+
+on:
+  workflow_dispatch:
+
+concurrency:
+  group: supabase-db
+  cancel-in-progress: false
+
+env:
+  SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+  SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+  PROJECT_REF: qgvadxivqtlgobfzbdxt
+
+jobs:
+  snapshot:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: supabase/setup-cli@v1
+        with:
+          version: latest
+      - name: Dump the live structure
+        run: |
+          supabase link --project-ref "$PROJECT_REF" --password "$SUPABASE_DB_PASSWORD"
+          mkdir -p db
+          supabase db dump --linked --password "$SUPABASE_DB_PASSWORD" -f db/live_schema.sql
+          wc -l db/live_schema.sql
+      - name: Push it to the schema-snapshot branch
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git checkout -B schema-snapshot
+          git add db/live_schema.sql
+          git commit -m "Live database structure, from the Schema snapshot workflow" || echo "No change."
+          git push -f origin schema-snapshot
