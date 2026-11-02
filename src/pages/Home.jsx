@@ -16,10 +16,10 @@ const sentence = (text) => (text ? text[0].toUpperCase() + text.slice(1).toLower
 // video plays to its end, then the next slide comes. Videos start muted
 // (browsers only autoplay muted) — the speaker button bottom left turns the
 // sound on. With nothing set yet, the campaign photo stands in.
-// Square-edged button over a photo — SHOP NOW, A CLOSER LOOK: a cream
-// outline with the text in the logo's orange (coral); fills cream on hover.
+// Square-edged button over a photo — SHOP NOW, A CLOSER LOOK: an outline and
+// text in the logo's orange (coral); fills cream on hover.
 function HeroButton({ to, children }) {
-  const cls = 'inline-flex items-center justify-center h-9 md:h-11 px-4 md:px-6 border border-[#F6F1E7] text-coral text-[11px] md:text-[12px] font-semibold uppercase tracking-[0.08em] [text-shadow:0_1px_6px_rgba(0,0,0,0.25)] hover:bg-[#F6F1E7] hover:[text-shadow:none] transition-colors';
+  const cls = 'inline-flex items-center justify-center h-9 md:h-11 px-4 md:px-6 border border-coral text-coral text-[11px] md:text-[12px] font-semibold uppercase tracking-[0.08em] [text-shadow:0_1px_6px_rgba(0,0,0,0.25)] hover:bg-[#F6F1E7] hover:[text-shadow:none] transition-colors';
   return /^https?:/.test(to)
     ? <a href={to} target="_blank" rel="noreferrer" className={cls}>{children}</a>
     : <Link to={to} className={cls}>{children}</Link>;
@@ -205,7 +205,8 @@ function Hero({ slides, button, countdown }) {
         </button>
       )}
 
-      <div className="absolute left-1/2 -translate-x-1/2 bottom-5 md:bottom-7 flex flex-col items-center gap-2 whitespace-nowrap text-white">
+      {/* SHOP NOW in the middle of the hero; the drop countdown just above it. */}
+      <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex flex-col items-center gap-2 whitespace-nowrap text-white">
         {left && <p className="tabular-nums text-[13px] [text-shadow:0_1px_8px_rgba(0,0,0,0.35)]">{sentence(countdown.label || 'Next drop')} in {left.toLowerCase()}</p>}
         <HeroButton to={button.link}>{button.label}</HeroButton>
       </div>

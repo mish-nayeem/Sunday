@@ -221,7 +221,7 @@ export default function HeroManager({ drops = [], products = [] }) {
       <FeatureManager drops={drops} products={products} />
 
       {/* ---- Button ---- */}
-      <Box title="HERO BUTTON" tip="The SHOP NOW button at the bottom of the main hero. It opens every product (/shop) unless you point it somewhere else — e.g. a new drop while it's fresh, then back to Shop · everything.">
+      <Box title="HERO BUTTON" tip="The SHOP NOW button in the middle of the main hero (orange outline). It opens every product (/shop) unless you point it somewhere else — e.g. a new drop while it's fresh, then back to Shop · everything.">
         <label className="pf-field">
           <span className="hm-flabel mono">TEXT</span>
           <input value={button.label} maxLength={28} onChange={(e) => { setButton({ ...button, label: e.target.value }); setNote({}) }} placeholder="SHOP NOW" />
