@@ -13,7 +13,8 @@
 #
 # Needs repository secrets (Settings → Secrets and variables → Actions):
 #   SUPABASE_ACCESS_TOKEN — already there (deploy-functions.yml)
-#   SUPABASE_DB_PASSWORD  — Supabase → Project Settings → Database → password
+#   SUPABASE_DB_URL       — Supabase → Connect → Session pooler → URI, with the
+#                           database password in place of [YOUR-PASSWORD]
 #   BACKUP_PASSPHRASE — a long passphrase of your own. Keep a copy somewhere
 #                       safe outside GitHub: a backup can't be opened without it.
 #
@@ -36,6 +37,9 @@ concurrency:
 env:
   SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
   SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+  # The database's Session pooler address (IPv4 — GitHub's machines have no
+  # IPv6): Supabase → Connect → Session pooler → URI, password filled in.
+  SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
   BACKUP_PASSPHRASE: ${{ secrets.BACKUP_PASSPHRASE }}
   PROJECT_REF: qgvadxivqtlgobfzbdxt
 
@@ -59,10 +63,13 @@ jobs:
 
       - name: Dump the database
         run: |
-          supabase link --project-ref "$PROJECT_REF" --password "$SUPABASE_DB_PASSWORD"
+          if [ -z "$SUPABASE_DB_URL" ]; then
+            echo "::error::Add a SUPABASE_DB_URL secret: Supabase → Connect → Session pooler → URI, with the database password in place of [YOUR-PASSWORD]."
+            exit 1
+          fi
           mkdir -p backup
-          supabase db dump --linked --password "$SUPABASE_DB_PASSWORD" -f backup/schema.sql
-          supabase db dump --linked --password "$SUPABASE_DB_PASSWORD" --data-only --use-copy \
+          supabase db dump --db-url "$SUPABASE_DB_URL" -f backup/schema.sql
+          supabase db dump --db-url "$SUPABASE_DB_URL" --data-only --use-copy \
             --schema public,auth,storage -f backup/data.sql
           ls -la backup
 
