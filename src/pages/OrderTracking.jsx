@@ -15,24 +15,24 @@ const statusIcons = {
 };
 
 export default function OrderTracking() {
-  const [query, setQuery] = useState('');
+  // Both, and they have to match: an order number alone (it's the time it
+  // was placed) or a phone number alone would show a stranger's order.
+  const [orderId, setOrderId] = useState('');
+  const [phone, setPhone] = useState('');
   const [order, setOrder] = useState(null);
   const [searching, setSearching] = useState(false);
   const [notFound, setNotFound] = useState(false);
 
   const handleSearch = async (e) => {
     e.preventDefault();
-    if (!query.trim()) return;
+    if (!orderId.trim() || !phone.trim()) return;
     setSearching(true);
     setNotFound(false);
     setOrder(null);
 
-    const trimmed = query.trim();
-    const looksLikeOrderId = trimmed.toUpperCase().startsWith('SND-');
-
     const { data } = await supabase.rpc('track_order', {
-      p_order_id: looksLikeOrderId ? trimmed.toUpperCase() : null,
-      p_mobile: looksLikeOrderId ? null : trimmed,
+      p_order_id: orderId.trim().toUpperCase(),
+      p_mobile: phone.trim(),
     });
 
     if (data && data.length > 0) {
@@ -55,13 +55,22 @@ export default function OrderTracking() {
       </div>
 
       <div className="max-w-2xl mx-auto px-5 md:px-10 py-10 md:py-16">
-        <form onSubmit={handleSearch} className="flex gap-3 mb-10">
+        <form onSubmit={handleSearch} className="flex flex-col sm:flex-row gap-3 mb-10">
           <input
             type="text"
-            value={query}
-            onChange={e => setQuery(e.target.value)}
-            placeholder="Order ID (SND-XXXXX) or Mobile Number"
-            className="flex-1 border border-charcoal/20 px-4 py-3 text-sm bg-transparent outline-none focus:border-charcoal transition-colors"
+            value={orderId}
+            onChange={e => setOrderId(e.target.value)}
+            placeholder="Order ID (SND-XXXXX)"
+            aria-label="Order ID"
+            className="flex-1 min-w-0 border border-charcoal/20 px-4 py-3 text-sm bg-transparent outline-none focus:border-charcoal transition-colors"
+          />
+          <input
+            type="tel"
+            value={phone}
+            onChange={e => setPhone(e.target.value)}
+            placeholder="Mobile number you ordered with"
+            aria-label="Mobile number"
+            className="flex-1 min-w-0 border border-charcoal/20 px-4 py-3 text-sm bg-transparent outline-none focus:border-charcoal transition-colors"
           />
           <button
             type="submit"
@@ -73,7 +82,7 @@ export default function OrderTracking() {
         </form>
 
         {notFound && (
-          <p className="text-center text-charcoal/50 py-10">No order found with that Order ID or mobile number.</p>
+          <p className="text-center text-charcoal/50 py-10">No order found with that Order ID and mobile number.</p>
         )}
 
         {order && (

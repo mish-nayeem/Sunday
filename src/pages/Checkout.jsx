@@ -236,31 +236,14 @@ export default function Checkout() {
     const oid = result[0].order_id;
     await markCartConverted(oid);
 
-    // Stock is NOT decremented here anymore — it only decrements once the order
-    // reaches "Delivered" status (handled in AdminOrders.jsx), so cancelled/returned
-    // orders never touch inventory in the first place.
+    // create_order has already taken the pieces off the shelf; cancelling or
+    // returning the order in the admin puts them back (update_order_status).
 
     // Notify the shop owner on Telegram instantly — doesn't block the order,
     // failure here is only logged.
     try {
-      await supabase.functions.invoke('notify-telegram-order', {
-        body: {
-          order_id: oid,
-          full_name: form.full_name,
-          mobile: form.mobile,
-          area: form.area,
-          district: form.district,
-          items: cart.map(i => ({ name: i.name, size: i.size, quantity: i.quantity, price: i.price })),
-          subtotal: result[0].subtotal,
-          discount,
-          coupon_code: coupon?.code || null,
-          delivery_charge: result[0].delivery_charge,
-          total: result[0].total,
-          payment_method: paymentMethod,
-          advance_amount: payNow,
-          bkash_transaction_id: isAdvancePay ? bkashTrxId.trim() : null,
-        },
-      });
+      // Only the number: the function reads the order from the database.
+      await supabase.functions.invoke('notify-telegram-order', { body: { order_id: oid } });
     } catch (e) {
       console.error('Telegram notification failed:', e);
     }
@@ -292,7 +275,11 @@ export default function Checkout() {
 
     placed.current = true;
     clearCart();
-    navigate(`/order-confirmation/${oid}`);
+    // The confirmation page looks the order up with its number and the phone
+    // it was placed with (track_order needs both) — kept for this tab, so a
+    // reload of that page still finds it.
+    try { sessionStorage.setItem(`sunday_order_mobile:${oid}`, form.mobile); } catch { /* storage off */ }
+    navigate(`/order-confirmation/${oid}`, { state: { mobile: form.mobile } });
   };
 
   return (

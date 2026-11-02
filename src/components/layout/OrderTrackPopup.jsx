@@ -21,7 +21,9 @@ const statusIcons = {
 export default function OrderTrackPopup() {
   const [dismissed, setDismissed] = useState(true); // start hidden until we check sessionStorage
   const [expanded, setExpanded] = useState(false);
-  const [query, setQuery] = useState('');
+  // Both, and they have to match (see track_order).
+  const [orderId, setOrderId] = useState('');
+  const [phone, setPhone] = useState('');
   const [order, setOrder] = useState(null);
   const [searching, setSearching] = useState(false);
   const [notFound, setNotFound] = useState(false);
@@ -41,17 +43,14 @@ export default function OrderTrackPopup() {
 
   const handleSearch = async (e) => {
     e.preventDefault();
-    if (!query.trim()) return;
+    if (!orderId.trim() || !phone.trim()) return;
     setSearching(true);
     setNotFound(false);
     setOrder(null);
 
-    const trimmed = query.trim();
-    const looksLikeOrderId = trimmed.toUpperCase().startsWith('SND-');
-
     const { data } = await supabase.rpc('track_order', {
-      p_order_id: looksLikeOrderId ? trimmed.toUpperCase() : null,
-      p_mobile: looksLikeOrderId ? null : trimmed,
+      p_order_id: orderId.trim().toUpperCase(),
+      p_mobile: phone.trim(),
     });
 
     if (data && data.length > 0) {
@@ -65,7 +64,8 @@ export default function OrderTrackPopup() {
   const reset = () => {
     setOrder(null);
     setNotFound(false);
-    setQuery('');
+    setOrderId('');
+    setPhone('');
   };
 
   const currentStepIndex = order ? statusSteps.indexOf(order.status) : -1;
@@ -124,9 +124,18 @@ export default function OrderTrackPopup() {
                 <input
                   autoFocus
                   type="text"
-                  value={query}
-                  onChange={(e) => setQuery(e.target.value)}
-                  placeholder="Order ID or Mobile Number"
+                  value={orderId}
+                  onChange={(e) => setOrderId(e.target.value)}
+                  placeholder="Order ID (SND-XXXXX)"
+                  aria-label="Order ID"
+                  className="border border-black/20 px-3 py-2.5 text-sm text-black outline-none focus:border-black transition-colors rounded-md bg-white"
+                />
+                <input
+                  type="tel"
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                  placeholder="Mobile number"
+                  aria-label="Mobile number"
                   className="border border-black/20 px-3 py-2.5 text-sm text-black outline-none focus:border-black transition-colors rounded-md bg-white"
                 />
                 <button

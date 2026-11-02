@@ -6,6 +6,7 @@
 //   BREVO_API_KEY, BREVO_SENDER_EMAIL, BREVO_SENDER_NAME, BREVO_REPLY_TO_EMAIL (optional)
 
 import { createClient } from "npm:@supabase/supabase-js@2";
+import { isAdminRequest } from "../_shared/admin.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -89,6 +90,12 @@ Deno.serve(async (req: Request) => {
   }
 
   try {
+    // The admin's alone: without this, anyone could send any customer a
+    // "your order was delivered / cancelled" email in SUNDAY's name.
+    if (!(await isAdminRequest(req))) {
+      return jsonResponse({ error: "Not allowed" }, 403);
+    }
+
     const { order_id, status } = await req.json();
     if (!order_id || !status) {
       return jsonResponse({ error: "order_id and status are required" }, 400);
