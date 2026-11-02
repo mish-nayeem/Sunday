@@ -8,7 +8,8 @@
 # a reference copy only — it's outside supabase/, so the Supabase GitHub
 # integration never runs it.
 #
-# Needs repository secrets: SUPABASE_ACCESS_TOKEN, SUPABASE_DB_PASSWORD.
+# Needs the repository secret SUPABASE_DB_URL: Supabase → Connect → Session
+# pooler → URI, with the database password in place of [YOUR-PASSWORD].
 
 name: Schema snapshot
 
@@ -22,6 +23,9 @@ concurrency:
 env:
   SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
   SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+  # The database's Session pooler address (IPv4 — GitHub's machines have no
+  # IPv6): Supabase → Connect → Session pooler → URI, password filled in.
+  SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
   PROJECT_REF: qgvadxivqtlgobfzbdxt
 
 jobs:
@@ -37,9 +41,12 @@ jobs:
           version: latest
       - name: Dump the live structure
         run: |
-          supabase link --project-ref "$PROJECT_REF" --password "$SUPABASE_DB_PASSWORD"
+          if [ -z "$SUPABASE_DB_URL" ]; then
+            echo "::error::Add a SUPABASE_DB_URL secret: Supabase → Connect → Session pooler → URI, with the database password in place of [YOUR-PASSWORD]."
+            exit 1
+          fi
           mkdir -p db
-          supabase db dump --linked --password "$SUPABASE_DB_PASSWORD" -f db/live_schema.sql
+          supabase db dump --db-url "$SUPABASE_DB_URL" -f db/live_schema.sql
           wc -l db/live_schema.sql
       - name: Push it to the schema-snapshot branch
         run: |
