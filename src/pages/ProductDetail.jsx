@@ -8,6 +8,7 @@ import ProductCard from '@/components/products/ProductCard';
 import { ProductHeader, ProductDisclosures, useBuyPanel } from '@/components/products/ProductPanels';
 import Lightbox from '@/components/products/Lightbox';
 import { useLiveSales, withSale } from '@/lib/pricing';
+import { jsonLd } from '@/lib/jsonLd';
 
 // Three scrolling columns need room; below this the page stacks.
 const WIDE = '(min-width: 1024px)';
@@ -166,7 +167,7 @@ export default function ProductDetail() {
 
   return (
     <div>
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify({
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLd({
         '@context': 'https://schema.org',
         '@type': 'Product',
         name: product.name,
