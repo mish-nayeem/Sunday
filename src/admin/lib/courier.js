@@ -76,3 +76,21 @@ export async function syncCourierStatus(orderId) {
     return { status: null, error: readError({ message: 'NOT_DEPLOYED' }) }
   }
 }
+
+// Orders → Courier setup: which couriers have keys, and whether they work.
+// Comes back as { couriers: { steadfast: { ok, message }, … } } or an error
+// worth showing.
+export async function checkCouriers() {
+  try {
+    const { data, error } = await supabase.functions.invoke('courier', {
+      body: { action: 'check' },
+    })
+
+    if (data?.couriers) return { couriers: data.couriers, error: null }
+
+    return { couriers: null, error: readError(error, data) || 'Couldn’t reach the courier function.' }
+  } catch (err) {
+    console.warn('[Courier] check unreachable:', err.message)
+    return { couriers: null, error: readError({ message: 'NOT_DEPLOYED' }) }
+  }
+}
