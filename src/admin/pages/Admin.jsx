@@ -81,6 +81,7 @@ import InstallAppButton from '../components/InstallAppButton.jsx'
 import NotifyButton from '../components/NotifyButton.jsx'
 import { startAdminApp } from '../lib/adminApp.js'
 import SecurityManager from '../components/SecurityManager.jsx'
+import CourierSetup from '../components/CourierSetup.jsx'
 import { fetchBlockList, blockCustomer, unblockCustomer, isBlockedPhone } from '../lib/safety.js'
 import { bdPhone } from '../../lib/phone.js'
 import AdsRoas from '../components/AdsRoas.jsx'
@@ -179,6 +180,7 @@ const ORDERS_SUBS = [
   { key: 'bkash', label: 'bKash check' },
   { key: 'abandoned', label: 'Abandoned cart' },
   { key: 'security', label: 'Security' },
+  { key: 'courier', label: 'Courier setup' },
 ]
 
 const PRODUCTS_SUBS = [
@@ -1726,6 +1728,8 @@ export default function Admin() {
               listError={blockListError}
             />
           )}
+
+          {ordersSub === 'courier' && <CourierSetup />}
           </>
         )}
 
