@@ -14,6 +14,20 @@ const statusIcons = {
   returned: XCircle,
 };
 
+// The courier's own words, readable: "in_review" → "In review".
+function courierStepLabel(status) {
+  const s = String(status || '').replace(/_approval_pending$/i, '').replace(/[_-]+/g, ' ').trim();
+  return s ? s.charAt(0).toUpperCase() + s.slice(1).toLowerCase() : '';
+}
+
+function courierStepTime(at) {
+  const d = new Date(at);
+  if (Number.isNaN(d.getTime())) return '';
+  return d.toLocaleString('en-GB', {
+    day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit', hour12: true, timeZone: 'Asia/Dhaka',
+  });
+}
+
 export default function OrderTracking() {
   // Both, and they have to match: an order number alone (it's the time it
   // was placed) or a phone number alone would show a stranger's order.
@@ -132,6 +146,20 @@ export default function OrderTracking() {
                 </div>
               ))}
             </div>
+
+            {Array.isArray(order.courier_steps) && order.courier_steps.length > 0 && (
+              <div className="border-t border-gold/20 pt-6 mt-6">
+                <p className="text-[11px] tracking-[0.2em] uppercase text-charcoal/40 mb-3">Courier updates</p>
+                <ol className="space-y-2">
+                  {[...order.courier_steps].reverse().map((step, i) => (
+                    <li key={`${step.at}-${i}`} className="flex justify-between gap-4 text-sm">
+                      <span className={i === 0 ? 'text-charcoal font-medium' : 'text-charcoal/60'}>{courierStepLabel(step.status)}</span>
+                      <span className="font-mono text-xs text-charcoal/40 whitespace-nowrap">{courierStepTime(step.at)}</span>
+                    </li>
+                  ))}
+                </ol>
+              </div>
+            )}
 
             {order.tracking_note && (
               <div className="mt-6 bg-mist p-4 text-sm text-charcoal/70">

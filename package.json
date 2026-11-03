@@ -5,11 +5,11 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
+    "build": "node scripts/generate-headers.mjs && vite build",
     "lint": "eslint . --quiet",
     "lint:fix": "eslint . --fix",
     "preview": "vite preview",
-    "deploy": "vite build && wrangler deploy"
+    "deploy": "npm run build && wrangler deploy"
   },
   "dependencies": {
     "@hello-pangea/dnd": "^17.0.0",

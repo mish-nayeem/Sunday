@@ -423,3 +423,13 @@ verify_jwt = false
 # admin-only actions check the admin themselves.
 [functions.notify]
 verify_jwt = false
+
+# sync-all comes from the database's clock (pg_cron) with the courier_sync
+# key, not a login; every other courier action checks the admin itself.
+[functions.courier]
+verify_jwt = false
+
+# The database asks for the "delivered" email with the courier_sync key;
+# everything else checks the admin itself.
+[functions.send-status-update]
+verify_jwt = false

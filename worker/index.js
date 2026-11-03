@@ -1,3 +1,5 @@
+import { withSecurityHeaders } from './security-headers.js';
+
 // Link previews for shared product and lookbook pages.
 //
 // WhatsApp, Facebook and Messenger read a link's HTML without running the
@@ -15,24 +17,28 @@
 // "Install" and iPhone's "Add to Home Screen" makes SUNDAY Admin. The shop's
 // own pages never carry them (src/admin/lib/adminApp.js adds the same tags
 // when the admin is reached from inside the shop without a reload).
-
 const SHARE_SUFFIX = '.share.jpg';
+
 
 export default {
   async fetch(request, env) {
-    const url = new URL(request.url);
-    const page = await env.ASSETS.fetch(request);
-    if (request.method !== 'GET' || !(page.headers.get('content-type') || '').includes('text/html')) return page;
-    if (url.pathname === '/admin' || url.pathname.startsWith('/admin/')) return adminApp(page);
-
-    try {
-      const meta = await previewFor(url, env);
-      return meta ? rewrite(page, meta) : page;
-    } catch {
-      return page; // a preview is never worth a broken page
-    }
+    return withSecurityHeaders(await handle(request, env));
   },
 };
+
+async function handle(request, env) {
+  const url = new URL(request.url);
+  const page = await env.ASSETS.fetch(request);
+  if (request.method !== 'GET' || !(page.headers.get('content-type') || '').includes('text/html')) return page;
+  if (url.pathname === '/admin' || url.pathname.startsWith('/admin/')) return adminApp(page);
+
+  try {
+    const meta = await previewFor(url, env);
+    return meta ? rewrite(page, meta) : page;
+  } catch {
+    return page; // a preview is never worth a broken page
+  }
+}
 
 const ADMIN_APP_HEAD = `
     <link rel="manifest" href="/admin.webmanifest" />

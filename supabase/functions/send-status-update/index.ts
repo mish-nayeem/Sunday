@@ -90,25 +90,37 @@ Deno.serve(async (req: Request) => {
   }
 
   try {
-    // The admin's alone: without this, anyone could send any customer a
-    // "your order was delivered / cancelled" email in SUNDAY's name.
-    if (!(await isAdminRequest(req))) {
-      return jsonResponse({ error: "Not allowed" }, 403);
-    }
-
-    const { order_id, status } = await req.json();
+    const body = await req.json().catch(() => ({}));
+    const { order_id, status } = body ?? {};
     if (!order_id || !status) {
       return jsonResponse({ error: "order_id and status are required" }, 400);
+    }
+
+    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+    const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const supabase = createClient(supabaseUrl, serviceRoleKey);
+
+    // Who may ask: the admin, or the database itself when the courier says
+    // a parcel was delivered (orders_courier_moves). The database shows the
+    // key in public.courier_sync, which only the server side can read, and
+    // gets the "delivered" email only, once per order.
+    const token = typeof body?.token === "string" ? body.token : "";
+    const fromCourier = token !== "";
+    if (fromCourier) {
+      const { data: cfg } = await supabase.from("courier_sync").select("token").eq("id", 1).maybeSingle();
+      if (!cfg?.token || token.length < 32 || token !== cfg.token || status !== "delivered") {
+        return jsonResponse({ error: "Not allowed" }, 403);
+      }
+    } else if (!(await isAdminRequest(req, supabase))) {
+      // Without this, anyone could send any customer a "your order was
+      // delivered / cancelled" email in SUNDAY's name.
+      return jsonResponse({ error: "Not allowed" }, 403);
     }
 
     const message = statusMessages[status];
     if (!message) {
       return jsonResponse({ skipped: true, reason: `no notification template for status "${status}"` });
     }
-
-    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-    const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const supabase = createClient(supabaseUrl, serviceRoleKey);
 
     const { data: order, error: orderError } = await supabase
       .from("orders")
@@ -118,6 +130,19 @@ Deno.serve(async (req: Request) => {
 
     if (orderError || !order) {
       return jsonResponse({ error: `Order not found: ${orderError?.message ?? order_id}` }, 404);
+    }
+
+    if (fromCourier) {
+      if (order.status !== "delivered") {
+        return jsonResponse({ skipped: true, reason: "order is not delivered" });
+      }
+      // Once: the key goes in first, and a second call finds it there.
+      const { error: onceError } = await supabase
+        .from("push_sent")
+        .insert({ order_id: `mail:delivered:${order.order_id}` });
+      if (onceError) {
+        return jsonResponse({ skipped: true, reason: "already sent" });
+      }
     }
 
     if (!order.email) {
