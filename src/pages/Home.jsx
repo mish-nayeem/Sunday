@@ -7,6 +7,7 @@ import { fetchHeroSlides, slidesFor, isVideo, PHONE_QUERY } from '@/admin/lib/he
 import { fetchHeroExtras, DEFAULT_HERO_BUTTON } from '@/admin/lib/siteSettings.js';
 import { useCountdown } from '@/admin/components/DropCountdown.jsx';
 import { fetchFeatures, dropShopLink } from '@/admin/lib/features.js';
+import { jsonLd } from '@/lib/jsonLd';
 
 // The panel saves labels in capitals; the storefront writes in sentence case.
 const sentence = (text) => (text ? text[0].toUpperCase() + text.slice(1).toLowerCase() : '');
@@ -236,7 +237,7 @@ export default function Home() {
 
   return (
     <div>
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify({
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLd({
         '@context': 'https://schema.org',
         '@type': 'WebSite',
         name: 'SUNDAY',

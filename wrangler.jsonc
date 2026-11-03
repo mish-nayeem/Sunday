@@ -3,7 +3,8 @@
   // deploy` uploads it. Every unknown path falls back to index.html so React
   // Router handles it. Product and lookbook pages go through worker/index.js
   // first, which gives shared links their own preview (title, text, photo);
-  // /admin too, for the installable admin app's tags.
+  // /admin too, for the installable admin app's tags; and robots.txt and
+  // sitemap.xml, which the worker writes for the address the site is on.
   "name": "sunday",
   "compatibility_date": "2026-09-23",
   "main": "./worker/index.js",
@@ -11,6 +12,6 @@
     "directory": "./dist",
     "binding": "ASSETS",
     "not_found_handling": "single-page-application",
-    "run_worker_first": ["/product/*", "/lookbook/*", "/admin", "/admin/*"]
+    "run_worker_first": ["/product/*", "/lookbook/*", "/admin", "/admin/*", "/robots.txt", "/sitemap.xml"]
   }
 }

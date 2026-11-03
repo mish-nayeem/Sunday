@@ -28,6 +28,8 @@ export default {
 
 async function handle(request, env) {
   const url = new URL(request.url);
+  if (request.method === 'GET' && url.pathname === '/robots.txt') return robots(url);
+  if (request.method === 'GET' && url.pathname === '/sitemap.xml') return sitemap(url, env);
   const page = await env.ASSETS.fetch(request);
   if (request.method !== 'GET' || !(page.headers.get('content-type') || '').includes('text/html')) return page;
   if (url.pathname === '/admin' || url.pathname.startsWith('/admin/')) return adminApp(page);
@@ -38,6 +40,59 @@ async function handle(request, env) {
   } catch {
     return page; // a preview is never worth a broken page
   }
+}
+
+// ---------- Search engines ----------
+// robots.txt and sitemap.xml are written here, on whatever address the site
+// is reached on, so they're right before and after a custom domain. The
+// sitemap lists the shop's pages and every product a shopper can see (the
+// public read, so hidden or not-yet-launched ones stay out).
+function robots(url) {
+  const body = [
+    'User-agent: *',
+    'Allow: /',
+    'Disallow: /admin',
+    'Disallow: /checkout',
+    'Disallow: /cart',
+    'Disallow: /login',
+    'Disallow: /order-confirmation/',
+    '',
+    `Sitemap: ${url.origin}/sitemap.xml`,
+    '',
+  ].join('\n');
+  return new Response(body, { headers: { 'content-type': 'text/plain; charset=utf-8', 'cache-control': 'public, max-age=3600' } });
+}
+
+const SITEMAP_PAGES = ['/', '/shop', '/about', '/contact', '/faq', '/order-tracking', '/support'];
+
+async function sitemap(url, env) {
+  let products = [];
+  try {
+    const cfgRes = await env.ASSETS.fetch(new Request(new URL('/og-config.json', url)));
+    const cfg = cfgRes.ok ? await cfgRes.json() : {};
+    if (cfg.url && cfg.key) {
+      const r = await fetch(`${cfg.url}/rest/v1/products?select=id,updated_at,created_at&order=created_at.desc`, {
+        headers: { apikey: cfg.key, Authorization: `Bearer ${cfg.key}` },
+      });
+      if (r.ok) products = await r.json();
+    }
+  } catch { /* pages only */ }
+
+  const entry = (path, lastmod, priority) =>
+    `  <url><loc>${escapeXml(url.origin + path)}</loc>${lastmod ? `<lastmod>${String(lastmod).slice(0, 10)}</lastmod>` : ''}<priority>${priority}</priority></url>`;
+  const body = [
+    '<?xml version="1.0" encoding="UTF-8"?>',
+    '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">',
+    ...SITEMAP_PAGES.map((p) => entry(p, null, p === '/' ? '1.0' : p === '/shop' ? '0.9' : '0.5')),
+    ...products.map((p) => entry(`/product/${encodeURIComponent(p.id)}`, p.updated_at || p.created_at, '0.8')),
+    '</urlset>',
+    '',
+  ].join('\n');
+  return new Response(body, { headers: { 'content-type': 'application/xml; charset=utf-8', 'cache-control': 'public, max-age=3600' } });
+}
+
+function escapeXml(s) {
+  return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
 
 const ADMIN_APP_HEAD = `
