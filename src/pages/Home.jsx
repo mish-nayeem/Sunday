@@ -19,15 +19,18 @@ const sentence = (text) => (text ? text[0].toUpperCase() + text.slice(1).toLower
 // sound on. With nothing set yet, the campaign photo stands in.
 // Square-edged button over a photo — SHOP NOW, A CLOSER LOOK: an outline and
 // text in the logo's orange (coral); fills cream on hover.
-function HeroButton({ to, children }) {
-  const cls = 'inline-flex items-center justify-center h-9 md:h-11 px-4 md:px-6 border border-coral text-coral text-[11px] md:text-[12px] font-semibold uppercase tracking-[0.08em] [text-shadow:0_1px_6px_rgba(0,0,0,0.25)] hover:bg-[#F6F1E7] hover:[text-shadow:none] transition-colors';
+function HeroButton({ to, children, small = false }) {
+  const size = small
+    ? 'h-8 md:h-9 px-3 md:px-4 text-[10px] md:text-[11px]'
+    : 'h-9 md:h-11 px-4 md:px-6 text-[11px] md:text-[12px]';
+  const cls = `inline-flex items-center justify-center ${size} border border-coral text-coral font-semibold uppercase tracking-[0.08em] [text-shadow:0_1px_6px_rgba(0,0,0,0.25)] hover:bg-[#F6F1E7] hover:[text-shadow:none] transition-colors`;
   return /^https?:/.test(to)
     ? <a href={to} target="_blank" rel="noreferrer" className={cls}>{children}</a>
     : <Link to={to} className={cls}>{children}</Link>;
 }
 
 // A drop under the hero (Admin → Homepage → Drop sections): a wide photo with
-// the drop's name and a line of text bottom left, SHOP NOW bottom right
+// the drop's name and a line of text bottom left, SHOP NOW in the middle
 // (→ only that drop's products), then a row of picked photos, each opening
 // its look in the drop's lookbook.
 function DropFeature({ f, isPhone }) {
@@ -48,15 +51,18 @@ function DropFeature({ f, isPhone }) {
             />
           </Link>
           <div className="pointer-events-none absolute inset-x-0 bottom-0 h-2/5 bg-gradient-to-t from-black/45 to-transparent" />
-          {/* Name and text bottom left, SHOP NOW bottom right — on a phone too. */}
-          <div className="pointer-events-none absolute inset-x-4 md:inset-x-6 bottom-5 md:bottom-7 flex items-end justify-between gap-3 md:gap-4 text-white">
+          {/* Name and text bottom left; SHOP NOW, a little smaller, in the
+              middle of the photo — on a phone too. */}
+          <div className="pointer-events-none absolute inset-x-4 md:inset-x-6 bottom-5 md:bottom-7 text-white">
             <div className="min-w-0 max-w-md">
               <h2 className="font-heading text-[24px] md:text-[40px] leading-none">{f.title || f.drop_name}</h2>
               {f.blurb && <p className="mt-2 md:mt-3 text-[12px] md:text-[13px] leading-snug">{f.blurb}</p>}
             </div>
-            <div className="pointer-events-auto flex flex-col md:flex-row items-end gap-2 md:gap-3 shrink-0">
-              <HeroButton to={shop}>Shop now</HeroButton>
-              {f.show_lookbook && <HeroButton to={`/lookbook/${encodeURIComponent(f.drop_name)}`}>A closer look</HeroButton>}
+          </div>
+          <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
+            <div className="pointer-events-auto flex flex-col sm:flex-row items-center gap-2 md:gap-3">
+              <HeroButton small to={shop}>Shop now</HeroButton>
+              {f.show_lookbook && <HeroButton small to={`/lookbook/${encodeURIComponent(f.drop_name)}`}>A closer look</HeroButton>}
             </div>
           </div>
         </div>

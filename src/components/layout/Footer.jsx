@@ -82,7 +82,8 @@ export default function Footer() {
 
   return (
     <footer className="border-t border-rule mt-auto px-4 md:px-6 pt-12 pb-8 text-[13px]">
-      <div className="grid gap-12 md:grid-cols-[minmax(0,1.2fr)_minmax(0,2fr)]">
+      {/* The newsletter, then SHOP / HELP / POLICIES under it, all on the left. */}
+      <div className="flex flex-col gap-10">
         <div className="max-w-sm">
           <p className="font-heading text-[22px] leading-tight mb-2">Newsletter</p>
           <p className="text-graphite mb-4">Get an email when new arrivals land. No more than a few a month.</p>
@@ -108,7 +109,7 @@ export default function Footer() {
           {status === 'error' && <p className="mt-2 text-coral">That didn’t go through. Check the address and try again.</p>}
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 sm:gap-8 content-start">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 sm:gap-8 content-start max-w-xl">
           {COLUMNS.map((col) => <FooterGroup key={col.title} col={col} />)}
         </div>
       </div>
