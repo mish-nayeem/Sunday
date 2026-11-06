@@ -102,7 +102,7 @@ export default function FeatureManager({ drops = [], products = [] }) {
           <p><b>Drop section</b> (+ Add drop section) — a drop’s banner and its best photos, below.</p>
           <p><b>Editorial block</b> (+ Add editorial block) — magazine style: one big photo beside a heading and two lines of text, with an optional link. Use it between drops to tell a story: the fabric, the shoot, the season.</p>
           <p>A drop section has:</p>
-          <p><b>1.</b> A wide photo, 70% the height of the main hero, with the drop’s name and a short line of text at the bottom left, and a <b>SHOP NOW</b> button at the bottom right. SHOP NOW opens the shop with only that drop’s products.</p>
+          <p><b>1.</b> A wide photo, 70% the height of the main hero, with the drop’s name and a short line of text at the bottom left, and a <b>SHOP NOW</b> button in the middle of the photo. SHOP NOW opens the shop with only that drop’s products.</p>
           <p><b>2.</b> A row of your best photos from the drop underneath (4 to a row on a PC, 2 on a phone). Each is a look in the drop’s lookbook; tapping one opens it with the products worn in it.</p>
           <p>A product belongs to a drop through the <b>Drop / collection</b> field in its product form. Hide a section to take it off the homepage without losing it.</p>
         </InfoTip>
@@ -277,8 +277,8 @@ function FeatureCard({ f, index, count, drops, products, looks, onLooksChanged, 
               : <span className="mono">+ Upload banner photo</span>}
             <div className="fm-banner-text">
               <b>{f.title || f.drop_name}</b>
-              <i>SHOP NOW</i>
             </div>
+            <i className="fm-banner-btn">SHOP NOW</i>
             <input type="file" accept="image/*" hidden disabled={busy} onChange={pickPhoto('image_url')} />
           </label>
           {f.image_url && <FocusPicker value={f.focus} disabled={busy} onChange={(focus) => onPatch({ focus })} />}

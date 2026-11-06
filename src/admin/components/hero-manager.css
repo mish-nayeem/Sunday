@@ -423,7 +423,8 @@
   pointer-events: none;
 }
 .fm-banner-text b { font-size: 15px; font-weight: 500; }
-.fm-banner-text i { font-style: normal; font-size: 9px; letter-spacing: 0.08em; border: 1px solid #fff; padding: 4px 7px; }
+/* SHOP NOW sits in the middle of the photo, as on the homepage. */
+.fm-banner-btn { color: #fff; text-shadow: 0 1px 6px rgba(0, 0, 0, 0.45); pointer-events: none; font-style: normal; font-size: 8px; letter-spacing: 0.08em; border: 1px solid #fff; padding: 3px 6px; position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); }
 
 .fm-phone-row { display: flex; align-items: center; gap: 10px; }
 .fm-phone {
