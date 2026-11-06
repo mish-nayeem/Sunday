@@ -14,14 +14,15 @@ import { joinWishlist, hasJoined, savedEmail } from '@/admin/lib/wishlist.js';
 // so buying from either looks and works the same: ProductInfo (name, price,
 // details) on the left, BuyPanel (colour, size, add to bag) on the right.
 
-// "Email me when it's back" for one sold-out size. The admin panel's
-// Customers → Wishlist lists the requests, and restocking the size mails them.
+// "Email me when it's back" for one sold-out size, or (no size) for a product
+// that's sold out in every size. The admin panel's Customers → Wishlist lists
+// the requests, and restocking mails them.
 export function RestockForm({ product, size }) {
   const [email, setEmail] = useState(savedEmail());
   const [state, setState] = useState(hasJoined(product.id, size) ? 'done' : 'idle');
 
   if (state === 'done') {
-    return <p className="mt-3 text-[13px]">We’ll email you when size {size} is back.</p>;
+    return <p className="mt-3 text-[13px]">We’ll email you when {size ? `size ${size} is` : 'it’s'} back.</p>;
   }
 
   const submit = async (e) => {
@@ -33,7 +34,7 @@ export function RestockForm({ product, size }) {
 
   return (
     <form onSubmit={submit} className="mt-3">
-      <p className="text-[13px] mb-2">Size {size} is sold out. Get an email when it’s back.</p>
+      <p className="text-[13px] mb-2">{size ? `Size ${size} is sold out.` : 'This piece is sold out.'} Get an email when it’s back.</p>
       <div className="flex border-b border-ink">
         <label htmlFor={`restock-email-${product.id}`} className="sr-only">Email address</label>
         <input
@@ -212,6 +213,7 @@ export function useBuyPanel(product, { photoSelector = '[data-pdp-photo]' } = {}
   const navigate = useNavigate();
   const [size, setSize] = useState('');
   const [waitSize, setWaitSize] = useState('');
+  const [wishOpen, setWishOpen] = useState(false);
   const [sizeError, setSizeError] = useState(false);
   const [color, setColor] = useState('');
   const [wishlisted, setWishlisted] = useState(false);
@@ -225,6 +227,7 @@ export function useBuyPanel(product, { photoSelector = '[data-pdp-photo]' } = {}
     const p = latest.current;
     if (!p) return;
     setWaitSize('');
+    setWishOpen(false);
     setSizeError(false);
     setSize(p.sizes?.length === 1 && isSizeAvailable(p, p.sizes[0]) ? p.sizes[0] : '');
     setColor(p.colors?.[0] || '');
@@ -263,7 +266,7 @@ export function useBuyPanel(product, { photoSelector = '[data-pdp-photo]' } = {}
 
   const pickSize = (s) => {
     if (isSizeAvailable(product, s)) { setSize(s); setWaitSize(''); setSizeError(false); }
-    else { setSize(''); setWaitSize(waitSize === s ? '' : s); }
+    else { setSize(''); setWishOpen(false); setWaitSize(waitSize === s ? '' : s); }
   };
 
   // The same piece in other colours (Admin: colour group), this one ringed.
@@ -370,22 +373,35 @@ export function useBuyPanel(product, { photoSelector = '[data-pdp-photo]' } = {}
     </div>
   );
 
-  const actions = (
+  const actions = soldOut ? (
+    // Sold out in every size: no bag, just the wishlist — an email left here
+    // lands in Admin → Customers → Wishlist and is mailed when it's back.
+    <div className="mt-4">
+      {wishOpen ? (
+        <RestockForm product={product} />
+      ) : (
+        <button
+          type="button"
+          onClick={() => { setWaitSize(''); setWishOpen(true); }}
+          className="w-full h-12 bg-ink text-white text-[13px] hover:bg-ink/85"
+        >
+          Add to wishlist
+        </button>
+      )}
+    </div>
+  ) : (
     <div className="mt-4 space-y-2">
       <button
         type="button"
         data-buy-add
         onClick={add}
-        disabled={soldOut}
-        className="w-full h-12 bg-ink text-white text-[13px] hover:bg-ink/85 disabled:bg-stone disabled:text-graphite disabled:cursor-not-allowed"
+        className="w-full h-12 bg-ink text-white text-[13px] hover:bg-ink/85"
       >
-        {soldOut ? 'Sold out' : 'Add to bag'}
+        Add to bag
       </button>
-      {!soldOut && (
-        <button type="button" onClick={buyNow} className="w-full h-12 border border-ink text-[13px] hover:bg-stone">
-          Buy now
-        </button>
-      )}
+      <button type="button" onClick={buyNow} className="w-full h-12 border border-ink text-[13px] hover:bg-stone">
+        Buy now
+      </button>
       <button
         type="button"
         onClick={() => setWishlisted(toggleWishlist(product.id))}
