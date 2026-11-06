@@ -10,7 +10,10 @@
 #            VITE_SUPABASE_ANON_KEY (Supabase → Settings → API → anon public;
 #                                    it ends up in the browser anyway)
 #   optional variables (Variables tab): VITE_SUPABASE_IMAGE_TRANSFORM,
-#            VITE_SITE_URL — the same as in Cloudflare's Build variables.
+#            VITE_SITE_URL — the same as in Cloudflare's Build variables;
+#            VITE_SENTRY_DSN — error reports to Sentry (off when empty);
+#            VITE_IMAGE_CDN_HOST — the domain whose photos Cloudflare resizes
+#            (src/lib/imageCdn.js; off when empty).
 # Without the token and the anon key this workflow says so and stops.
 name: Deploy
 
@@ -59,6 +62,8 @@ jobs:
           VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY || vars.VITE_SUPABASE_ANON_KEY }}
           VITE_SUPABASE_IMAGE_TRANSFORM: ${{ vars.VITE_SUPABASE_IMAGE_TRANSFORM }}
           VITE_SITE_URL: ${{ vars.VITE_SITE_URL }}
+          VITE_SENTRY_DSN: ${{ vars.VITE_SENTRY_DSN }}
+          VITE_IMAGE_CDN_HOST: ${{ vars.VITE_IMAGE_CDN_HOST }}
 
       - name: wrangler deploy
         run: npx --yes wrangler@4 deploy

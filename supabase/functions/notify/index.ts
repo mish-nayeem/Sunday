@@ -12,6 +12,15 @@
 //   { action: 'test' }                      → a test notification to every phone
 //   { action: 'order', order_id }           → "New order" — sent by the database
 //                                              trigger the moment an order comes in
+//   { action: 'request', id }               → "Exchange / Refund request" — a
+//                                              customer asked from the Support page
+//   { action: 'courier', order_id }         → the parcel was delivered, is coming
+//                                              back, was cancelled, held or failed
+//                                              (the courier's status just changed)
+//
+// The three the database sends need no login, so each is checked against
+// the database itself: only something that really just happened, and each
+// one once (push_sent) — calling again, or with a made-up id, sends nothing.
 //
 // No secrets to add: the notification keys (VAPID) are made by this function
 // the first time and kept in the push_config table, which only it can read.
@@ -190,6 +199,74 @@ async function newOrder(db: Db, orderId: string) {
   })
 }
 
+// A customer's exchange / refund request, from the Support page.
+async function newRequest(db: Db, id: number) {
+  if (!Number.isFinite(id) || id <= 0) return { skipped: 'no request' }
+  const { data: r } = await db
+    .from('order_returns')
+    .select('id, order_id, kind, reason, items, source, created_at')
+    .eq('id', id)
+    .maybeSingle()
+  if (!r || r.source !== 'customer' || Date.now() - new Date(r.created_at).getTime() > 15 * 60 * 1000) return { skipped: 'not a new request' }
+  const { error } = await db.from('push_sent').insert({ order_id: `req:${r.id}` })
+  if (error) return { skipped: 'already sent' }
+
+  const { data: o } = await db.from('orders').select('full_name').eq('order_id', r.order_id).maybeSingle()
+  type Piece = { name?: string; product_name?: string; size?: string; exchange_size?: string }
+  const pieces = (Array.isArray(r.items) ? r.items : []) as Piece[]
+  const what = pieces
+    .map((it) => `${it.name ?? it.product_name ?? ''} ${it.size ?? ''}`.trim() + (it.exchange_size ? ` → ${it.exchange_size}` : ''))
+    .filter(Boolean)
+    .join(', ')
+  const kind = r.kind === 'exchange' ? '🔁 Exchange' : r.kind === 'refund' ? '💸 Refund' : '↩️ Return'
+  return pushAll(db, {
+    title: `${kind} request · ${r.order_id}`,
+    body: [o?.full_name, what, r.reason].filter(Boolean).join(' · ').slice(0, 180),
+    url: '/admin?show=requests',
+    tag: `request-${r.id}`,
+  })
+}
+
+// What a courier status means for the admin — only the ones worth a
+// notification. Steadfast says e.g. "delivered", "partial_delivered",
+// "cancelled_approval_pending", "hold"; Pathao "Delivered", "Return",
+// "Delivery Failed", "On Hold", "Pickup Cancelled".
+const COURIER_NEWS: [string, RegExp, string][] = [
+  ['partial', /partial/, '🟡 Partly delivered'],
+  ['delivered', /^delivered$/, '✅ Delivered'],
+  ['returned', /return/, '↩️ Coming back'],
+  ['cancelled', /cancel/, '❌ Courier cancelled'],
+  ['failed', /fail/, '⚠️ Delivery failed'],
+  ['hold', /hold/, '⏸ On hold'],
+]
+
+function courierNews(status: string): { key: string; label: string } | null {
+  const s = status.toLowerCase().replace(/_approval_pending$/, '').replace(/[_-]+/g, ' ').trim()
+  const hit = COURIER_NEWS.find(([, re]) => re.test(s))
+  return hit ? { key: hit[0], label: hit[2] } : null
+}
+
+async function courierChange(db: Db, orderId: string) {
+  if (!orderId) return { skipped: 'no order' }
+  const { data: o } = await db
+    .from('orders')
+    .select('order_id, full_name, district, courier, courier_status, courier_synced_at, total, subtotal')
+    .eq('order_id', orderId)
+    .maybeSingle()
+  if (!o?.courier_status || !o.courier_synced_at || Date.now() - new Date(o.courier_synced_at).getTime() > 15 * 60 * 1000) return { skipped: 'no fresh status' }
+  const news = courierNews(String(o.courier_status))
+  if (!news) return { skipped: 'nothing to tell' }
+  const { error } = await db.from('push_sent').insert({ order_id: `courier:${o.order_id}:${news.key}` })
+  if (error) return { skipped: 'already sent' }
+  const courier = o.courier ? o.courier[0].toUpperCase() + o.courier.slice(1) : ''
+  return pushAll(db, {
+    title: `${news.label} · ${o.order_id}`,
+    body: [o.full_name, o.district, courier, taka(o.total ?? o.subtotal)].filter(Boolean).join(' · ').slice(0, 180),
+    url: `/admin?order=${encodeURIComponent(o.order_id)}`,
+    tag: `courier-${o.order_id}`,
+  })
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: cors })
   try {
@@ -198,6 +275,8 @@ Deno.serve(async (req) => {
     const db = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!)
 
     if (action === 'order') return json(await newOrder(db, String(body.order_id || '')))
+    if (action === 'request') return json(await newRequest(db, Number(body.id)))
+    if (action === 'courier') return json(await courierChange(db, String(body.order_id || '')))
 
     // Everything else is the admin's.
     if (!(await isAdminRequest(req, db))) return json({ error: 'Not allowed' }, 403)
@@ -223,7 +302,7 @@ Deno.serve(async (req) => {
     }
 
     if (action === 'test') {
-      return json(await pushAll(db, { title: '🔔 SUNDAY Admin', body: 'Notifications are on. New orders will show up here.', url: '/admin', tag: 'test' }))
+      return json(await pushAll(db, { title: '🔔 SUNDAY Admin', body: 'Notifications are on: new orders, exchange / refund requests and parcel news will show up here.', url: '/admin', tag: 'test' }))
     }
 
     return json({ error: 'Unknown action' }, 400)
