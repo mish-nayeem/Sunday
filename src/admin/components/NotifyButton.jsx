@@ -46,8 +46,8 @@ export default function NotifyButton() {
         <div className="install-back" role="dialog" aria-modal="true" aria-label="Notifications" onClick={() => setOpen(false)}>
           <div className="install-card" onClick={(e) => e.stopPropagation()}>
             <img src="/admin-icon-192.png" alt="" className="install-icon" />
-            <h3>New order notifications</h3>
-            <p className="install-lead">A notification on this phone the moment an order comes in — “🛍 New order · ৳2,480”, even with the app closed. Tap it to open that order. Turn it on once on each phone.</p>
+            <h3>Phone notifications</h3>
+            <p className="install-lead">A notification on this phone, even with the app closed: a new order (“🛍 New order · ৳2,480”), a customer’s exchange / refund request, and parcel news from the courier — delivered, coming back, cancelled, on hold or failed. Tap it to open it. Turn it on once on each phone.</p>
 
             {!pushSupported() || needsInstallFirst() ? (
               <ol>

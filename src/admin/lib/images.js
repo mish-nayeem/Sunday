@@ -15,6 +15,8 @@
 // Supabase" button has copied them over; anything else (a placeholder URL,
 // say) passes through untouched.
 
+import { onImageCdn, cdnImage } from '@/lib/imageCdn'
+
 export const IMAGE_BUCKET = 'images'
 
 const SUPABASE_OBJECT = '/storage/v1/object/public/'
@@ -29,6 +31,11 @@ const TRANSFORM = import.meta.env.VITE_SUPABASE_IMAGE_TRANSFORM === 'true'
 
 export function imgUrl(url, { w, h, q, original = false } = {}) {
   if (typeof url !== 'string') return url
+
+  // On the shop's domain, Cloudflare resizes it (src/lib/imageCdn.js). The
+  // full-screen view there is 2000px at 85 — the same on any screen, and a
+  // fraction of the upload.
+  if (onImageCdn(url)) return original ? cdnImage(url, { w: 2000, q: 85 }) : cdnImage(url, { w, h, q })
 
   // The stored file itself, untouched — for the full-screen view, where a
   // second resize and re-encode would soften what was uploaded.

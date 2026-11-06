@@ -14,6 +14,7 @@ import { fetchLiveSales } from '@/admin/lib/sales.js';
 import { withSale } from '@/lib/pricing';
 import { BKASH_NUMBER } from '@/admin/lib/delivery.js';
 import { bdPhone } from '@/lib/phone';
+import { Sentry } from '@/lib/sentry';
 
 // create_order's tagged errors, said plainly.
 function orderErrorMessage(error) {
@@ -228,6 +229,9 @@ export default function Checkout() {
     }
     if (orderError || !result?.[0]) {
       console.error('Order creation failed:', orderError);
+      // Handled here, so Sentry's automatic capture never sees it — a lost
+      // sale is reported by hand.
+      Sentry.captureException(orderError, { tags: { flow: 'checkout' } });
       setSubmitError(orderErrorMessage(orderError));
       setSubmitting(false);
       return;

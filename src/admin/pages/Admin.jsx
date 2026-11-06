@@ -1160,23 +1160,26 @@ export default function Admin() {
   // on it, or a message from the service worker when the admin is already
   // open. (Set to openOrder further down, once it exists.)
   const openOrderRef = useRef(null)
+  const openRequestsRef = useRef(null)
   const refreshLiveRef = useRef(refreshLive)
   refreshLiveRef.current = refreshLive
   useEffect(() => {
     if (loading || !session) return
-    const id = new URLSearchParams(window.location.search).get('order')
-    if (id) {
-      openOrderRef.current?.(id)
-      window.history.replaceState(window.history.state, '', '/admin')
-    }
+    const q = new URLSearchParams(window.location.search)
+    const id = q.get('order')
+    if (id) openOrderRef.current?.(id)
+    else if (q.get('show') === 'requests') openRequestsRef.current?.()
+    if (id || q.get('show')) window.history.replaceState(window.history.state, '', '/admin')
   }, [loading, session])
   useEffect(() => {
     if (!('serviceWorker' in navigator)) return
     const onMsg = (e) => {
       if (e.data?.type === 'refresh') return refreshLiveRef.current?.()
       if (e.data?.type !== 'open') return
-      const id = new URL(e.data.url, window.location.origin).searchParams.get('order')
+      const q = new URL(e.data.url, window.location.origin).searchParams
+      const id = q.get('order')
       if (id) openOrderRef.current?.(id)
+      else if (q.get('show') === 'requests') openRequestsRef.current?.()
     }
     navigator.serviceWorker.addEventListener('message', onMsg)
     return () => navigator.serviceWorker.removeEventListener('message', onMsg)
@@ -1222,6 +1225,8 @@ export default function Admin() {
     setSupportSub('requests')
     goTab('support')
   }
+
+  openRequestsRef.current = openRequests
 
   const navItems = [
     { key: 'overview', label: 'Overview', badge: null },

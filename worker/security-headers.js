@@ -7,6 +7,7 @@
 // The CSP allows exactly what the site loads from outside its own address:
 //   Supabase      — data, login, edge functions and photos (https + wss)
 //   Google Fonts  — the stylesheet and the font files
+//   Sentry        — error reports (when VITE_SENTRY_DSN is set)
 // Photos and the hero video may come from any https host, so an old link
 // (a Cloudinary photo, a pasted video) never shows as broken. A new outside
 // script, pixel or API has to be added here, or the browser will block it.
@@ -20,7 +21,7 @@ export const CSP = [
   "font-src 'self' data: https://fonts.gstatic.com",
   "img-src 'self' data: blob: https:",
   "media-src 'self' blob: https:",
-  `connect-src 'self' https://${SUPABASE} wss://${SUPABASE}`,
+  `connect-src 'self' https://${SUPABASE} wss://${SUPABASE} https://*.ingest.sentry.io https://*.ingest.us.sentry.io https://*.ingest.de.sentry.io`,
   // The admin's email preview is an <iframe srcdoc>, on this site.
   "frame-src 'self'",
   "object-src 'none'",

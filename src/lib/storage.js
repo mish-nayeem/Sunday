@@ -2,6 +2,8 @@
 // Uploads happen in the admin panel (src/admin/lib/images.js); the storefront
 // only reads them, sized for where they show.
 
+import { onImageCdn, cdnImage } from './imageCdn';
+
 const OBJECT_PATH = '/storage/v1/object/public/';
 const RENDER_PATH = '/storage/v1/render/image/public/';
 
@@ -14,6 +16,9 @@ const TRANSFORM = import.meta.env.VITE_SUPABASE_IMAGE_TRANSFORM === 'true';
 // Returns a URL for roughly `width` px wide. Any other URL (old links,
 // placeholders) passes through untouched.
 export function imgUrl(url, width) {
+  // On the shop's domain, Cloudflare resizes it (src/lib/imageCdn.js); the
+  // full-screen view (2000px and up) at a higher quality.
+  if (onImageCdn(url)) return cdnImage(url, { w: width, q: width >= 1600 ? 85 : 75 });
   if (!TRANSFORM || typeof url !== 'string' || !url.includes(OBJECT_PATH) || url.includes('?')) return url;
   const params = new URLSearchParams({ quality: '75', resize: 'contain' });
   if (width) params.set('width', String(width));
