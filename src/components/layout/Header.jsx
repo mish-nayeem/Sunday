@@ -128,7 +128,9 @@ export default function Header() {
                 role="tab"
                 aria-selected={menuTab === key}
                 onClick={() => setMenuTab(key)}
-                className={`text-left px-5 text-[11px] font-semibold uppercase tracking-[0.12em] ${menuTab === key ? 'text-ink' : 'bg-[#EAE2D3] text-graphite hover:text-ink'}`}
+                // The open tab in dark ink, cream lettering — unmistakably the one
+                // chosen; the other stays light.
+                className={`text-left px-5 text-[11px] font-semibold uppercase tracking-[0.12em] transition-colors ${menuTab === key ? 'bg-ink text-[#F6F1E7]' : 'bg-[#EAE2D3] text-graphite hover:text-ink'}`}
               >
                 {label}
               </button>
