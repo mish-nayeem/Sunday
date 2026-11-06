@@ -83,8 +83,10 @@ export default function Footer() {
 
   return (
     <footer className="border-t border-rule mt-auto px-4 md:px-6 pt-12 pb-8 text-[13px]">
-      {/* The newsletter, then SHOP / HELP / POLICIES under it, all on the left. */}
-      <div className="flex flex-col gap-10">
+      {/* The newsletter, then SHOP / HELP / POLICIES under it, on the left;
+          the big faded SUNDAY logo beside them on the right. */}
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-10">
+        <div className="flex flex-col gap-10 md:flex-1 md:min-w-0">
         <div className="max-w-sm">
           <p className="font-heading text-[22px] leading-tight mb-2">Newsletter</p>
           <p className="text-graphite mb-4">Get an email when new arrivals land. No more than a few a month.</p>
@@ -113,6 +115,16 @@ export default function Footer() {
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 sm:gap-8 content-start max-w-xl">
           {COLUMNS.map((col) => <FooterGroup key={col.title} col={col} />)}
         </div>
+        </div>
+
+        {/* No colour, just a soft grey shade of the header's mark. */}
+        <img
+          src={logo}
+          alt=""
+          aria-hidden="true"
+          className="block self-end md:self-center w-[70%] sm:w-[50%] md:w-[44%] max-w-[640px] h-auto brightness-0 opacity-[0.08] select-none pointer-events-none"
+          loading="lazy"
+        />
       </div>
 
       <div className="mt-14 pt-5 border-t border-rule flex flex-col sm:flex-row gap-3 sm:items-center justify-between text-graphite">
@@ -126,15 +138,6 @@ export default function Footer() {
         </ul>
       </div>
 
-      {/* The SUNDAY logo, big, at the foot on the right — no colour, just a
-          soft grey shade (the same mark as the header's, faded). */}
-      <img
-        src={logo}
-        alt=""
-        aria-hidden="true"
-        className="mt-10 md:mt-14 block ml-auto w-[78%] sm:w-[60%] md:w-[46%] max-w-[720px] h-auto brightness-0 opacity-[0.08] select-none pointer-events-none"
-        loading="lazy"
-      />
     </footer>
   );
 }
