@@ -258,7 +258,7 @@ export default function Home() {
       <Hero slides={slides} button={extras.button} countdown={extras.countdown} />
 
       {features.length > 0 && (
-        <div className="pt-8 md:pt-12">
+        <div className="pt-2 md:pt-3">
           {features.map((f) => (f.kind === 'editorial'
             ? <Editorial key={f.id} f={f} isPhone={isPhone} />
             : <DropFeature key={f.id} f={f} isPhone={isPhone} />))}
