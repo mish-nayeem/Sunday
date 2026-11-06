@@ -1,19 +1,17 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { imgUrl } from '@/lib/storage';
-import { addToCart, openCartDrawer } from '@/lib/cartStore';
-import { flyToBag } from '@/lib/flyToBag';
-import { isSizeAvailable, isSoldOut, formatPrice } from '@/lib/catalog';
+import QuickAdd from './QuickAdd';
+import { isSoldOut, formatPrice } from '@/lib/catalog';
 import { useLiveSales, withSale } from '@/lib/pricing';
 
 // Grid tile: photo on a quiet ground, name left and price right underneath
 // (sizes only on the product page). Hovering on a computer slowly runs
-// through its photos and shows a row of sizes that add straight to the bag.
+// through its photos; the + in the photo's corner adds to the bag.
 // `colours` (optional): the other colours of the same piece (colour group),
 // shown as small swatches under the price.
 export default function ProductCard({ product: raw, colours = [] }) {
   const product = withSale(raw, useLiveSales());
-  const [added, setAdded] = useState('');
   // Hover slideshow. `slide` fades in on top of `under`, which stays fully
   // shown beneath it, so there's never a blank frame between photos; the
   // next photo is loaded before it's switched to.
@@ -50,13 +48,6 @@ export default function ProductCard({ product: raw, colours = [] }) {
   const onSale = !!product.compare_at;
   const colorCount = product.colors?.length || 0;
 
-  const quickAdd = (e, size) => {
-    e.preventDefault();
-    addToCart(product, size, 1);
-    setAdded(size);
-    flyToBag(e.currentTarget.closest('.group')?.querySelector('img'), images[0] && imgUrl(images[0], 300)).then(openCartDrawer);
-    setTimeout(() => setAdded(''), 1500);
-  };
 
   return (
     <div className="group">
@@ -92,28 +83,9 @@ export default function ProductCard({ product: raw, colours = [] }) {
           <span className="pointer-events-none absolute top-2 left-2 text-[11px] bg-white px-1.5 py-0.5">New</span>
         )}
 
-        {!soldOut && product.sizes?.length > 0 && (
-          <div className="hidden md:block absolute inset-x-2 bottom-2 bg-white px-3 py-2 opacity-0 translate-y-1 group-hover:opacity-100 group-hover:translate-y-0 focus-within:opacity-100 focus-within:translate-y-0 transition duration-200">
-            <p className="text-[11px] text-graphite mb-1">{added ? `Added ${added} to bag` : 'Quick add'}</p>
-            <div className="flex flex-wrap gap-x-3 gap-y-1">
-              {product.sizes.map((size) => {
-                const ok = isSizeAvailable(product, size);
-                return (
-                  <button
-                    key={size}
-                    type="button"
-                    disabled={!ok}
-                    onClick={(e) => quickAdd(e, size)}
-                    className="text-[12px] hover:underline underline-offset-2 disabled:text-graphite/50 disabled:line-through disabled:no-underline"
-                    aria-label={`Add size ${size} to bag`}
-                  >
-                    {size}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        )}
+        {/* + on the photo's corner: tap for the sizes, tap one to add it
+            to the bag — on a phone too. */}
+        {!soldOut && product.sizes?.length > 0 && <QuickAdd product={product} />}
       </div>
 
       <Link to={`/product/${product.id}`} className="block pt-3 pb-1 text-[12px] leading-snug">
