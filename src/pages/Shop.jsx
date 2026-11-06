@@ -151,13 +151,13 @@ export default function Shop() {
     return [...set].sort((a, b) => rank(a) - rank(b));
   }, [products]);
 
-  const filterCount = sizes.length + (inStockOnly ? 1 : 0) + (sort !== 'featured' ? 1 : 0);
+  const filterCount = sizes.length + (inStockOnly ? 1 : 0);
 
   return (
     <div className="pb-20">
       {/* One quiet bar: the lists to hop between on the left — the other drops
           inside a drop, the categories everywhere else, as set in Admin → Side
-          menu — and a single Filter button (sort, sold out, size) on the right. */}
+          menu — and a single Filter button (sold out, size) on the right. */}
       <div className="sticky top-14 md:top-16 z-30 bg-white border-b border-rule">
         <div className="h-14 md:h-16 px-4 md:px-6 flex items-center gap-6 text-[13px]">
           <nav className="flex-1 min-w-0 h-full flex items-center gap-7 overflow-x-auto hide-scrollbar max-md:pr-6 max-md:[mask-image:linear-gradient(to_right,black_80%,transparent)]" aria-label={drop ? 'Drops' : 'Categories'}>
@@ -231,18 +231,6 @@ export default function Shop() {
               </button>
             </div>
             <div className="flex-1 overflow-y-auto px-5 py-6 space-y-8">
-              <fieldset>
-                <legend className="text-[12px] text-graphite mb-3">Sort by</legend>
-                <div className="space-y-2">
-                  {SORTS.map((x) => (
-                    <label key={x.value} className="flex items-center gap-3 text-[14px] cursor-pointer">
-                      <input type="radio" name="sort" className="accent-black" checked={sort === x.value}
-                        onChange={() => setParam('sort', x.value === 'featured' ? '' : x.value)} />
-                      {x.label}
-                    </label>
-                  ))}
-                </div>
-              </fieldset>
               <fieldset>
                 <legend className="text-[12px] text-graphite mb-3">Availability</legend>
                 <label className="flex items-center gap-3 text-[14px] cursor-pointer">
