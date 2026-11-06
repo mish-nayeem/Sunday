@@ -129,7 +129,8 @@ export default function Footer() {
 
       <div className="mt-14 pt-5 border-t border-rule flex flex-col sm:flex-row gap-3 sm:items-center justify-between text-graphite">
         <p>© {new Date().getFullYear()} SUNDAY, Bangladesh</p>
-        <ul className="flex gap-5">
+        {/* Clear of the round chat button fixed in the corner. */}
+        <ul className="flex gap-5 sm:pr-16">
           {SOCIAL.map((s) => (
             <li key={s.label}>
               <a href={s.href} target="_blank" rel="noopener noreferrer" className="hover:text-ink hover:underline underline-offset-4">{s.label}</a>
