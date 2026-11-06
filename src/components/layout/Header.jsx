@@ -119,7 +119,6 @@ export default function Header() {
         <aside
           className={`absolute left-0 top-0 h-full w-full max-w-[450px] bg-[#F6F1E7] text-ink flex flex-col overflow-hidden transition-transform duration-300 ease-out ${menuOpen ? 'translate-x-0' : '-translate-x-full'}`}
         >
-          <img src={logo} alt="" aria-hidden="true" className="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[85%] opacity-[0.05] grayscale" />
           <div className="relative grid grid-cols-[1fr_1fr_auto] h-16 shrink-0" role="tablist">
             {[['shop', 'Shop'], ['explore', 'Explore']].map(([key, label]) => (
               <button

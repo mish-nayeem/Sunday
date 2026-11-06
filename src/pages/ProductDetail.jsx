@@ -24,22 +24,6 @@ function useWide() {
   return wide;
 }
 
-// The wheel over a side column moves only that column — never the page,
-// even when the column is too short to scroll. Non-passive so the page's
-// own scroll can be stopped.
-function useOwnWheel(ref, enabled) {
-  useEffect(() => {
-    const el = ref.current;
-    if (!el || !enabled) return;
-    const onWheel = (e) => {
-      e.preventDefault();
-      el.scrollTop += e.deltaY;
-    };
-    el.addEventListener('wheel', onWheel, { passive: false });
-    return () => el.removeEventListener('wheel', onWheel);
-  }, [ref, enabled]);
-}
-
 export default function ProductDetail() {
   const { id } = useParams();
   const [raw, setRaw] = useState(null);
@@ -52,8 +36,6 @@ export default function ProductDetail() {
   const [recent, setRecent] = useState([]);
   const railRef = useRef(null);
   const [viewer, setViewer] = useState(null); // photo index open full screen, or null
-  const leftRef = useRef(null);
-  const rightRef = useRef(null);
   const wide = useWide();
   const buy = useBuyPanel(product);
   // Phone: the bar at the bottom shows only until the Add to bag under the
@@ -61,7 +43,6 @@ export default function ProductDetail() {
   // that button, it returns.
   const panelRef = useRef(null);
   const [inlineAddVisible, setInlineAddVisible] = useState(false);
-  useOwnWheel(leftRef, wide && !loading);
   useEffect(() => {
     const el = panelRef.current?.querySelector('[data-buy-add]');
     if (wide || !el) return;
@@ -69,7 +50,6 @@ export default function ProductDetail() {
     io.observe(el);
     return () => { io.disconnect(); setInlineAddVisible(false); };
   }, [wide, loading, product?.id]);
-  useOwnWheel(rightRef, wide && !loading);
 
   useEffect(() => {
     let cancelled = false;
@@ -183,12 +163,13 @@ export default function ProductDetail() {
       }) }} />
 
       {wide ? (
-        // Desktop: details | photos | buy box. Each column scrolls on its own
-        // under the pointer; the photos are the long one.
-        <div className="grid grid-cols-[minmax(240px,1fr)_minmax(340px,480px)_minmax(240px,1fr)] gap-10 xl:gap-16 px-6 h-[calc(100vh-4rem)]">
-          {/* The side columns keep the wheel to themselves; the photos column
-              runs on into the page (You may also like, footer) at its end. */}
-          <div ref={leftRef} className="h-full overflow-y-auto hide-scrollbar py-10">
+        // Desktop: details | photos | buy box, with wide gaps either side of
+        // the photos. Each column scrolls on its own under the pointer; once
+        // the one under it has reached its end (or has nothing to scroll),
+        // the wheel carries on and the whole page moves down to You may also
+        // like and the footer.
+        <div className="grid grid-cols-[minmax(240px,1fr)_minmax(320px,440px)_minmax(240px,1fr)] gap-16 xl:gap-28 px-6 h-[calc(100vh-4rem)]">
+          <div className="h-full overflow-y-auto hide-scrollbar py-10">
             <div className="max-w-sm">
               {header}
               {disclosures}
@@ -213,7 +194,7 @@ export default function ProductDetail() {
               </div>
             ))}
           </div>
-          <div ref={rightRef} className="h-full overflow-y-auto hide-scrollbar py-10 flex">
+          <div className="h-full overflow-y-auto hide-scrollbar py-10 flex">
             <div className="w-full max-w-sm ml-auto my-auto">
               {buy.panel}
             </div>

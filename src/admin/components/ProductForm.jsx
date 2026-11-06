@@ -482,6 +482,11 @@ export default function ProductForm({ existing, copyFrom = null, allProducts = [
     for (const size of restocked) {
       await sendRestockAlert(p.id.trim(), size)
     }
+    // Those who asked for the product as a whole (it was sold out in every
+    // size) hear as soon as any size is back.
+    if (restocked.length > 0) {
+      await sendRestockAlert(p.id.trim(), null)
+    }
 
     setSaving(false)
 
