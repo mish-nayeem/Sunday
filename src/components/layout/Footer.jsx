@@ -84,7 +84,7 @@ export default function Footer() {
     <footer className="border-t border-rule mt-auto px-4 md:px-6 pt-12 pb-8 text-[13px]">
       <div className="grid gap-12 md:grid-cols-[minmax(0,1.2fr)_minmax(0,2fr)]">
         <div className="max-w-sm">
-          <p className="font-heading text-[22px] leading-tight mb-2">New pieces, first</p>
+          <p className="font-heading text-[22px] leading-tight mb-2">Newsletter</p>
           <p className="text-graphite mb-4">Get an email when new arrivals land. No more than a few a month.</p>
           {status === 'done' ? (
             <p>You’re on the list.</p>
