@@ -126,13 +126,13 @@ export default function Footer() {
         </ul>
       </div>
 
-      {/* The SUNDAY logo, big, at the foot on the left — no colour, just a
+      {/* The SUNDAY logo, big, at the foot on the right — no colour, just a
           soft grey shade (the same mark as the header's, faded). */}
       <img
         src={logo}
         alt=""
         aria-hidden="true"
-        className="mt-10 md:mt-14 block w-[78%] sm:w-[60%] md:w-[46%] max-w-[720px] h-auto brightness-0 opacity-[0.08] select-none pointer-events-none"
+        className="mt-10 md:mt-14 block ml-auto w-[78%] sm:w-[60%] md:w-[46%] max-w-[720px] h-auto brightness-0 opacity-[0.08] select-none pointer-events-none"
         loading="lazy"
       />
     </footer>
