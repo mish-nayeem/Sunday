@@ -11,22 +11,24 @@ import { launchLabel } from '../lib/schedule.js'
 import { dropKey } from '../lib/lookbook.js'
 import {
   BOX_COLORS, PLACES, colorOf, promoCards,
-  fetchBoxes, fetchPlaces, clearPromoCache,
+  fetchBoxes, fetchPlaces, fetchDropBanners, clearPromoCache,
 } from '../lib/promos.js'
 import './promo-manager.css'
 
 const KINDS = [
+  { key: 'soon', label: 'New drop coming', tip: 'A collection with a launch time ahead and "coming soon" ticked (Products → Collections → open it). Shows a countdown; goes away at launch.' },
   { key: 'sale', label: 'Sale', tip: 'Every running sale from Marketing → Sales, by itself — on a drop it shows the drop\'s banner photo, on chosen products the first product\'s photo. Goes away when the sale ends.' },
   { key: 'coupon', label: 'Coupon boxes', tip: 'The five boxes below — the ones with a code written in.' },
 ]
 
 // Website → Banners. Where the promo banners show, and the five coupon
-// boxes. Sales make their own banners; this page only decides where they
-// appear.
+// boxes. Sales and coming drops make their own banners; this page only
+// decides where they appear.
 export default function PromoManager({ products }) {
   const [boxes, setBoxes] = useState(null)
   const [places, setPlaces] = useState(null)
   const [saved, setSaved] = useState('')
+  const [banners, setBanners] = useState({})
   const [sales, setSales] = useState([])
   const [coupons, setCoupons] = useState([])
   const [busy, setBusy] = useState(false)
@@ -34,10 +36,11 @@ export default function PromoManager({ products }) {
   const [preview, setPreview] = useState('home')
 
   useEffect(() => {
-    Promise.all([fetchBoxes(), fetchPlaces(), listSales(), fetchCoupons()]).then(([b, p, s, c]) => {
+    Promise.all([fetchBoxes(), fetchPlaces(), fetchDropBanners(), listSales(), fetchCoupons()]).then(([b, p, d, s, c]) => {
       setBoxes(b.boxes)
       setPlaces(p.places)
       setSaved(JSON.stringify([b.boxes, p.places]))
+      setBanners(d.banners)
       setSales(s.sales || [])
       setCoupons(c.coupons || [])
       if (b.error) setNote("Couldn't load — check the connection and try again.")
@@ -47,10 +50,12 @@ export default function PromoManager({ products }) {
   const drops = useMemo(() => {
     const m = new Map()
     for (const p of products) if (p.drop_name) m.set(dropKey(p.drop_name), p.drop_name.trim())
+    for (const b of Object.values(banners)) if (b?.name) m.set(dropKey(b.name), b.name)
     return [...m.values()].sort()
-  }, [products])
+  }, [products, banners])
 
   const live = sales.filter((s) => s.active && new Date(s.ends_at).getTime() > Date.now())
+  const coming = Object.values(banners).filter((b) => b?.launch_at && new Date(b.launch_at).getTime() > Date.now())
 
   // Unsaved boxes and places stay in this browser until Save.
   const kept = useDraft('promo', { boxes, places }, (v) => { setBoxes(v.boxes); setPlaces(v.places) }, { enabled: Boolean(boxes && places) })
@@ -59,8 +64,8 @@ export default function PromoManager({ products }) {
   const previewData = useMemo(() => {
     if (!boxes || !places) return null
     const thumbs = Object.fromEntries(products.map((p) => [String(p.id), { id: p.id, name: p.name, images: p.images || [] }]))
-    return { boxes, places, sales: live, thumbs }
-  }, [boxes, places, live, products])
+    return { banners, boxes, places, sales: live, thumbs }
+  }, [boxes, places, banners, live, products])
 
   if (!boxes || !places) return <div className="empty mono">Loading…</div>
 
@@ -95,11 +100,13 @@ export default function PromoManager({ products }) {
       <AdminBox
         wide
         title="HOW BANNERS WORK"
-        tip="Two kinds of banner. Sales make their own — nothing to type here. Coupon boxes are the ones you write."
+        tip="Three kinds of banner, all from one place. Sales and coming drops make their own — nothing to type here. Coupon boxes are the only ones you write."
       >
         <ul className="pm-how">
-          <li><b>Sale</b> — Marketing → Sales → create a sale. Its card shows by itself while it runs: on chosen products with the product's photo, and a countdown to the end.</li>
+          <li><b>New drop coming</b> — Products → Collections → open a collection → upload its banner image, set a launch time, keep “coming soon” ticked. A card with a countdown shows until launch.</li>
+          <li><b>Sale</b> — Marketing → Sales → create a sale. Its card shows by itself while it runs: on a drop with the drop's banner photo, on chosen products with the product's photo, and a countdown to the end.</li>
           <li><b>Coupon</b> — write a code in one of the five boxes below, pick its colour, Save. Customers tap “Copy code” and paste it at checkout. Make the code itself in Marketing → Coupons first, or checkout won't take it.</li>
+          <li>Each drop's banner image also shows wide on top of that drop's page in the shop. A coupon box only shows while its coupon is on, started, not ended and not used up.</li>
         </ul>
       </AdminBox>
 
@@ -125,7 +132,7 @@ export default function PromoManager({ products }) {
         tip={
           <>
             <p>Five boxes, one colour each to start — change any box's colour by tapping a dot. Write a code and a line about it; an empty box doesn't show.</p>
-            <p><b>Links to</b>: a drop opens the drop's products; a product shows its photo and opens it; nothing = just the code.</p>
+            <p><b>Links to</b>: a drop shows the drop's banner photo small and opens the drop; a product shows its photo and opens it; nothing = just the code.</p>
             <p>The code is only text here — the discount itself comes from Marketing → Coupons, so make it there with the same code.</p>
           </>
         }
@@ -169,7 +176,7 @@ export default function PromoManager({ products }) {
                   {b.target === 'drop' && (
                     <select className="ab-input" value={b.drop} onChange={(e) => setBox(i, { drop: e.target.value })}>
                       <option value="">Pick a drop…</option>
-                      {drops.map((d) => <option key={d} value={d}>{d}</option>)}
+                      {drops.map((d) => <option key={d} value={d}>{d}{banners[dropKey(d)]?.image ? '' : ' (no banner image)'}</option>)}
                     </select>
                   )}
                   {b.target === 'product' && (
@@ -190,12 +197,18 @@ export default function PromoManager({ products }) {
         </div>
       </AdminBox>
 
-      <AdminBox wide title="SALES RUNNING NOW" tip="Read only — change these in Marketing → Sales.">
+      <AdminBox wide title="MADE BY THEMSELVES" tip="Read only — change these where they're made.">
         <div className="pm-auto">
           <div>
             <div className="ab-label mono">RUNNING SALES <span className="dim">(Marketing → Sales)</span></div>
             {live.length === 0 ? <div className="ab-empty mono">No sale running.</div> : live.map((s) => (
               <div className="pm-auto-row mono" key={s.id}>{s.name || 'Sale'} · {s.percent}% off · {s.drop_name ? s.drop_name : (s.product_ids?.length ? `${s.product_ids.length} products` : 'everything')} · ends {launchLabel(s.ends_at)}</div>
+            ))}
+          </div>
+          <div>
+            <div className="ab-label mono">COMING DROPS <span className="dim">(Products → Collections)</span></div>
+            {coming.length === 0 ? <div className="ab-empty mono">No collection with a launch time ahead.</div> : coming.map((b) => (
+              <div className="pm-auto-row mono" key={b.name}>{b.name} · {launchLabel(b.launch_at)} · {b.soon === false ? 'coming soon OFF' : 'announced'}{b.image ? '' : ' · no banner image'}</div>
             ))}
           </div>
         </div>
@@ -207,7 +220,7 @@ export default function PromoManager({ products }) {
         </div>
         <div className={`pm-preview ${preview === 'cart' ? 'narrow' : ''}`}>
           <PromoBanners place={preview} data={previewData} className={preview === 'cart' ? 'pb-cart' : ''} />
-          {promoCards(previewData, preview).length === 0 && <div className="ab-empty mono">Nothing shows here right now — no sale running, no coupon box ticked for this page.</div>}
+          {promoCards(previewData, preview).length === 0 && <div className="ab-empty mono">Nothing shows here right now — no sale running, no coming drop, no coupon box ticked for this page.</div>}
         </div>
       </AdminBox>
     </div>

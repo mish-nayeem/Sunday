@@ -873,6 +873,7 @@ function toRow(p, isNewRecord) {
     is_new_arrival: Boolean(p.isNew),
     is_featured: Boolean(p.featured),
     is_best_seller: Boolean(p.bestSeller),
+    hidden: Boolean(p.hidden),
     images: p.images ?? [],
     description: p.description ?? '',
     sizes: p.sizes ?? [],

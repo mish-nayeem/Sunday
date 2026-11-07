@@ -96,6 +96,8 @@ import MarketingGuide from '../components/MarketingGuide.jsx'
 import { isNewRequest } from '../lib/support.js'
 import NoticeCenter from '../components/NoticeCenter.jsx'
 import InfoTip from '../components/InfoTip.jsx'
+import EyeToggle from '../components/EyeToggle.jsx'
+import { hasDraft } from '../lib/useDraft.js'
 import { pageHelp, PANEL_HELP } from '../lib/help.js'
 import '../styles/base.css'
 import './admin.css'
@@ -524,6 +526,17 @@ export default function Admin() {
   const [tab, setTab] = useState(() => savedPlace('tab', 'overview', Object.keys(TAB_LABELS).map((key) => ({ key }))))
   const [orders, setOrders] = useState([])
   const [products, setProducts] = useState([])
+  // 👁 in Product catalog: hide a product from the shop without deleting it.
+  const [hidingId, setHidingId] = useState(null)
+  async function toggleHidden(p) {
+    const next = !p.hidden
+    setHidingId(p.id)
+    setQueueError('')
+    const { error } = await supabase.from('products').update({ hidden: next }).eq('id', p.id)
+    setHidingId(null)
+    if (error) return setQueueError(`Couldn't ${next ? 'hide' : 'show'} ${p.name} — try again.`)
+    setProducts((prev) => prev.map((x) => (x.id === p.id ? { ...x, hidden: next } : x)))
+  }
   const [navCategories, setNavCategories] = useState([])
   const [wishRows, setWishRows] = useState([])
   const [notifying, setNotifying] = useState(null)
@@ -1882,6 +1895,16 @@ export default function Admin() {
 
             {products.length === 0 && <div className="empty mono">No products in the catalog.</div>}
 
+            {/* A new product left half done is still here, as it was. */}
+            {hasDraft('product:new') && (
+              <div className="draft-note mono" role="status">
+                <span>↺ A new product you started isn't saved yet.</span>
+                <button type="button" onClick={() => { setCopyFrom(null); setNewProductDrop(''); setNewProductLaunch(''); setEditing('new') }}>
+                  Continue it
+                </button>
+              </div>
+            )}
+
             {products.length > 0 && (
               <div className="bulk-bar mono">
                 {!selecting ? (
@@ -1947,7 +1970,7 @@ export default function Admin() {
             <div className="table">
               {drag.list.map((p) => (
                 <div
-                  className={`trow prow clickable queue ${drag.dragId === p.id ? 'dragging' : ''} ${picked.has(p.id) ? 'picked' : ''}`}
+                  className={`trow prow clickable queue ${drag.dragId === p.id ? 'dragging' : ''} ${picked.has(p.id) ? 'picked' : ''} ${p.hidden ? 'is-hidden' : ''}`}
                   key={p.id}
                   ref={drag.rowRef(p.id)}
                   onClick={() => (selecting ? togglePick(p.id) : setEditing(p))}
@@ -1994,6 +2017,7 @@ export default function Admin() {
                     )}
                   </div>
                   <div className="tc mono">
+                    {p.hidden && <span className="hidden-tag">Hidden</span>}
                     {isScheduled(p) && <span className="sched-tag">Live {launchLabel(p.publish_at)}</span>}
                     {totalStock(p) === 0 && <span className="out-tag">Sold out</span>}
                     {totalStock(p) === null &&
@@ -2002,6 +2026,7 @@ export default function Admin() {
                         <span className="out-tag">{p.sizes_out.length} size out</span>
                       )}
                   </div>
+                  <EyeToggle hidden={Boolean(p.hidden)} busy={hidingId === p.id} label={p.name} onToggle={() => toggleHidden(p)} />
                   <button
                     type="button"
                     className="drag-handle"

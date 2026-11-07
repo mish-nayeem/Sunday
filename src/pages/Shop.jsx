@@ -8,7 +8,8 @@ import { useMenus, dropLink } from '@/lib/menus';
 import { dropKey } from '@/admin/lib/lookbook.js';
 import { fetchSetting } from '@/admin/lib/siteSettings.js';
 import { imgUrl } from '@/lib/storage';
-import PromoBanners from '@/components/home/PromoBanners';
+import PromoBanners, { DropHero } from '@/components/home/PromoBanners';
+import { fetchDropBanners, dropBannerFor } from '@/admin/lib/promos.js';
 
 // The params that say which list is showing; sort, size and stock only refine it.
 const LIST_KEYS = ['category', 'type', 'drop', 'filter', 'search'];
@@ -64,6 +65,9 @@ export default function Shop() {
   const search = params.get('search') || '';
   const type = params.get('type') || '';
   const drop = params.get('drop') || '';
+  // Each collection's banner photo (Products → Collections), on top of its page.
+  const [dropBanners, setDropBanners] = useState({});
+  useEffect(() => { fetchDropBanners().then(({ banners }) => setDropBanners(banners)).catch(() => {}); }, []);
   const sort = params.get('sort') || 'featured';
   const sizes = (params.get('size') || '').split(',').filter(Boolean);
   const inStockOnly = params.get('instock') === '1';
@@ -192,6 +196,7 @@ export default function Shop() {
         </button>
       )}
 
+      {drop && <DropHero banner={dropBannerFor(drop, dropBanners)} />}
       <PromoBanners place="shop" className="pt-6" />
 
       <div className="pt-6">
