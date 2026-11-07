@@ -121,23 +121,30 @@ function netOfRefunds(o) {
   // the second parcel is revenue too. (A cheaper one's difference was
   // refunded, so it's in refunded_amount.)
   const extra = Number(o.exchange_extra) || 0
+  // Pieces handed back to the rider at the door (✕ on the item): never
+  // paid for, so they come off what's collected as well as what's sold.
+  let rejectedValue = 0
   let changed = refunded > 0 || extra > 0
   const items = (o.order_items || []).map((it) => {
-    const back = Number(it.returned_qty) || 0
-    if (!back) return it
+    const refundedBack = Number(it.returned_qty) || 0
+    const doorBack = Number(it.rejected_qty) || 0
+    if (!refundedBack && !doorBack) return it
     changed = true
-    return { ...it, ordered_qty: it.qty, qty: Math.max(0, Number(it.qty) - back) }
+    rejectedValue += Number(it.price) * doorBack
+    return { ...it, ordered_qty: it.qty, qty: Math.max(0, Number(it.qty) - refundedBack - doorBack) }
   })
   if (!changed) return o
+  const off = refunded + rejectedValue - extra
   return {
     ...o,
     order_items: items,
     refunded,
     exchange_extra: extra,
+    rejected_value: rejectedValue,
     paid_subtotal: o.subtotal,
     paid_total: o.total,
-    subtotal: Number(o.subtotal) - refunded + extra,
-    total: o.total == null ? o.total : Number(o.total) - refunded + extra,
+    subtotal: Number(o.subtotal) - off,
+    total: o.total == null ? o.total : Number(o.total) - off,
   }
 }
 
@@ -160,7 +167,7 @@ export function toPanelOrder(o) {
     uuid: o.id,
     id: o.order_id || o.id,
     // SUNDAY's in-between steps read as "pending" on the panel's four-step board.
-    status: OPEN_STATUSES.includes(o.status) ? 'pending' : o.status === 'returned' ? 'cancelled' : o.status,
+    status: OPEN_STATUSES.includes(o.status) ? 'pending' : o.status,
     sunday_status: o.status,
     customer_name: o.full_name,
     customer_phone: o.mobile,
@@ -181,6 +188,8 @@ export function toPanelOrder(o) {
       qty: Number(it.qty ?? it.quantity) || 0,
       price: Number(it.price) || 0,
       returned_qty: Number(it.returned_qty) || 0,
+      // Handed back to the rider at the door (✕ on the item).
+      rejected_qty: Number(it.rejected_qty) || 0,
       // Exchanged in Support → Returns & exchanges: what it was before.
       exchanged_from: it.exchanged_from || null,
     })),
@@ -204,6 +213,20 @@ export async function fetchOrders() {
 // is placed), and puts it back if a delivered order is moved off delivered.
 // update_order_status does both in one transaction — see
 // supabase/migrations/*_admin_panel.sql. `orderId` is the order number.
+// ✕ on one line of an order: the customer handed those pieces back to the
+// rider. They go back into stock and stop counting as sold; `undo` reverses
+// it. `line` is the line's place in the order (order_items[n].id).
+export async function rejectOrderItem(orderId, line, undo = false) {
+  const { error } = await supabase.rpc('admin_reject_item', { p_order_id: orderId, p_line: line, p_undo: undo })
+  if (error) {
+    console.error('[Supabase] rejectOrderItem failed:', error.message)
+    const m = error.message || ''
+    if (m.includes('admin_reject_item')) return { error: 'The ✕ migration hasn’t gone out yet — try again in a minute.' }
+    return { error: m.startsWith('Not enough stock') || m.startsWith('This order') ? m : "Couldn't update that item. Try again." }
+  }
+  return { error: null }
+}
+
 export async function updateOrderStatus(orderId, status) {
   const { error } = await supabase.rpc('update_order_status', {
     p_order_id: orderId,
