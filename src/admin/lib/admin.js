@@ -112,7 +112,11 @@ export async function getSession() {
 // (ordered_qty, paid_subtotal, paid_total) for the order's own details.
 function netOfRefunds(o) {
   const refunded = Number(o.refunded_amount) || 0
-  let changed = refunded > 0
+  // An exchange to a dearer product: the difference the rider collected with
+  // the second parcel is revenue too. (A cheaper one's difference was
+  // refunded, so it's in refunded_amount.)
+  const extra = Number(o.exchange_extra) || 0
+  let changed = refunded > 0 || extra > 0
   const items = (o.order_items || []).map((it) => {
     const back = Number(it.returned_qty) || 0
     if (!back) return it
@@ -124,10 +128,11 @@ function netOfRefunds(o) {
     ...o,
     order_items: items,
     refunded,
+    exchange_extra: extra,
     paid_subtotal: o.subtotal,
     paid_total: o.total,
-    subtotal: Number(o.subtotal) - refunded,
-    total: o.total == null ? o.total : Number(o.total) - refunded,
+    subtotal: Number(o.subtotal) - refunded + extra,
+    total: o.total == null ? o.total : Number(o.total) - refunded + extra,
   }
 }
 
@@ -171,6 +176,8 @@ export function toPanelOrder(o) {
       qty: Number(it.qty ?? it.quantity) || 0,
       price: Number(it.price) || 0,
       returned_qty: Number(it.returned_qty) || 0,
+      // Exchanged in Support → Returns & exchanges: what it was before.
+      exchanged_from: it.exchanged_from || null,
     })),
   }
 }
@@ -265,13 +272,15 @@ export async function createReturn({ orderId, reason, kind = 'exchange' }) {
 // Completes a request: an exchange swaps the sizes in stock, a refund puts
 // the pieces back and takes the money off the order's revenue, a reject
 // just closes it. See supabase-migration-returns-processing.sql.
-export async function processReturn({ id, action, items = [], refund = 0, note = '' }) {
+export async function processReturn({ id, action, items = [], refund = 0, note = '', fee = 0, feePaid = true }) {
   const { data, error } = await supabase.rpc('admin_process_return', {
     p_return_id: id,
     p_action: action,
     p_items: items,
     p_refund: refund,
     p_note: note,
+    p_fee: fee,
+    p_fee_paid: feePaid,
   })
   if (error) {
     console.error('[Supabase] processReturn failed:', error.message)

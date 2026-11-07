@@ -1,3 +1,4 @@
+import { DELIVERY } from '@/lib/catalog'
 import { supabase } from './supabaseClient.js'
 import { fetchSetting, saveSetting } from './siteSettings.js'
 import { INFO_PAGES } from '../content/info-pages.js'
@@ -60,7 +61,9 @@ export async function findOrder(orderId, contact) {
   return { order: data, error: null }
 }
 
-export async function sendRequest({ orderId, contact, kind, reason, items, details }) {
+// `refundTo`: the bKash number money goes back to (a refund, or a cheaper
+// exchange's difference).
+export async function sendRequest({ orderId, contact, kind, reason, items, details, refundTo = '' }) {
   const { data, error } = await supabase.rpc('support_request_return', {
     p_order_id: orderId,
     p_contact: contact,
@@ -68,6 +71,7 @@ export async function sendRequest({ orderId, contact, kind, reason, items, detai
     p_reason: reason,
     p_items: items,
     p_details: details,
+    ...(refundTo ? { p_refund_to: refundTo } : {}),
   })
   // The function's own messages ("Pick at least one item.") are written for
   // the customer, so they're shown as they are.
@@ -76,6 +80,40 @@ export async function sendRequest({ orderId, contact, kind, reason, items, detai
 }
 
 // ---------- Admin ----------
+
+// An exchange's money, from what was asked (or done): the price difference
+// over the pieces (+ the customer owes it, − we owe it back).
+export function exchangeDiff(items) {
+  return (items || []).reduce((sum, it) => {
+    const to = it.to_price ?? it.exchange_price
+    const from = it.from_price ?? it.price
+    if (to == null || from == null) return sum
+    return sum + (Number(to) - Number(from)) * (Number(it.qty) || 1)
+  }, 0)
+}
+
+// The refund of a cheaper exchange has been sent by bKash.
+export async function markExchangeRefund(returnId, trx) {
+  const { data, error } = await supabase.rpc('admin_mark_exchange_refund', { p_return_id: returnId, p_trx: trx || '' })
+  if (error) console.error('[Supabase] admin_mark_exchange_refund failed:', error.message)
+  return { resolution: data, error }
+}
+
+// The admin's own email to an order's customer (send-customer-email).
+export async function emailCustomer(orderId, subject, text) {
+  try {
+    const { data, error } = await supabase.functions.invoke('send-customer-email', { body: { orderId, subject, text } })
+    if (error) {
+      let msg = error.message
+      try { msg = (await error.context.clone().json()).error || msg } catch { /* not JSON */ }
+      return { error: msg }
+    }
+    return { error: data?.error || null, to: data?.to }
+  } catch (err) {
+    return { error: err.message }
+  }
+}
+
 
 export function isNewRequest(r) {
   return r.source === 'customer' && !r.seen_at
@@ -105,3 +143,32 @@ export async function updateRequest(id, status, adminNote) {
   if (error) console.error('[Supabase] updateRequest failed:', error.message)
   return { error }
 }
+
+// An exchange's second parcel: its delivery charge, by zone. The courier
+// keeps it. Only "Wrong size ordered" — the customer's own pick — is theirs
+// to pay; every other reason is our mistake, so the shop carries the charge
+// and it comes off revenue.
+export const EXCHANGE_FEE = { inside: DELIVERY.insideDhaka, outside: DELIVERY.outsideDhaka }
+
+export const EXCHANGE_REASONS = [
+  'Wrong size ordered',
+  'Wrong size received',
+  'Wrong item received',
+  'Faulty or damaged product received',
+]
+
+// Reasons the customer pays the delivery for — including the wording older
+// requests were sent with.
+const CUSTOMER_PAYS = ['Wrong size ordered', 'Wrong size', 'Other']
+
+export function exchangeIsFree(reason) {
+  return !CUSTOMER_PAYS.includes(reason)
+}
+
+// Refunds are only for our mistakes — a faulty piece, the wrong item, or a
+// wrong size we sent when the right size is out of stock (otherwise it's
+// exchanged). A size the customer ordered wrong is exchanged, never
+// refunded. The first delivery stays the customer's; the pickup parcel is
+// ours. The money goes back by bKash to the number they give.
+export const REFUND_REASONS = ['Wrong size received', 'Wrong item received', 'Faulty or damaged product received']
+export const REFUND_WRONG_SIZE = 'Wrong size received'
