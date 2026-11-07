@@ -7,17 +7,19 @@ import InfoTip from './InfoTip.jsx'
 import { IconX } from './Icons.jsx'
 // The form's own id and colour-tag rules (a circular import is fine here:
 // both are only called once the page is running).
-import { nextProductId as nextId, tagOf } from './ProductForm.jsx'
+import { nextProductId as nextId, newGroupFor } from './ProductForm.jsx'
 
 // Add another colour, right after a product is added (or from its edit
 // form). The piece is the lead: the shop shows its card only, and its
 // product page shows every colour as a small photo. Each colour here needs
-// just its photos and how many there are — everything else (name, price,
-// sizes, chart, details) is the lead's. A colour name is optional.
+// just its photos and how many there are — everything else (sizes, chart,
+// details) is the lead's, and its price starts at the lead's. A colour name is optional.
 export default function QuickColours({ base, existingIds, onDone }) {
   const tracked = stockMap(base) !== null
   const blank = () => ({
+    name: '',
     variant: '',
+    price: String(base.price ?? ''),
     images: [],
     stock: Object.fromEntries((base.sizes || []).map((s) => [s, 0])),
   })
@@ -28,7 +30,9 @@ export default function QuickColours({ base, existingIds, onDone }) {
   const [error, setError] = useState('')
   const fileRef = useRef(null)
   const usedIds = useRef([...existingIds, base.id])
-  const group = useRef(base.colourGroup || tagOf(base.name))
+  // A group of the piece's own: another piece that happens to have the
+  // same name never ends up in it.
+  const group = useRef(base.colourGroup || newGroupFor(base))
 
   async function pickPhotos(e) {
     const files = [...(e.target.files || [])]
@@ -49,6 +53,7 @@ export default function QuickColours({ base, existingIds, onDone }) {
 
   async function save() {
     if (form.images.length === 0) return setError('Add at least one photo of this colour.')
+    if (!(Number(form.price) > 0)) return setError('Enter a price above 0.')
     setSaving(true)
     setError('')
 
@@ -58,7 +63,11 @@ export default function QuickColours({ base, existingIds, onDone }) {
         ...base,
         id,
         sku: id.toUpperCase(),
+        // Its own name if one is typed (Green Tea), else the piece's.
+        name: form.name.trim() || base.name,
         variant: form.variant.trim(),
+        price: Number(form.price),
+        imageFocus: {},
         images: form.images,
         sizesOut: [],
         stock: tracked ? form.stock : null,
@@ -96,7 +105,7 @@ export default function QuickColours({ base, existingIds, onDone }) {
           <InfoTip>
             <p>The shop shows one card for this piece — this colour, the lead — sliding through its own photos only.</p>
             <p>Open it and every colour shows as a small photo under the price; tapping one shows that colour's photos.</p>
-            <p>Colours belong together by name: anything named {base.name} is a colour of this piece.</p>
+            <p>Each colour can have its own price and its own name — leave them as they are to use {base.name}'s. They stay colours of one piece either way.</p>
           </InfoTip>
         </h3>
         <button type="button" className="courier-btn mono qc-done" onClick={onDone}>Done</button>
@@ -120,7 +129,7 @@ export default function QuickColours({ base, existingIds, onDone }) {
       <section className="pf-sec qc-box">
         <div className="pf-sec-head">
           <span className="pf-sec-title mono">+ ADD ANOTHER COLOUR</span>
-          <InfoTip>Just this colour's photos and how many of each size there are. Name, price, sizes, size chart and details are copied from {base.name}. Press Upload colour, then add the next one, or Done.</InfoTip>
+          <InfoTip>Just this colour's photos, how many of each size there are, and its price (it starts at {base.name}'s). Sizes, size chart and details are copied from {base.name}; so is the name, unless you type this colour's own. Press Upload colour, then add the next one, or Done.</InfoTip>
         </div>
 
         <div className="qc-grid">
@@ -168,6 +177,23 @@ export default function QuickColours({ base, existingIds, onDone }) {
             <label className="pf-field qc-name">
               <span className="pf-flabel mono">COLOUR NAME (OPTIONAL)</span>
               <input value={form.variant} onChange={(e) => setForm((f) => ({ ...f, variant: e.target.value }))} placeholder="e.g. Green" maxLength={40} />
+            </label>
+
+            <label className="pf-field qc-name">
+              <span className="pf-flabel mono">PRICE (৳)</span>
+              <input
+                type="number"
+                min="1"
+                inputMode="numeric"
+                value={form.price}
+                onChange={(e) => setForm((f) => ({ ...f, price: e.target.value }))}
+                placeholder={String(base.price ?? '')}
+              />
+            </label>
+
+            <label className="pf-field qc-name">
+              <span className="pf-flabel mono">PRODUCT NAME (OPTIONAL)</span>
+              <input value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} placeholder={base.name} maxLength={80} />
             </label>
           </div>
         </div>

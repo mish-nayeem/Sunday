@@ -840,6 +840,7 @@ function toRow(p, isNewRecord) {
     details: p.details ?? '',
     size_chart: p.sizeChart ?? null,
     colour_group: p.colourGroup?.trim() || null,
+    image_focus: Object.fromEntries(Object.entries(p.imageFocus || {}).filter(([url]) => (p.images || []).includes(url))),
     publish_at: fromLocalInput(p.publishAt),
   }
   // Untracked products keep whatever count and status they already had.
