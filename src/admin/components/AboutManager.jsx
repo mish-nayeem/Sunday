@@ -1,4 +1,6 @@
 import { useEffect, useState } from 'react'
+import useDraft from '../lib/useDraft.js'
+import DraftNote from './DraftNote.jsx'
 import { supabase } from '../lib/supabaseClient.js'
 import { imgUrl, uploadImage } from '../lib/images.js'
 import {
@@ -10,6 +12,8 @@ import {
 } from '../lib/about.js'
 import { IconX } from './Icons.jsx'
 import AdminBox from './AdminBox.jsx'
+import RichEditor from './RichEditor.jsx'
+import { isHtml, plainText, textToHtml } from '../lib/richText.js'
 import './about-manager.css'
 
 export default function AboutManager() {
@@ -19,6 +23,9 @@ export default function AboutManager() {
   const [error, setError] = useState('')
   const [newHeading, setNewHeading] = useState('')
   const [newText, setNewText] = useState('')
+  // The words of a half-made block stay in this browser (the photo has to
+  // be picked again — a browser can't keep a file for later).
+  const kept = useDraft('about:new', { newHeading, newText }, (v) => { setNewHeading(v.newHeading); setNewText(v.newText) })
   const [confirmId, setConfirmId] = useState(null)
   // The photo picked for the next block, shown before it's uploaded.
   const [pick, setPick] = useState(null) // { file, url }
@@ -48,7 +55,7 @@ export default function AboutManager() {
 
   async function addBlock() {
     if (!pick) return setError('Pick the photo for this block.')
-    if (!newHeading.trim() && !newText.trim()) return setError('Write the heading or text that goes next to the photo.')
+    if (!newHeading.trim() && !plainText(newText).trim()) return setError('Write the heading or text that goes next to the photo.')
 
     setBusy(true)
     setError('')
@@ -142,6 +149,7 @@ export default function AboutManager() {
 
   return (
     <div className="ab-grid stretch about-m">
+      <DraftNote draft={kept} />
       {error && <div className="err-banner mono ab-wide">{error}</div>}
 
       {/* ---- Add a block ---- */}
@@ -170,13 +178,9 @@ export default function AboutManager() {
               maxLength={120}
             />
             <span className="ab-label">TEXT</span>
-            <textarea
-              className="ab-input"
-              placeholder="The words beside the photo…"
-              value={newText}
-              onChange={(e) => setNewText(e.target.value)}
-              rows={4}
-            />
+            {/* Written like a document: bold, headings, sizes, colours,
+                lists, space (the same editor as the Support pages). */}
+            <RichEditor value={newText} onChange={setNewText} placeholder="The words beside the photo…" />
           </div>
         </div>
         <div className="ab-row about-add-actions">
@@ -203,7 +207,7 @@ export default function AboutManager() {
                 <img src={imgUrl(b.image_url, { w: 200 })} alt="" />
                 <div>
                   {b.heading && <b>{b.heading}</b>}
-                  {b.description && <p>{b.description}</p>}
+                  {b.description && <p>{plainText(b.description)}</p>}
                 </div>
               </div>
             ))
@@ -216,7 +220,7 @@ export default function AboutManager() {
         wide
         title="BLOCKS"
         side={loading ? '' : `${visible.length} showing${blocks.length > visible.length ? ` · ${blocks.length - visible.length} hidden` : ''}`}
-        tip="Each block in the page's order — ↑ ↓ moves it. The heading and text save on their own when you click away. Hidden blocks stay here but don't show on the page."
+        tip="Each block in the page's order — ↑ ↓ moves it. The heading saves on its own when you click away; the text, written like a document (bold, headings, sizes, colours, lists, space), saves with its Save text button. Hidden blocks stay here but don't show on the page."
       >
         {loading && <div className="ab-empty mono">Loading…</div>}
 
@@ -246,13 +250,7 @@ export default function AboutManager() {
                   maxLength={120}
                   onBlur={(e) => saveField(b, 'heading', e.target.value)}
                 />
-                <textarea
-                  className="ab-input"
-                  defaultValue={b.description || ''}
-                  placeholder="Text"
-                  rows={5}
-                  onBlur={(e) => saveField(b, 'description', e.target.value)}
-                />
+                <BlockText block={b} onSave={(html) => saveField(b, 'description', html)} />
               </div>
 
               <div className="about-tools mono">
@@ -276,6 +274,31 @@ export default function AboutManager() {
           ))}
         </div>
       </AdminBox>
+    </div>
+  )
+}
+
+// A block's text in the editor, with its own Save: the page changes only
+// when it's pressed. Plain text from before the editor opens as paragraphs.
+function BlockText({ block, onSave }) {
+  const start = isHtml(block.description) ? block.description : textToHtml(block.description)
+  const [html, setHtml] = useState(start)
+  const [saving, setSaving] = useState(false)
+  useEffect(() => { setHtml(isHtml(block.description) ? block.description : textToHtml(block.description)) }, [block.description])
+  const dirty = html !== start
+  return (
+    <div className="about-text-edit">
+      <RichEditor value={html} onChange={setHtml} placeholder="Text" />
+      <div className="ab-row about-text-save">
+        <button
+          type="button"
+          className="ab-btn mono"
+          disabled={!dirty || saving}
+          onClick={async () => { setSaving(true); await onSave(html); setSaving(false) }}
+        >
+          {saving ? 'Saving…' : dirty ? 'Save text' : 'Saved'}
+        </button>
+      </div>
     </div>
   )
 }

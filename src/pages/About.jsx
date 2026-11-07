@@ -2,6 +2,8 @@ import React, { useEffect, useState } from 'react';
 import { imgUrl } from '@/lib/storage';
 import { fetchAboutBlocks } from '@/admin/lib/about.js';
 import attentionImage from '@/assets/attention.jpeg';
+import { isHtml, cleanHtml } from '@/admin/lib/richText.js';
+import '@/admin/components/rich-text.css';
 
 // The built-in page, used until the first block is added in Admin → About us.
 const DEFAULT_BLOCKS = [
@@ -43,11 +45,16 @@ export default function About() {
                 ? <h1 className="font-heading text-[30px] md:text-[40px] leading-tight mb-4">{b.heading}</h1>
                 : <h2 className="font-heading text-[26px] md:text-[32px] leading-tight mb-4">{b.heading}</h2>
             )}
-            {b.description && (
+            {/* Written in the admin's editor (bold, headings, colours, lists):
+                shown as written, cleaned again here. Older plain text still
+                shows as paragraphs. */}
+            {b.description && (isHtml(b.description) ? (
+              <div className="rich-text text-[15px] text-graphite" dangerouslySetInnerHTML={{ __html: cleanHtml(b.description) }} />
+            ) : (
               <div className="text-[15px] leading-relaxed text-graphite space-y-4">
                 {b.description.split(/\n{2,}/).map((para) => <p key={para}>{para}</p>)}
               </div>
-            )}
+            ))}
           </div>
         </section>
       ))}

@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import InfoTip from './InfoTip.jsx'
 import { fetchCoupons, createCoupon, setCouponActive, deleteCoupon, describeCoupon } from '../lib/coupons.js'
+import { pruneCouponBoxes } from '../lib/promos.js'
 import './coupon-manager.css'
 import { unsold } from '../lib/admin.js'
 
@@ -45,8 +46,11 @@ export default function CouponManager({ orders }) {
   const [error, setError] = useState('')
 
   async function load() {
-    const { coupons } = await fetchCoupons()
+    const { coupons, error } = await fetchCoupons()
     setCoupons(coupons)
+    // The coupon boxes (Website → Banners) follow: a deleted code is taken
+    // out of its box, a switched-off one stops showing.
+    if (!error) pruneCouponBoxes(coupons || [])
   }
 
   useEffect(() => { load() }, [])

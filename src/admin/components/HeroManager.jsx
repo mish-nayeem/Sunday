@@ -10,10 +10,15 @@ import {
   slidesFor,
   isVideo,
 } from '../lib/hero.js'
-import { fetchHeroExtras, saveSetting, DEFAULT_HERO_BUTTON } from '../lib/siteSettings.js'
+import { fetchHeroExtras, saveSetting, fetchSetting, DEFAULT_HERO_BUTTON, DEFAULT_FOOTER_ABOUT } from '../lib/siteSettings.js'
+import useDraft from '../lib/useDraft.js'
+import DraftNote from './DraftNote.jsx'
+import TickerManager from './TickerManager.jsx'
 import { useCountdown } from './DropCountdown.jsx'
 import InfoTip from './InfoTip.jsx'
 import FocusPicker from './FocusPicker.jsx'
+import FocusDrag from './FocusDrag.jsx'
+import { parseFocus, formatFocus, focusStyle, MAX_ZOOM } from '../lib/focus.js'
 import FeatureManager from './FeatureManager.jsx'
 import SharePreviewsBox from './SharePreviewsBox.jsx'
 import { IconX } from './Icons.jsx'
@@ -37,7 +42,8 @@ export default function HeroManager({ drops = [], products = [] }) {
 
   const [button, setButton] = useState(DEFAULT_HERO_BUTTON)
   const [countdown, setCountdown] = useState({ label: 'NEXT DROP', at: '' })
-  const [saved, setSaved] = useState({ button: '', countdown: '' })
+  const [saved, setSaved] = useState({ button: '', countdown: '', footer: '' })
+  const [footer, setFooter] = useState({ heading: '', text: '' })
   const [note, setNote] = useState({})
 
   async function load() {
@@ -54,9 +60,25 @@ export default function HeroManager({ drops = [], products = [] }) {
       setButton(button)
       const cd = countdown ? { label: countdown.label || 'NEXT DROP', at: toLocal(countdown.at) } : { label: 'NEXT DROP', at: '' }
       setCountdown(cd)
-      setSaved({ button: JSON.stringify(button), countdown: JSON.stringify(cd) })
+      setSaved((s) => ({ ...s, button: JSON.stringify(button), countdown: JSON.stringify(cd) }))
+    })
+    fetchSetting('footer_about').then(({ value }) => {
+      const f = { heading: String(value?.heading ?? ''), text: String(value?.text ?? '') }
+      setFooter(f)
+      setSaved((s) => ({ ...s, footer: JSON.stringify(f) }))
     })
   }, [])
+
+  // The footer words stay in this browser until saved.
+  const keptFooter = useDraft('footer:about', footer, setFooter, { enabled: saved.footer !== '' })
+
+  async function saveFooter() {
+    const clean = { heading: footer.heading.trim(), text: footer.text.trim() }
+    const { error } = await saveSetting('footer_about', clean)
+    setFooter(clean)
+    setNote((n) => ({ ...n, footer: error ? "Couldn't save — try again." : 'Saved — live in the footer.' }))
+    if (!error) { setSaved((s) => ({ ...s, footer: JSON.stringify(clean) })); keptFooter.saved(clean) }
+  }
 
   async function upload(file, device) {
     setBusy(true)
@@ -265,6 +287,33 @@ export default function HeroManager({ drops = [], products = [] }) {
         </div>
       </Box>
 
+      {/* ---- Ticker ---- */}
+      <div className="hm-ticker"><TickerManager /></div>
+
+      {/* ---- Footer text ---- */}
+      <Box
+        title="FOOTER TEXT"
+        wide
+        tip="The words at the bottom of every page, over the email sign-up: a heading and a line under it. Leave a box empty to go back to the built-in words."
+      >
+        <DraftNote draft={keptFooter} />
+        <label className="pf-field">
+          <span className="hm-flabel mono">HEADING</span>
+          <input value={footer.heading} maxLength={40} onChange={(e) => { setFooter({ ...footer, heading: e.target.value }); setNote({}) }} placeholder={DEFAULT_FOOTER_ABOUT.heading} />
+        </label>
+        <label className="pf-field">
+          <span className="hm-flabel mono">TEXT</span>
+          <textarea rows={3} value={footer.text} maxLength={400} onChange={(e) => { setFooter({ ...footer, text: e.target.value }); setNote({}) }} placeholder={DEFAULT_FOOTER_ABOUT.text} />
+        </label>
+        <div className="hm-foot-preview">
+          <b>{footer.heading.trim() || DEFAULT_FOOTER_ABOUT.heading}</b>
+          <p>{footer.text.trim() || DEFAULT_FOOTER_ABOUT.text}</p>
+        </div>
+        <div className="hm-actions">
+          <button type="button" className="courier-btn mono" onClick={saveFooter} disabled={JSON.stringify(footer) === saved.footer}>Save footer text</button>
+          {note.footer && <span className="hm-note mono">{note.footer}</span>}
+        </div>
+      </Box>
 
       {/* ---- Link previews for shared links ---- */}
       <SharePreviewsBox />
@@ -294,15 +343,77 @@ function Box({ title, tip, wide = false, children }) {
 // One hero photo, shown in the shape of the screen it's for and cropped the
 // way the site will crop it, with its settings under it.
 function SlideCard({ s, device, first, last, busy, confirm, onMove, onPatch, onAskDelete, onCancelDelete, onDelete }) {
+  // A photo stays put until ✥ Adjust is pressed — so scrolling the page on a
+  // phone can't nudge it by accident — and a move or zoom is only kept when
+  // Save is pressed. A video keeps the arrows below.
+  const video = isVideo(s.image_url)
+  const [draft, setDraft] = useState(null)
+  const editing = draft !== null
+  const [dx, dy, dz] = parseFocus(editing ? draft : s.focus)
+  const changed = editing && draft !== formatFocus(...parseFocus(s.focus))
+  const tags = (
+    <>
+      {!s.active && <span className="hm-hidden mono">HIDDEN</span>}
+      <span className="hm-pos mono">{s.device === 'all' || !s.device ? 'BOTH' : device === 'mobile' ? 'PHONE' : 'PC'}</span>
+    </>
+  )
   return (
     <div className={`hm-card ${s.active ? '' : 'off'}`}>
-      <div className={`hm-shot ${device}`}>
-        {isVideo(s.image_url)
-          ? <video src={s.image_url} muted loop autoPlay playsInline style={{ objectPosition: s.focus || 'center' }} />
-          : <img src={imgUrl(s.image_url, { w: device === 'mobile' ? 360 : 640 })} alt="" style={{ objectPosition: s.focus || 'center' }} />}
-        {!s.active && <span className="hm-hidden mono">HIDDEN</span>}
-        <span className="hm-pos mono">{s.device === 'all' || !s.device ? 'BOTH' : device === 'mobile' ? 'PHONE' : 'PC'}</span>
-      </div>
+      {video ? (
+        <div className={`hm-shot ${device}`}>
+          <video src={s.image_url} muted loop autoPlay playsInline style={{ objectPosition: s.focus || 'center' }} />
+          {tags}
+        </div>
+      ) : (
+        <FocusDrag
+          className={`hm-shot ${device} ${editing ? 'editing' : ''}`}
+          src={imgUrl(s.image_url, { w: device === 'mobile' ? 360 : 640 })}
+          value={editing ? draft : s.focus}
+          zoom
+          disabled={!editing || busy}
+          liveHint="Let go · then Save"
+          onChange={(focus) => setDraft(focus)}
+        >
+          {tags}
+        </FocusDrag>
+      )}
+
+      {!video && (editing ? (
+        <div className="hm-adjust mono">
+          <label className="hm-zoom">
+            <span aria-hidden="true">−</span>
+            <input
+              type="range"
+              min="1"
+              max={MAX_ZOOM}
+              step="0.05"
+              value={dz}
+              aria-label="Zoom"
+              onChange={(e) => setDraft(formatFocus(dx, dy, Number(e.target.value)))}
+            />
+            <span aria-hidden="true">+</span>
+            <b>{Math.round(dz * 100)}%</b>
+          </label>
+          <div className="hm-adjust-row">
+            <button type="button" className="hm-vis" onClick={() => setDraft(formatFocus(50, 50, 1))} disabled={busy}>Reset</button>
+            <span className="hm-adjust-end">
+              <button type="button" className="hm-vis" onClick={() => setDraft(null)} disabled={busy}>Cancel</button>
+              <button
+                type="button"
+                className="hm-vis on hm-save"
+                disabled={busy || !changed}
+                onClick={() => { onPatch({ focus: draft }); setDraft(null) }}
+              >
+                Save
+              </button>
+            </span>
+          </div>
+        </div>
+      ) : (
+        <button type="button" className="hm-vis hm-adjust-btn mono" onClick={() => setDraft(formatFocus(...parseFocus(s.focus)))} disabled={busy}>
+          ✥ Adjust · move & zoom
+        </button>
+      ))}
 
       <input
         className="hm-name mono"
@@ -315,7 +426,7 @@ function SlideCard({ s, device, first, last, busy, confirm, onMove, onPatch, onA
         }}
       />
 
-      <FocusPicker value={s.focus} disabled={busy} onChange={(focus) => onPatch({ focus })} />
+      {video && <FocusPicker value={s.focus} disabled={busy} onChange={(focus) => onPatch({ focus })} />}
 
       <div className="hm-card-row mono">
         <select value={s.device || 'all'} disabled={busy} onChange={(e) => onPatch({ device: e.target.value })} aria-label="Shows on">
@@ -364,7 +475,7 @@ function Preview({ slides, button, countdown }) {
         <div className="hm-frame-screen">
           {cur && (isVideo(cur.image_url)
             ? <video key={cur.id} src={cur.image_url} muted loop autoPlay playsInline style={{ objectPosition: cur.focus || 'center' }} />
-            : <img src={imgUrl(cur.image_url, { w: isPhone ? 360 : 720 })} alt="" style={{ objectPosition: cur.focus || 'center' }} />)}
+            : <img src={imgUrl(cur.image_url, { w: isPhone ? 360 : 720 })} alt="" style={focusStyle(cur.focus)} />)}
           <div className="hm-frame-shade" />
           <div className="hm-frame-center mono">
             {left && (

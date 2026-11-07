@@ -1,4 +1,5 @@
 import { supabase } from './supabaseClient.js'
+import { fetchSetting, saveSetting } from './siteSettings.js'
 
 // Drop lookbooks: one row per photo (a "look"), made in Admin → Lookbook.
 
@@ -70,4 +71,19 @@ export async function reorderLooks(looks) {
 
 export function lookbookPath(drop) {
   return `/lookbook/${encodeURIComponent(drop)}`
+}
+
+// Lookbooks hidden from the shop (Admin → Lookbook → 👁 on a drop): kept in
+// site_settings 'lookbook_hidden' as a list of drop keys. A hidden lookbook
+// leaves the EXPLORE menu and its page sends visitors to the drop's
+// products; the photos and the products stay as they are.
+export const LOOKBOOK_HIDDEN_KEY = 'lookbook_hidden'
+
+export async function fetchHiddenLookbooks() {
+  const { value } = await fetchSetting(LOOKBOOK_HIDDEN_KEY)
+  return new Set(Array.isArray(value) ? value.map(dropKey) : [])
+}
+
+export async function saveHiddenLookbooks(keys) {
+  return saveSetting(LOOKBOOK_HIDDEN_KEY, [...keys].map(dropKey))
 }

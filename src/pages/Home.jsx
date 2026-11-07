@@ -2,12 +2,14 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Volume2, VolumeX, ShoppingBag } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { imgUrl } from '@/lib/storage';
+import { focusStyle, focusZoom } from '@/lib/focus';
 import heroImage from '@/assets/hero.jpeg';
 import { fetchHeroSlides, slidesFor, isVideo, PHONE_QUERY } from '@/admin/lib/hero.js';
-import { fetchHeroExtras, DEFAULT_HERO_BUTTON } from '@/admin/lib/siteSettings.js';
+import { fetchHeroExtras, DEFAULT_HERO_BUTTON, fetchTicker, fetchTickerSpeed, TICKER_SPEEDS } from '@/admin/lib/siteSettings.js';
 import { useCountdown } from '@/admin/components/DropCountdown.jsx';
 import { fetchFeatures, dropShopLink } from '@/admin/lib/features.js';
 import { jsonLd } from '@/lib/jsonLd';
+import PromoBanners from '@/components/home/PromoBanners';
 
 // The panel saves labels in capitals; the storefront writes in sentence case.
 const sentence = (text) => (text ? text[0].toUpperCase() + text.slice(1).toLowerCase() : '');
@@ -187,12 +189,12 @@ function Hero({ slides, button, countdown }) {
         ) : (
           <img
             key={s.id}
-            src={s.id === 'default' ? s.image_url : imgUrl(s.image_url, isPhone ? 900 : 2000)}
+            src={s.id === 'default' ? s.image_url : imgUrl(s.image_url, Math.min(3000, Math.round((isPhone ? 900 : 2000) * focusZoom(s.focus))))}
             alt={s.label || 'SUNDAY campaign'}
             fetchpriority={i === 0 ? 'high' : undefined}
             loading={i === 0 ? 'eager' : 'lazy'}
             className={cls}
-            style={{ objectPosition: s.focus || 'center' }}
+            style={focusStyle(s.focus)}
           />
         );
       })}
@@ -222,6 +224,34 @@ function Hero({ slides, button, countdown }) {
     </section>
   );
 }
+// The strip under the hero (Admin → Homepage → Ticker): the saved lines
+// scrolling right to left at the chosen speed. Two copies side by side so
+// the loop has no gap. Nothing at all when no lines are saved.
+function Ticker() {
+  const [lines, setLines] = useState([]);
+  const [speed, setSpeed] = useState(5);
+  useEffect(() => {
+    Promise.all([fetchTicker(), fetchTickerSpeed()]).then(([l, s]) => { setLines(l); setSpeed(s); }).catch(() => {});
+  }, []);
+  if (!lines.length) return null;
+  // Short lists repeat so the strip is always full.
+  const reps = Math.max(1, Math.ceil(8 / lines.length));
+  const run = Array.from({ length: reps }, () => lines).flat();
+  return (
+    <div className="bg-ink text-white overflow-hidden border-y border-ink" aria-label={lines.join(' · ')} role="marquee">
+      <div className="sunday-ticker flex w-max" style={{ animationDuration: `${TICKER_SPEEDS[speed - 1]}s` }}>
+        {[0, 1].map((half) => (
+          <div key={half} className="flex shrink-0" aria-hidden={half === 1 || undefined}>
+            {run.map((l, i) => (
+              <span key={i} className="px-6 py-2.5 text-[11px] uppercase tracking-[0.16em] whitespace-nowrap">{l}<span className="pl-12 opacity-50">✦</span></span>
+            ))}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 export default function Home() {
   const [slides, setSlides] = useState(null); // null until loaded
   const [extras, setExtras] = useState({ button: DEFAULT_HERO_BUTTON, countdown: null });
@@ -256,6 +286,8 @@ export default function Home() {
       }) }} />
 
       <Hero slides={slides} button={extras.button} countdown={extras.countdown} />
+      <Ticker />
+      <PromoBanners place="home" className="px-4 md:px-6 pt-4" />
 
       {features.length > 0 && (
         <div className="pt-2 md:pt-3">

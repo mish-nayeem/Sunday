@@ -39,6 +39,7 @@ import LookbookManager from '../components/LookbookManager.jsx'
 import CollectionManager from '../components/CollectionManager.jsx'
 import DropReport from '../components/DropReport.jsx'
 import AboutManager from '../components/AboutManager.jsx'
+import PromoManager from '../components/PromoManager.jsx'
 import LinkGenerator from '../components/LinkGenerator.jsx'
 import AudienceManager from '../components/AudienceManager.jsx'
 import ManualOrderForm from '../components/ManualOrderForm.jsx'
@@ -134,6 +135,7 @@ const SITE_TABS = [
   { key: 'lookbook', label: 'Lookbook' },
   { key: 'menu', label: 'Side menu' },
   { key: 'about', label: 'About us' },
+  { key: 'banners', label: 'Banners' },
 ]
 const SITE_KEYS = SITE_TABS.map((t) => t.key)
 
@@ -148,6 +150,7 @@ const TAB_LABELS = {
   lookbook: 'Lookbook',
   menu: 'Side menu',
   about: 'About us page',
+  banners: 'Banners',
   support: 'Support',
 }
 
@@ -2308,6 +2311,7 @@ export default function Admin() {
           </>
         )}
         {tab === 'about' && <AboutManager />}
+        {!loading && tab === 'banners' && <PromoManager products={products} />}
         {!loading && tab === 'support' && (
           <>
             <div className="subtabs mono">

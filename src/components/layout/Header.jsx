@@ -22,6 +22,8 @@ export default function Header() {
   const location = useLocation();
   const menus = useMenus();
   const drops = menus.explore.filter((m) => m.drop);
+  // EXPLORE leaves out lookbooks the admin hid; the drops still shop.
+  const lookDrops = drops.filter((d) => !menus.lookHidden?.has(String(d.drop).trim().replace(/\s+/g, ' ').toLowerCase()));
   const isHome = location.pathname === '/';
   const overHero = isHome && !pastHero;
 
@@ -175,10 +177,10 @@ export default function Header() {
                 </li>
               )}
               {/* EXPLORE: the drops' lookbooks only. */}
-              {menuTab === 'explore' && drops.map((d) => (
+              {menuTab === 'explore' && lookDrops.map((d) => (
                 <li key={d.key}><Link to={lookbookLink(d.drop)} className="text-graphite hover:text-ink">{d.label}</Link></li>
               ))}
-              {menuTab === 'explore' && drops.length === 0 && (
+              {menuTab === 'explore' && lookDrops.length === 0 && (
                 <li className="normal-case tracking-normal text-[13px] text-graphite">New lookbooks will show here.</li>
               )}
             </ul>

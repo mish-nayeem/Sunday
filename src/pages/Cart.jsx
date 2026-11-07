@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { getCart, updateCartItem, removeFromCart, subscribeCart } from '@/lib/cartStore';
 import { imgUrl } from '@/lib/storage';
 import { DELIVERY, formatPrice } from '@/lib/catalog';
+import PromoBanners from '@/components/home/PromoBanners';
 import AddOneMore, { useBagCatalog } from '@/components/cart/AddOneMore';
 
 export default function Cart() {
@@ -65,6 +66,7 @@ export default function Cart() {
           <span>{formatPrice(subtotal)}</span>
         </div>
         <p className="text-[12px] text-graphite mb-5">Delivery is added at checkout: {formatPrice(DELIVERY.insideDhaka)} inside Dhaka, {formatPrice(DELIVERY.outsideDhaka)} outside.</p>
+        <PromoBanners place="cart" className="mb-4" />
         <Link to="/checkout" className="h-12 w-full bg-ink text-white text-[13px] flex items-center justify-center hover:bg-ink/85">
           Checkout
         </Link>
