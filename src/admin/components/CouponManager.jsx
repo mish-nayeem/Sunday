@@ -1,3 +1,5 @@
+import useDraft from '../lib/useDraft.js'
+import DraftNote from './DraftNote.jsx'
 import { useEffect, useMemo, useState } from 'react'
 import InfoTip from './InfoTip.jsx'
 import { fetchCoupons, createCoupon, setCouponActive, deleteCoupon, describeCoupon } from '../lib/coupons.js'
@@ -42,6 +44,8 @@ function numOrNull(v) {
 export default function CouponManager({ orders }) {
   const [coupons, setCoupons] = useState([])
   const [draft, setDraft] = useState(BLANK)
+  // A half-made coupon stays in this browser until it's created.
+  const kept = useDraft('coupon:new', draft, setDraft)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
 
@@ -124,8 +128,9 @@ export default function CouponManager({ orders }) {
 
   return (
     <>
+      <DraftNote draft={kept} />
       <form className="pform cp-form" onSubmit={handleCreate}>
-        <div className="pform-head"><h3 className="display">New coupon</h3></div>
+        <div className="pform-head"><h3 className="display">New coupon</h3><InfoTip>Codes are secret until someone types one. To show a code on the website, write it in a coupon box in Website → Banners — customers can copy it from there.</InfoTip></div>
         <div className="pf-grid">
           <label className="pf-field">
             <span className="mono">CODE <InfoTip>What customers type at checkout, e.g. EID10. Capital letters, numbers, - or _, 3 to 24 characters.</InfoTip></span>

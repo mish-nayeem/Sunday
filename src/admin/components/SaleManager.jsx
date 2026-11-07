@@ -1,3 +1,5 @@
+import useDraft from '../lib/useDraft.js'
+import DraftNote from './DraftNote.jsx'
 import { useEffect, useMemo, useState } from 'react'
 import InfoTip from './InfoTip.jsx'
 import { listSales, createSale, setSaleActive, deleteSale, salePrice } from '../lib/sales.js'
@@ -26,6 +28,8 @@ function when(iso) {
 export default function SaleManager({ products }) {
   const [sales, setSales] = useState([])
   const [draft, setDraft] = useState(BLANK)
+  // A half-made sale stays in this browser until it's created.
+  const kept = useDraft('sale:new', draft, setDraft)
   const [search, setSearch] = useState('')
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
@@ -129,8 +133,9 @@ export default function SaleManager({ products }) {
 
   return (
     <>
+      <DraftNote draft={kept} />
       <form className="pform cp-form" onSubmit={handleCreate}>
-        <div className="pform-head"><h3 className="display">New sale</h3></div>
+        <div className="pform-head"><h3 className="display">New sale</h3><InfoTip>A running sale makes its own banner on the website — on chosen products with the product's photo, with a countdown to the end. Website → Banners says which pages it shows on.</InfoTip></div>
         <div className="pf-grid">
           <label className="pf-field">
             <span className="mono">NAME (OPTIONAL) <InfoTip>Shown next to the price, e.g. Eid sale.</InfoTip></span>
