@@ -91,7 +91,10 @@ export function ShareButton({ product }) {
   const [open, setOpen] = useState(false);
   const [copied, setCopied] = useState(false);
   const box = useRef(null);
-  const url = `${window.location.origin}/product/${product.id}`;
+  // Each way of sharing tags its link (?s=…), so an order from it shows
+  // where it came from in Analytics → Where from.
+  const base = `${window.location.origin}/product/${product.id}`;
+  const url = `${base}?s=share`;
   const text = `${product.name}${product.variant ? `, ${product.variant}` : ''} — SUNDAY`;
 
   useEffect(() => {
@@ -112,7 +115,7 @@ export function ShareButton({ product }) {
 
   const copy = async () => {
     try {
-      await navigator.clipboard.writeText(url);
+      await navigator.clipboard.writeText(`${base}?s=copy`);
       setCopied(true);
       setTimeout(() => { setCopied(false); setOpen(false); }, 1200);
     } catch { /* no clipboard */ }
@@ -129,9 +132,9 @@ export function ShareButton({ product }) {
         <div className="absolute right-0 top-full mt-2 w-48 bg-white border border-rule shadow-sm py-1 z-20" role="menu">
           <button type="button" role="menuitem" onClick={copy} className={item}>{copied ? 'Link copied' : 'Copy link'}</button>
           <a role="menuitem" className={item} target="_blank" rel="noreferrer"
-            href={`https://wa.me/?text=${encodeURIComponent(`${text} ${url}`)}`}>WhatsApp</a>
+            href={`https://wa.me/?text=${encodeURIComponent(`${text} ${base}?s=whatsapp`)}`}>WhatsApp</a>
           <a role="menuitem" className={item} target="_blank" rel="noreferrer"
-            href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}`}>Facebook</a>
+            href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(`${base}?s=facebook`)}`}>Facebook</a>
         </div>
       )}
     </div>
