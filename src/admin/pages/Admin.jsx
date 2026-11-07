@@ -8,6 +8,10 @@ import {
   deleteProducts,
   updateOrderStatus,
   computeStats,
+  orderMoney,
+  courierReturned,
+  setReturnFeePaid,
+  COD_FEE_RATE,
   dailySeries,
   monthlySeries,
   salesByAttribution,
@@ -778,6 +782,79 @@ export default function Admin() {
 
   // The open order's details, in sections: the pieces, the money, who and
   // where, this number's history, courier, and what to do next.
+  // Delivered: where the money went — the courier's cut and what's ours.
+  // Returned: the delivery charge, Paid / Unpaid.
+  function renderMoneySplit(o) {
+    const m = orderMoney(o)
+    if (o.status === 'delivered' || m.expected) {
+      return (
+        <div className="osplit">
+          <div className="osplit-head mono">
+            AFTER THE COURIER
+            <InfoTip>
+              <p>The courier keeps the delivery charge and {Math.round(COD_FEE_RATE * 100)}% of the product price it collects.</p>
+              <p><b>Receivable amount</b> = product price − {Math.round(COD_FEE_RATE * 100)}%: what reaches you. {m.expected ? 'It is added to Revenue once this order is delivered.' : 'This order is delivered, so it is in Revenue.'}</p>
+            </InfoTip>
+          </div>
+          <div className="orow dim"><span>Courier · delivery</span><span className="mono">− {taka(m.delivery)}</span></div>
+          <div className="orow dim"><span>Courier · {Math.round(COD_FEE_RATE * 100)}% of {taka(m.collected ?? m.items)}</span><span className="mono">− {taka(m.codFee)}</span></div>
+          {m.exchange > 0 && (
+            <div className="orow dim">
+              <span title="The exchange parcel or the return pickup">Courier · 2nd parcel {taka(m.exchange)} · {m.exchangeUnpaid ? 'paid by us' : 'customer paid'}</span>
+              <span className="mono">− {taka(m.exchangeUnpaid)}</span>
+            </div>
+          )}
+          <div className="orow osplit-you">
+            <span>Receivable amount{m.expected ? ' · after delivery' : ' · in revenue'}</span>
+            <span className="mono">{m.receivable < 0 ? `− ${taka(-m.receivable)}` : taka(m.receivable)}</span>
+          </div>
+        </div>
+      )
+    }
+    if (courierReturned(o)) {
+      const paid = m.returnFeePaid
+      return (
+        <div className="osplit">
+          <div className="osplit-head mono">
+            RETURN DELIVERY CHARGE · {taka(m.delivery)}
+            <InfoTip>
+              <p>The courier charges the delivery even when the parcel comes back.</p>
+              <p><b>Paid</b> — the customer paid it (or the bKash advance covered it): nothing comes off your revenue.</p>
+              <p><b>Unpaid</b> — they didn't: {taka(m.delivery)} comes off your revenue.</p>
+            </InfoTip>
+          </div>
+          <div className="osplit-pick mono" role="radiogroup" aria-label="Return delivery charge">
+            {[true, false].map((v) => (
+              <button
+                key={String(v)}
+                type="button"
+                role="radio"
+                aria-checked={paid === v}
+                className={`osplit-opt ${paid === v ? 'on' : ''} ${v ? 'paid' : 'unpaid'}`}
+                disabled={savingId === o.id}
+                onClick={async () => {
+                  if (paid === v) return
+                  setSavingId(o.id)
+                  const { error } = await setReturnFeePaid(o.id, v)
+                  setSavingId(null)
+                  if (error) setLoadError(error)
+                  else setOrders((prev) => prev.map((x) => (x.id === o.id ? { ...x, return_fee_paid: v } : x)))
+                }}
+              >
+                {v ? 'Paid' : 'Unpaid'}
+              </button>
+            ))}
+          </div>
+          <div className="orow osplit-you">
+            <span>Your revenue</span>
+            <span className="mono">{m.toShop < 0 ? `− ${taka(-m.toShop)}` : taka(0)}</span>
+          </div>
+        </div>
+      )
+    }
+    return null
+  }
+
   function renderOrderSheet(o) {
     const h = lookupCustomer(customers, o.customer_phone)
     const history = returns.filter((r) => r.order_id === o.id && r.resolution && r.resolution.action !== 'reject')
@@ -865,6 +942,7 @@ export default function Admin() {
             <span>{advance > 0 ? 'Cash to collect' : 'Total (COD)'}</span>
             <span className="mono">{taka((o.paid_total ?? o.total ?? o.subtotal) - advance)}</span>
           </div>
+          {renderMoneySplit(o)}
         </section>
 
         <section className="osec">
@@ -1412,9 +1490,9 @@ export default function Admin() {
               <StatCard
                 icon={<IconCash />}
                 tone="good"
-                label="REVENUE COLLECTED"
+                label="REVENUE"
                 value={taka(stats.revenue)}
-                note={`Delivered orders only · ${taka(stats.openValue)} still to collect`}
+                note={`After the courier's ${Math.round(COD_FEE_RATE * 100)}%${stats.returnLoss ? ` and ${taka(stats.returnLoss)} of unpaid return charges` : ''} · ${taka(stats.openValue)} still to come in`}
               />
             </div>
 

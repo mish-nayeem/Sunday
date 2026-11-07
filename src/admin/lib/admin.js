@@ -46,6 +46,9 @@ export function returnFeePaid(o) {
 // One order's money, split three ways: what the customer paid for the
 // products, what the courier keeps, and what's left for us. Only delivered
 // and returned orders have any — the rest haven't settled yet.
+// A parcel the courier brought back to us (SUNDAY's 'returned').
+export const courierReturned = (o) => o?.status === 'returned' || o?.sunday_status === 'returned'
+
 export function orderMoney(o) {
   const fee = Number(o.delivery_fee) || 0
   if (o.status === 'delivered') {
@@ -79,7 +82,9 @@ export function orderMoney(o) {
     const codFee = Math.round(items * COD_FEE_RATE * 100) / 100
     return { items, delivery: fee, codFee, courier: 0, toShop: 0, receivable: items - codFee, expected: true }
   }
-  if (o.status === 'returned') {
+  // SUNDAY's courier-returned parcels show as cancelled on the order board
+  // (sunday_status keeps 'returned'), but their delivery charge still counts.
+  if (o.status === 'returned' || o.sunday_status === 'returned') {
     const paid = returnFeePaid(o)
     return { items: 0, delivery: fee, codFee: 0, courier: fee, toShop: paid ? 0 : -fee, returnFeePaid: paid }
   }
@@ -401,25 +406,49 @@ export async function fetchAdminProducts() {
 
 // ---------- Derived stats ----------
 
+// The returned order's delivery charge: paid by the customer or not.
+export async function setReturnFeePaid(orderId, paid) {
+  const { error } = await supabase.rpc('admin_set_return_fee', { p_order_id: orderId, p_paid: paid })
+  if (error) {
+    console.error('[Supabase] setReturnFeePaid failed:', error.message)
+    if ((error.message || '').includes('admin_set_return_fee')) return { error: 'The return-fee migration hasn’t gone out yet — try again in a minute.' }
+    return { error: "Couldn't save that. Try again." }
+  }
+  return { error: null }
+}
+
 // Everything here is computed from the orders already fetched, so the
 // dashboard never needs a second round trip for its summary numbers.
 export function computeStats(orders) {
   const delivered = orders.filter((o) => o.status === 'delivered')
-  const cancelled = orders.filter((o) => o.status === 'cancelled')
+  const cancelled = orders.filter((o) => o.status === 'cancelled' && !courierReturned(o))
   const pending = orders.filter((o) => o.status === 'pending')
   const shipped = orders.filter((o) => o.status === 'shipped')
+  const returned = orders.filter(courierReturned)
 
   // Anything still owed to us: placed but not yet delivered or cancelled.
   const open = [...pending, ...shipped]
 
-  // Revenue counts delivered orders only — COD money isn't real until it lands.
-  const revenue = delivered.reduce((sum, o) => sum + itemsNet(o), 0)
-  const openValue = open.reduce((sum, o) => sum + itemsNet(o), 0)
+  // Revenue is what reaches us: delivered orders' products less the
+  // courier's COD fee (the delivery charge was never ours — the courier keeps
+  // it), less the delivery charge of any returned parcel nobody paid for.
+  // COD money isn't real until it lands, so nothing open counts.
+  let revenue = 0
+  let courierTook = 0
+  let returnLoss = 0
+  for (const o of [...delivered, ...returned]) {
+    const m = orderMoney(o)
+    revenue += m.toShop
+    courierTook += m.courier
+    if (m.toShop < 0) returnLoss -= m.toShop
+  }
+  // Still to collect: what those orders will bring in after the courier.
+  const openValue = open.reduce((sum, o) => sum + orderMoney(o).receivable, 0)
 
   // Pieces, not orders — one order can carry several units of several products.
   // Cancelled orders never counted as a sale, so they're left out.
   const unitsSold = orders
-    .filter((o) => o.status !== 'cancelled')
+    .filter((o) => !unsold(o))
     .reduce(
       (sum, o) => sum + (o.order_items || []).reduce((s, it) => s + Number(it.qty), 0),
       0
@@ -430,10 +459,13 @@ export function computeStats(orders) {
     unitsSold,
     delivered: delivered.length,
     cancelled: cancelled.length,
+    returned: returned.length,
     pending: pending.length,
     shipped: shipped.length,
     open: open.length,
     revenue,
+    courierTook,
+    returnLoss,
     openValue,
   }
 }
@@ -468,7 +500,7 @@ export function topProducts(orders, limit = 5) {
   const tally = new Map()
 
   orders
-    .filter((o) => o.status !== 'cancelled')
+    .filter((o) => !unsold(o))
     .forEach((o) => {
       ;(o.order_items || []).forEach((item) => {
         // Grouped by id rather than name — two products sharing a name (a
@@ -505,7 +537,7 @@ export function monthlySeries(orders, months = 6) {
   const byKey = new Map(buckets.map((b) => [b.key, b]))
 
   orders
-    .filter((o) => o.status !== 'cancelled')
+    .filter((o) => !unsold(o))
     .forEach((o) => {
       const d = new Date(o.created_at)
       const bucket = byKey.get(`${d.getFullYear()}-${d.getMonth()}`)
@@ -531,7 +563,7 @@ function groupSales(orders, products, column, fallback) {
   const tally = new Map()
 
   orders
-    .filter((o) => o.status !== 'cancelled')
+    .filter((o) => !unsold(o))
     .forEach((o) => {
       ;(o.order_items || []).forEach((it) => {
         const product = catalog.get(String(it.product_id))
@@ -566,7 +598,7 @@ export function salesByAttribution(orders, fallback = 'Direct / no link') {
   const tally = new Map()
 
   orders
-    .filter((o) => o.status !== 'cancelled')
+    .filter((o) => !unsold(o))
     .forEach((o) => {
       const label = o.utm_source || fallback
       const prev = tally.get(label) || { name: label, orders: 0, value: 0 }
