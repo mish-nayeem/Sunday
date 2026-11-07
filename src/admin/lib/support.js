@@ -1,7 +1,7 @@
 import { DELIVERY } from '@/lib/catalog'
 import { supabase } from './supabaseClient.js'
 import { fetchSetting, saveSetting } from './siteSettings.js'
-import { INFO_PAGES } from '../content/info-pages.js'
+import { INFO_PAGES, SUPPORT_TABS } from '../content/info-pages.js'
 
 // The Support page: its copy (built-in defaults from src/content/info-pages.js,
 // overridden page by page from Admin → Support → Support pages) and the
@@ -9,6 +9,23 @@ import { INFO_PAGES } from '../content/info-pages.js'
 
 export const PAGES_KEY = 'support_pages'
 export const PORTAL_KEY = 'support_portal'
+export const TABS_KEY = 'support_tabs'
+
+// The tab row: [{ slug, label, on }] in order — the admin's (Admin →
+// Support → Support pages), or the built-in one. `on: false` keeps a tab
+// (and its copy) but takes it off the row. A built-in tab the saved row
+// doesn't know yet (added to the site later) joins at the end.
+export async function fetchSupportTabs() {
+  const { value, error } = await fetchSetting(TABS_KEY)
+  const list = Array.isArray(value) ? value.filter((t) => t && t.slug && t.label) : null
+  if (!list || !list.length) return { tabs: SUPPORT_TABS.map((t) => ({ ...t, on: true })), error }
+  const have = new Set(list.map((t) => t.slug))
+  return { tabs: [...list, ...SUPPORT_TABS.filter((t) => !have.has(t.slug)).map((t) => ({ ...t, on: true }))], error }
+}
+
+export async function saveSupportTabs(tabs) {
+  return saveSetting(TABS_KEY, tabs)
+}
 
 export const DEFAULT_PORTAL = {
   heading: 'Return & Exchange',

@@ -1,22 +1,35 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Link, Navigate, useParams } from 'react-router-dom';
 import { INFO_PAGES, SUPPORT_TABS } from '@/admin/content/info-pages.js';
-import { fetchSupportPages } from '@/admin/lib/support.js';
+import { fetchSupportPages, fetchSupportTabs } from '@/admin/lib/support.js';
+import { cleanHtml } from '@/admin/lib/richText.js';
+import '@/admin/components/rich-text.css';
 import ReturnPortal from '@/components/support/ReturnPortal';
 
 // /support/<tab>: every policy page and the Return & Exchange Portal behind
-// one row of tabs. The copy comes from Admin → Support → Support pages.
+// one row of tabs. The row (names, order, which show, pages added) and the
+// copy come from Admin → Support → Support pages. A tab taken off the row
+// still opens at its own address (the footer links to some directly).
 export default function Support() {
-  const { slug = 'refunds' } = useParams();
-  const tab = SUPPORT_TABS.find((t) => t.slug === slug);
+  const { slug: asked } = useParams();
   const [pages, setPages] = useState(INFO_PAGES);
+  const [tabs, setTabs] = useState(() => SUPPORT_TABS.map((t) => ({ ...t, on: true })));
+  const [ready, setReady] = useState(false);
   const tabsRef = useRef(null);
 
   useEffect(() => {
     let alive = true;
-    fetchSupportPages().then(({ pages: p }) => alive && setPages(p));
+    Promise.all([fetchSupportPages(), fetchSupportTabs()]).then(([{ pages: p }, { tabs: t }]) => {
+      if (!alive) return;
+      setPages(p);
+      setTabs(t);
+      setReady(true);
+    });
     return () => { alive = false; };
   }, []);
+
+  const row = tabs.filter((t) => t.on !== false);
+  const slug = asked || row[0]?.slug || 'refunds';
 
   // On a phone the row scrolls sideways; keep the open tab in view.
   useEffect(() => {
@@ -24,13 +37,15 @@ export default function Support() {
     if (on) tabsRef.current.scrollTo({ left: on.offsetLeft - 16 });
   }, [slug]);
 
-  if (!tab) return <Navigate to="/support" replace />;
   const page = slug === 'portal' ? null : pages[slug];
+  // An address with nothing behind it (a tab since deleted) goes to the
+  // first tab — once the admin's tabs are in, so a new tab isn't bounced.
+  if (ready && slug !== 'portal' && !page) return <Navigate to="/support" replace />;
 
   return (
     <div className="px-4 md:px-6 pb-20">
       <nav ref={tabsRef} className="flex gap-5 overflow-x-auto hide-scrollbar border-b border-rule py-3 -mx-4 md:-mx-6 px-4 md:px-6" aria-label="Support">
-        {SUPPORT_TABS.map((t) => (
+        {row.map((t) => (
           <Link
             key={t.slug}
             to={`/support/${t.slug}`}
@@ -94,7 +109,11 @@ function InfoBody({ page }) {
           return (
             <section key={i}>
               {block.heading && <h2 className="font-heading text-[22px] mb-2">{block.heading}</h2>}
-              <p className="text-[15px] leading-relaxed">{block.body}</p>
+              {/* Written in the admin's editor: its formatting, cleaned.
+                  Older sections are plain text, as before. */}
+              {block.html != null
+                ? <div className="rich-text text-[15px]" dangerouslySetInnerHTML={{ __html: cleanHtml(block.html) }} />
+                : <p className="text-[15px] leading-relaxed whitespace-pre-line">{block.body}</p>}
             </section>
           );
         })}

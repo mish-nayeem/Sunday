@@ -200,3 +200,13 @@ export const SUPPORT_TABS = [
   { slug: 'terms', label: 'Terms of Service' },
   { slug: 'portal', label: 'Return & Exchange Portal' },
 ]
+
+// Pages outside the tab row. SUNDAY keeps every page on the row (the footer
+// links straight to Privacy and Terms too), so there are none.
+export const OWN_PAGES = []
+
+// The copy a page starts from: its built-in one, or for a page the admin
+// added, an empty page with its name.
+export function basePage(slug, label = '') {
+  return INFO_PAGES[slug] || { eyebrow: 'SUPPORT', title: label || 'Support', intro: '', blocks: [{ type: 'text', heading: '', body: '' }] }
+}
