@@ -11,6 +11,7 @@ import {
   orderMoney,
   courierReturned,
   setReturnFeePaid,
+  rejectOrderItem,
   COD_FEE_RATE,
   dailySeries,
   monthlySeries,
@@ -93,10 +94,11 @@ import AdsRoas from '../components/AdsRoas.jsx'
 import EmailCampaigns from '../components/EmailCampaigns.jsx'
 import SocialTracking from '../components/SocialTracking.jsx'
 import MarketingGuide from '../components/MarketingGuide.jsx'
-import { isNewRequest } from '../lib/support.js'
+import { isNewRequest, exchangeDiff, exchangeIsFree, EXCHANGE_FEE } from '../lib/support.js'
 import NoticeCenter from '../components/NoticeCenter.jsx'
 import InfoTip from '../components/InfoTip.jsx'
 import EyeToggle from '../components/EyeToggle.jsx'
+import OrderBulkBar from '../components/OrderBulkBar.jsx'
 import { hasDraft } from '../lib/useDraft.js'
 import { pageHelp, PANEL_HELP } from '../lib/help.js'
 import '../styles/base.css'
@@ -104,7 +106,7 @@ import './admin.css'
 import './admin-theme.css'
 import './admin-mobile.css'
 
-const STATUSES = ['pending', 'shipped', 'delivered', 'cancelled']
+const STATUSES = ['pending', 'shipped', 'delivered', 'returned', 'cancelled']
 
 // Order sheet → send (or resend) the order confirmation email, showing
 // Brevo's own answer when it fails — a missing secret, an unverified sender.
@@ -430,7 +432,6 @@ function PackingSlip({ order }) {
   const due = total - advance
 
   return (
-    <div className="slip-root">
       <div className="slip">
         <div className="slip-head">
           <div>
@@ -497,7 +498,6 @@ function PackingSlip({ order }) {
           Check the parcel in front of the rider · sundayclothin@gmail.com
         </div>
       </div>
-    </div>
   )
 }
 
@@ -542,7 +542,18 @@ export default function Admin() {
   const [notifying, setNotifying] = useState(null)
   const [courierBusy, setCourierBusy] = useState(null)
   const [courierPick, setCourierPick] = useState({})
-  const [slipOrder, setSlipOrder] = useState(null)
+  // The orders whose packing slips are printing — one, or several from
+  // Orders → Select, each on its own page.
+  const [slips, setSlips] = useState(null)
+  const setSlipOrder = (o) => setSlips(o ? [o] : null)
+  // Orders → Select: tick order cards, then act on them all at once.
+  const [orderSelecting, setOrderSelecting] = useState(false)
+  const [orderPicked, setOrderPicked] = useState(() => new Set())
+  const [orderBulkBusy, setOrderBulkBusy] = useState('')
+  const [orderBulkNote, setOrderBulkNote] = useState('')
+  // ✕ on an order line: which one is asking, and which is saving.
+  const [rejectAsk, setRejectAsk] = useState(null)
+  const [rejectBusy, setRejectBusy] = useState(null)
   const [loading, setLoading] = useState(false)
   const [loadError, setLoadError] = useState('')
   const [savingId, setSavingId] = useState(null)
@@ -871,6 +882,8 @@ export default function Admin() {
   function renderOrderSheet(o) {
     const h = lookupCustomer(customers, o.customer_phone)
     const history = returns.filter((r) => r.order_id === o.id && r.resolution && r.resolution.action !== 'reject')
+    // An exchange or refund asked for and not done yet.
+    const asked = returns.filter((r) => r.order_id === o.id && (r.status === 'open' || r.status === 'approved'))
     const advance = Number(o.advance_amount) || 0
     return (
       <>
@@ -896,33 +909,113 @@ export default function Admin() {
         </header>
 
         <section className="osec">
-          <div className="osec-label mono">ITEMS · {(o.order_items || []).reduce((n, it) => n + Number(it.ordered_qty ?? it.qty), 0)} pcs</div>
+          <div className="osec-label mono">
+            ITEMS · {(o.order_items || []).reduce((n, it) => n + Number(it.ordered_qty ?? it.qty), 0)} pcs{' '}
+            <InfoTip>
+              <p><b>✕ on an item</b> — the customer kept the rest but handed this one back to the rider. It goes back into stock, comes off the cash to collect and stops counting as sold. Then set the order to <b>delivered</b> for the rest.</p>
+              <p>Tap ✕ again (Undo) if it was a mistake.</p>
+              <p>Whole parcel came back (couldn't reach the customer, or refused)? Set the status to <b>returned</b> instead — every piece goes back into stock.</p>
+            </InfoTip>
+          </div>
           {(o.order_items || []).map((it) => {
             const ordered = it.ordered_qty ?? it.qty
+            const door = Number(it.rejected_qty) || 0
+            const refundedBack = Number(it.returned_qty) || 0
             const src = productsById.get(String(it.product_id))?.images?.[0]
+            const canCross = !['cancelled', 'returned'].includes(o.status)
             return (
-              <div className="oitem" key={it.id}>
+              <div className={`oitem ${door ? 'crossed' : ''}`} key={it.id}>
                 <span className="oitem-thumb">{src && <img src={imgUrl(src, { w: 100 })} alt="" />}</span>
                 <span className="oitem-name">
                   {it.product_name}
                   <span className="mono dim">
                     {' '}· {it.size} × {ordered}
-                    {ordered !== it.qty && <span className="ditem-back"> · {ordered - it.qty} returned</span>}
+                    {it.exchanged_from && <span className="ditem-swap"> · exchanged from {it.exchanged_from}</span>}
+                    {refundedBack > 0 && <span className="ditem-back"> · {refundedBack} refunded</span>}
+                    {door > 0 && <span className="ditem-back"> · returned at door, back in stock</span>}
                   </span>
+                  {rejectAsk === it.id && (
+                    <span className="oitem-ask mono">
+                      {door ? 'Undo — this piece was delivered after all?' : 'Customer handed this back to the rider?'}
+                      <button
+                        type="button"
+                        className="ab-yes"
+                        disabled={rejectBusy === it.id}
+                        onClick={async () => {
+                          setRejectBusy(it.id)
+                          const { error } = await rejectOrderItem(o.id, it.id, door > 0)
+                          setRejectBusy(null)
+                          setRejectAsk(null)
+                          if (error) setLoadError(error)
+                          else reload()
+                        }}
+                      >
+                        {rejectBusy === it.id ? '…' : 'Yes'}
+                      </button>
+                      <button type="button" className="ab-no" onClick={() => setRejectAsk(null)}>No</button>
+                    </span>
+                  )}
                 </span>
-                <span className="mono">{taka(it.price * ordered)}</span>
+                <span className="mono oitem-price">{taka(it.price * ordered)}</span>
+                {canCross && (
+                  <button
+                    type="button"
+                    className={`oitem-x ${door ? 'on' : ''}`}
+                    title={door ? 'Undo — put it back on the order' : 'Returned at the door — back into stock'}
+                    aria-label={door ? `Undo return of ${it.product_name}` : `${it.product_name} returned at the door`}
+                    onClick={() => setRejectAsk(rejectAsk === it.id ? null : it.id)}
+                  >
+                    {door ? '↺' : '✕'}
+                  </button>
+                )}
               </div>
             )
           })}
           {(!o.order_items || o.order_items.length === 0) && <div className="mono dim">No line items recorded.</div>}
-          {history.map((r) => (
-            <div className="ditem-history mono" key={r.id}>
-              {r.resolution.action === 'exchange'
-                ? `Exchanged ${(r.resolution.items || []).map((x) => `${x.product_name} ${x.from_size} → ${x.to_size} ×${x.qty}`).join(', ')}`
-                : `Refunded ${taka(r.resolution.refund)} · ${(r.resolution.items || []).map((x) => `${x.product_name} ${x.size} ×${x.qty}`).join(', ')} back in stock`}
-              {' · '}{shortDate(r.resolution.at || r.processed_at)}
-            </div>
-          ))}
+          {/* An exchange or refund asked for and not done yet: what, and the money it means. */}
+          {asked.map((r) => {
+            const diff = r.kind === 'exchange' ? exchangeDiff(r.items) : 0
+            const fee = r.kind === 'exchange' && !exchangeIsFree(r.reason) ? (o.delivery_zone === 'outside' ? EXCHANGE_FEE.outside : EXCHANGE_FEE.inside) : 0
+            const refund = r.kind === 'refund' ? (r.items || []).reduce((n, x) => n + Number(x.price || 0) * (Number(x.qty) || 1), 0) : 0
+            return (
+              <div className="ditem-history ditem-asked mono" key={`ask-${r.id}`}>
+                {r.status === 'approved' ? 'Accepted' : 'Requested'} {r.kind === 'refund' ? 'refund' : 'exchange'} · {r.reason}
+                {(r.items || []).map((x, i) => (
+                  <div key={i}>
+                    {x.product_name} {x.size} ×{x.qty}
+                    {(x.exchange_product_name || x.exchange_size) && ` → ${x.exchange_product_name || x.product_name} ${x.exchange_size || ''}`}
+                  </div>
+                ))}
+                {r.kind === 'exchange' && diff > 0 && <div>Rider to collect {taka(diff + fee)} (difference {taka(diff)}{fee ? ` + delivery ${taka(fee)}` : ''})</div>}
+                {r.kind === 'exchange' && diff < 0 && <div>We refund {taka(-diff)} by bKash to {r.refund_to || '—'}{fee ? ` · rider collects delivery ${taka(fee)}` : ''}</div>}
+                {r.kind === 'exchange' && diff === 0 && <div>{fee ? `Rider collects delivery ${taka(fee)}` : 'Nothing to collect — delivery on us'}</div>}
+                {r.kind === 'refund' && <div>Refund about {taka(refund)} by bKash to {r.refund_to || '—'}</div>}
+              </div>
+            )
+          })}
+          {/* Every exchange and refund on this order: what changed, and its money. */}
+          {history.map((r) => {
+            const res = r.resolution
+            const swap = (x) => x.to_product_name && String(x.to_product_id) !== String(x.product_id)
+              ? `${x.product_name} ${x.from_size} → ${x.to_product_name} ${x.to_size}`
+              : `${x.product_name} ${x.from_size} → ${x.to_size}`
+            return (
+              <div className="ditem-history mono" key={r.id}>
+                {res.action === 'exchange'
+                  ? `Exchanged ${(res.items || []).map((x) => `${swap(x)} ×${x.qty}`).join(', ')}`
+                  : `Refunded ${taka(res.refund)} · ${(res.items || []).map((x) => `${x.product_name} ${x.size} ×${x.qty}`).join(', ')} back in stock`}
+                {' · '}{shortDate(res.at || r.processed_at)}
+                {res.action === 'exchange' && Number(res.extra_due) > 0 && <div>Price difference + {taka(res.extra_due)} · collected by the rider with the new piece</div>}
+                {res.action === 'exchange' && Number(res.refund_due) > 0 && (
+                  <div>
+                    Price difference − {taka(res.refund_due)} · refund by bKash to {res.refund_to || '—'}
+                    {res.refund_sent_at ? ` · sent ${shortDate(res.refund_sent_at)}${res.refund_trx ? ` (${res.refund_trx})` : ''}` : ' · NOT SENT YET'}
+                  </div>
+                )}
+                {Number(res.fee) > 0 && <div>Second parcel {taka(res.fee)} · {res.fee_paid === false ? 'paid by us' : 'paid by the customer'}</div>}
+              </div>
+            )
+          })}
         </section>
 
         <section className="osec">
@@ -951,9 +1044,15 @@ export default function Admin() {
           {o.refunded > 0 && (
             <div className="orow ditem-refund"><span>Refunded</span><span className="mono">− {taka(o.refunded)}</span></div>
           )}
+          {o.rejected_value > 0 && (
+            <div className="orow ditem-refund"><span>Handed back at the door</span><span className="mono">− {taka(o.rejected_value)}</span></div>
+          )}
+          {o.exchange_extra > 0 && (
+            <div className="orow"><span>Exchange price difference (collected)</span><span className="mono">+ {taka(o.exchange_extra)}</span></div>
+          )}
           <div className="orow ototal">
             <span>{advance > 0 ? 'Cash to collect' : 'Total (COD)'}</span>
-            <span className="mono">{taka((o.paid_total ?? o.total ?? o.subtotal) - advance)}</span>
+            <span className="mono">{taka((o.paid_total ?? o.total ?? o.subtotal) - (o.rejected_value || 0) - advance)}</span>
           </div>
           {renderMoneySplit(o)}
         </section>
@@ -1135,7 +1234,8 @@ export default function Admin() {
     // Emails the customer if the new status is one worth telling them about.
     // The status change is already saved, so a mail failure is logged and
     // otherwise ignored rather than shown as a failed update.
-    await sendStatusUpdate(orderId, status)
+    // A parcel the courier brought back isn't news for the customer.
+    if (status !== 'returned') await sendStatusUpdate(orderId, status)
 
     setSavingId(null)
   }
@@ -1150,14 +1250,14 @@ export default function Admin() {
   // afterprint rather than clearing straight away keeps the slip on the page
   // for the browsers that print asynchronously.
   useEffect(() => {
-    if (!slipOrder) return
+    if (!slips?.length) return
 
     // Chrome names a "Save as PDF" file after the document title, so the slip
-    // saves as PC481203.pdf rather than whatever the admin tab was called.
+    // saves as SND-….pdf rather than whatever the admin tab was called.
     const previousTitle = document.title
-    document.title = `${slipOrder.id} · SUNDAY packing slip`
+    document.title = slips.length === 1 ? `${slips[0].id} · SUNDAY packing slip` : `SUNDAY packing slips · ${slips.length} orders`
 
-    const done = () => setSlipOrder(null)
+    const done = () => setSlips(null)
     window.addEventListener('afterprint', done)
     window.print()
 
@@ -1165,7 +1265,7 @@ export default function Admin() {
       window.removeEventListener('afterprint', done)
       document.title = previousTitle
     }
-  }, [slipOrder])
+  }, [slips])
 
   async function handleCourierSend(order) {
     const courier = courierPick[order.id] || COURIERS[0].key
@@ -1238,6 +1338,64 @@ export default function Admin() {
     reload()
   }
 
+  function toggleOrderPick(id) {
+    setOrderPicked((prev) => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  }
+
+  function stopOrderSelecting() {
+    setOrderSelecting(false)
+    setOrderPicked(new Set())
+    setOrderBulkNote('')
+  }
+
+  const pickedOrders = orders.filter((o) => orderPicked.has(o.id))
+
+  // One at a time, so each customer's status email goes out like a manual
+  // change would, and a failure stops on the order it failed on.
+  async function bulkMark(status) {
+    const list = pickedOrders.filter((o) => o.status !== status)
+    let done = 0
+    for (const o of list) {
+      setOrderBulkBusy(`Updating ${done + 1} of ${list.length}…`)
+      await handleStatusChange(o.id, status)
+      done++
+    }
+    setOrderBulkBusy('')
+    const skipped = pickedOrders.length - list.length
+    setOrderBulkNote(`${done} marked ${status}${skipped ? ` · ${skipped} already were` : ''}.`)
+  }
+
+  async function bulkCourier(courier) {
+    const list = pickedOrders.filter((o) => !o.consignment_id && o.status !== 'cancelled')
+    const failed = []
+    let booked = 0
+    for (const o of list) {
+      setOrderBulkBusy(`Booking ${booked + failed.length + 1} of ${list.length}…`)
+      const { error } = await sendToCourier(o.id, courier)
+      if (error) {
+        failed.push(`${o.id}: ${error}`)
+        // No keys / not deployed is the same for every order — stop early.
+        if (/isn.t connected|no API keys/.test(error)) break
+      } else booked++
+    }
+    setOrderBulkBusy('')
+    const skipped = pickedOrders.length - list.length
+    setOrderBulkNote(
+      [
+        `${booked} booked with ${courierLabel(courier)}`,
+        skipped ? `${skipped} skipped (already booked or cancelled)` : '',
+        failed.length ? `${failed.length} failed:\n${failed.slice(0, 5).join('\n')}` : '',
+      ].filter(Boolean).join(' · ')
+    )
+    if (booked) reload()
+  }
+
+
   function stopSelecting() {
     setSelecting(false)
     pickOnly([])
@@ -1295,6 +1453,7 @@ export default function Admin() {
     pending: stats.pending,
     shipped: stats.shipped,
     delivered: stats.delivered,
+    returned: stats.returned,
     cancelled: stats.cancelled,
   }
 
@@ -1675,6 +1834,16 @@ export default function Admin() {
               </div>
               <div className="orders-head-right">
                 <div className="mono dim">{filteredOrders.length} of {orders.length}</div>
+                <button
+                  className={`add-product select-toggle mono ${orderSelecting ? 'on' : ''}`}
+                  onClick={() => (orderSelecting ? stopOrderSelecting() : setOrderSelecting(true))}
+                >
+                  {orderSelecting ? 'Done' : 'Select'}
+                </button>
+                <InfoTip>
+                  <p><b>Select</b> — tap order cards to tick them, then mark them shipped, delivered or returned, print all their packing slips, or book them with a courier, in one go.</p>
+                  <p>Tip: filter PENDING first, then “All” to tick every pending order.</p>
+                </InfoTip>
                 <button className="add-product mono" onClick={() => setAddingOrder(true)}>
                   + New order
                 </button>
@@ -1683,20 +1852,22 @@ export default function Admin() {
 
             {filteredOrders.length === 0 && <div className="empty mono">No matching orders.</div>}
 
-            <div className="olist">
+            <div className={`olist ${orderSelecting ? 'selecting' : ''}`}>
               {filteredOrders.map((o) => {
                 const items = o.order_items || []
                 const first = items[0]
                 const risk = lookupCustomer(customers, o.customer_phone)
                 return (
                   <div
-                    className={`ocard ${o.status} ${expanded === o.id ? 'on' : ''}`}
+                    className={`ocard ${o.status} ${expanded === o.id ? 'on' : ''} ${orderPicked.has(o.id) ? 'picked' : ''}`}
                     key={o.id}
                     role="button"
                     tabIndex={0}
-                    onClick={() => setExpanded(o.id)}
-                    onKeyDown={(e) => { if (e.key === 'Enter') setExpanded(o.id) }}
+                    aria-pressed={orderSelecting ? orderPicked.has(o.id) : undefined}
+                    onClick={() => (orderSelecting ? toggleOrderPick(o.id) : setExpanded(o.id))}
+                    onKeyDown={(e) => { if (e.key === 'Enter') (orderSelecting ? toggleOrderPick(o.id) : setExpanded(o.id)) }}
                   >
+                    {orderSelecting && <span className="ocard-tick" aria-hidden="true">{orderPicked.has(o.id) ? '✓' : ''}</span>}
                     <div className="ocard-name">
                       {/* A long name steps down a size so it still fits in a line or two. */}
                       <span
@@ -1773,7 +1944,22 @@ export default function Admin() {
               })}
             </div>
 
-            {expandedOrder && (
+            {orderSelecting && (
+              <OrderBulkBar
+                count={orderPicked.size}
+                shown={filteredOrders.length}
+                busy={orderBulkBusy}
+                note={orderBulkNote}
+                onAll={() => setOrderPicked(new Set(filteredOrders.map((o) => o.id)))}
+                onNone={() => setOrderPicked(new Set())}
+                onMark={bulkMark}
+                onPrint={() => setSlips(pickedOrders)}
+                onCourier={bulkCourier}
+                onExit={stopOrderSelecting}
+              />
+            )}
+
+            {expandedOrder && !orderSelecting && (
               <OrderSheetFrame onClose={() => setExpanded(null)}>
                 {renderOrderSheet(expandedOrder)}
               </OrderSheetFrame>
@@ -2448,7 +2634,11 @@ export default function Admin() {
       </div>
       </main>
 
-      {slipOrder && <PackingSlip order={slipOrder} />}
+      {slips?.length > 0 && (
+        <div className="slip-root">
+          {slips.map((o) => <PackingSlip key={o.id} order={o} />)}
+        </div>
+      )}
     </div>
   )
 }
