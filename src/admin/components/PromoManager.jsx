@@ -103,7 +103,7 @@ export default function PromoManager({ products }) {
         </ul>
       </AdminBox>
 
-      <AdminBox wide title="WHERE THEY SHOW" tip="Tick the pages each kind of banner appears on. Homepage: under the hero and the ticker. Shop: over the products (a drop's page too). Bag: right above Checkout.">
+      <AdminBox wide title="WHERE THEY SHOW" tip="Tick the pages each kind of banner appears on. Homepage: under the hero. Shop: over the products (a drop's page too). Bag: right above Checkout.">
         <div className="pm-places">
           <div className="pm-places-row pm-places-head mono"><span />{PLACES.map((p) => <span key={p.key}>{p.label}</span>)}</div>
           {KINDS.map((k) => (

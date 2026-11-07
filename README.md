@@ -70,7 +70,6 @@ Admin → Website has five tabs:
 - **Homepage:**
   - hero photos (✥ Adjust moves and zooms, kept on Save);
   - drop sections, the hero button and the countdown;
-  - the **ticker** (off until a line is added);
   - the **footer text**;
   - link previews.
 - **Lookbook:** photos per drop. The 👁 on a drop hides its lookbook from the shop. **Delete lookbook** removes all its photos.

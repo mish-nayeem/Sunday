@@ -136,9 +136,3 @@ html, body {
   to { opacity: 1; }
 }
 .page-in { animation: page-in 0.4s ease-out backwards; }
-
-/* Homepage ticker (Admin → Homepage → Ticker): two copies side by side,
-   slid by half their width, so the loop never shows a gap. */
-@keyframes sunday-ticker { from { transform: translate3d(0, 0, 0); } to { transform: translate3d(-50%, 0, 0); } }
-.sunday-ticker { animation: sunday-ticker 40s linear infinite; }
-@media (prefers-reduced-motion: reduce) { .sunday-ticker { animation: none; } }

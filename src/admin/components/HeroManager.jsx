@@ -13,7 +13,6 @@ import {
 import { fetchHeroExtras, saveSetting, fetchSetting, DEFAULT_HERO_BUTTON, DEFAULT_FOOTER_ABOUT } from '../lib/siteSettings.js'
 import useDraft from '../lib/useDraft.js'
 import DraftNote from './DraftNote.jsx'
-import TickerManager from './TickerManager.jsx'
 import { useCountdown } from './DropCountdown.jsx'
 import InfoTip from './InfoTip.jsx'
 import FocusPicker from './FocusPicker.jsx'
@@ -286,9 +285,6 @@ export default function HeroManager({ drops = [], products = [] }) {
           {note.countdown && <span className="hm-note mono">{note.countdown}</span>}
         </div>
       </Box>
-
-      {/* ---- Ticker ---- */}
-      <div className="hm-ticker"><TickerManager /></div>
 
       {/* ---- Footer text ---- */}
       <Box

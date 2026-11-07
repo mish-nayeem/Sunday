@@ -30,21 +30,10 @@ export const DEFAULT_TICKER = [
   'Delivery all over Bangladesh. Cash on delivery inside Dhaka.',
 ]
 
-// The lines saved in Admin → Homepage → Ticker; none means the strip is off.
 export async function fetchTicker() {
   const { value } = await fetchSetting('ticker')
-  return Array.isArray(value) ? value.map((l) => String(l).trim()).filter(Boolean) : []
-}
-
-// How fast the ticker runs, 1 (slow) to 10 (fast). Each step is the seconds
-// one loop takes.
-export const TICKER_SPEEDS = [90, 75, 62, 52, 40, 33, 27, 22, 17, 13]
-export const DEFAULT_TICKER_SPEED = 5
-
-export async function fetchTickerSpeed() {
-  const { value } = await fetchSetting('ticker_speed')
-  const n = Number(value)
-  return n >= 1 && n <= TICKER_SPEEDS.length ? n : DEFAULT_TICKER_SPEED
+  const lines = Array.isArray(value) ? value.map((l) => String(l).trim()).filter(Boolean) : []
+  return lines.length ? lines : DEFAULT_TICKER
 }
 
 // The homepage hero's button and its optional drop countdown — Admin →
