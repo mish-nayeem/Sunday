@@ -13,6 +13,8 @@ import { sendRestockAlert } from '../lib/email.js'
 import { parseDetails, serializeDetails, mergeLabels, rememberedLabels, rememberLabels } from '../lib/details.js'
 import InfoTip from './InfoTip.jsx'
 import QuickColours from './QuickColours.jsx'
+import DraftNote from './DraftNote.jsx'
+import useDraft from '../lib/useDraft.js'
 import './product-form.css'
 
 const BLANK = {
@@ -27,6 +29,7 @@ const BLANK = {
   isNew: false,
   featured: false,
   bestSeller: false,
+  hidden: false,
   images: [],
   description: '',
   sizes: ['S', 'M', 'L', 'XL'],
@@ -51,6 +54,7 @@ function fromRow(row) {
     isNew: row.is_new,
     featured: row.featured,
     bestSeller: row.best_seller,
+    hidden: Boolean(row.hidden),
     images: row.images ?? [],
     description: row.description ?? '',
     sizes: row.sizes ?? [],
@@ -316,6 +320,20 @@ export default function ProductForm({ existing, copyFrom = null, allProducts = [
   const [addingSize, setAddingSize] = useState(false)
   const [newSize, setNewSize] = useState('')
   const [extraSizes, setExtraSizes] = useState(() => (p.sizes || []).filter((z) => !STANDARD_SIZES.includes(z)))
+
+  // Everything typed is kept in this browser until it's saved, so a form
+  // left half done (tab closed, connection gone) opens again where it was.
+  // Photos already uploaded stay too. Never brings back an id: SUNDAY's
+  // database gives a new product its id when it's saved.
+  const draft = useDraft(
+    existing ? `product:${existing.id}` : copyFrom ? `product:copy:${copyFrom.id}` : 'product:new',
+    { p, detailRows, extraSizes },
+    (v) => {
+      setP((prev) => ({ ...v.p, id: prev.id }))
+      setDetailRows(v.detailRows)
+      setExtraSizes(v.extraSizes)
+    },
+  )
   const sizeChoices = [...STANDARD_SIZES, ...extraSizes.filter((z) => !STANDARD_SIZES.includes(z))]
 
   function toggleSize(z) {
@@ -571,6 +589,8 @@ export default function ProductForm({ existing, copyFrom = null, allProducts = [
 
     setSaving(false)
 
+    draft.clear()
+
     // A new product goes straight on to its other colours, if it has any.
     if (isNewRecord) {
       setQuickBase({ ...p, id: savedId || id, colourGroup: link.group, sku: p.sku?.trim() || id.toUpperCase(), price: Number(p.price) })
@@ -589,6 +609,7 @@ export default function ProductForm({ existing, copyFrom = null, allProducts = [
       return
     }
 
+    draft.clear()
     onDone()
   }
 
@@ -610,9 +631,11 @@ export default function ProductForm({ existing, copyFrom = null, allProducts = [
               + Add another colour
             </button>
           )}
-          <button className="pf-ghost mono" onClick={onCancel}>Cancel</button>
+          <button className="pf-ghost mono" onClick={() => { draft.clear(); onCancel() }}>Cancel</button>
         </div>
       </div>
+
+      <DraftNote draft={draft} />
 
       {copyFrom && (
         <div className="pf-copy-note mono">
@@ -1118,6 +1141,11 @@ export default function ProductForm({ existing, copyFrom = null, allProducts = [
               <input type="checkbox" checked={p.bestSeller} onChange={(e) => set('bestSeller', e.target.checked)} />
               Best seller
               <InfoTip>Puts the product on the Best sellers page (Shop → Best sellers) and in the Best sellers row at the bottom of the home page. Pick 4 or more so the row is full.</InfoTip>
+            </label>
+            <label className="pf-check mono">
+              <input type="checkbox" checked={Boolean(p.hidden)} onChange={(e) => set('hidden', e.target.checked)} />
+              Hide from the shop
+              <InfoTip>Saved, but shoppers can't see or order it anywhere (the 👁 in Product catalog does the same). You can still enter an order for it by hand.</InfoTip>
             </label>
           </div>
         </Box>

@@ -1266,7 +1266,7 @@
 
 /* ---------- Product catalog: drag to set the ALL page order ---------- */
 
-.trow.prow.queue { grid-template-columns: 52px 1.4fr 1fr 100px 1.1fr 110px 30px; }
+.trow.prow.queue { grid-template-columns: 52px 1.4fr 1fr 100px 1.1fr 110px 34px 30px; }
 
 .drag-handle {
   display: flex;
@@ -1594,3 +1594,17 @@ body:has(.trow.dragging) { user-select: none; cursor: grabbing; }
 }
 .admin .main .osplit-opt.on.paid { background: var(--pill-delivered, #0b7a3b); border-color: var(--pill-delivered, #0b7a3b); color: #fff; }
 .admin .main .osplit-opt.on.unpaid { background: var(--signal); border-color: var(--signal); color: #fff; }
+
+/* A product hidden from the shop (👁 in Product catalog). */
+.trow.prow.is-hidden > :not(.eye-toggle):not(.drag-handle) { opacity: 0.45; }
+.hidden-tag {
+  display: inline-block;
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 2px 7px;
+  border-radius: 999px;
+  border: 1px solid currentColor;
+  color: var(--signal);
+  margin-right: 4px;
+}

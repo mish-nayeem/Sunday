@@ -8,10 +8,10 @@ import { useCountdown } from '@/admin/components/DropCountdown.jsx';
 // to its end, and the coupon boxes with a code to copy. Which kinds show on
 // the homepage, the shop and the bag is set there too.
 
-function Countdown({ at }) {
+function Countdown({ at, label = 'Ends in' }) {
   const left = useCountdown(at);
   if (!left) return null;
-  return <span className="tabular-nums">Ends in {left.toLowerCase()}</span>;
+  return <span className="tabular-nums">{label} {left.toLowerCase()}</span>;
 }
 
 function CopyCode({ code, light }) {
@@ -52,14 +52,15 @@ export function PromoCard({ card }) {
         <img src={imgUrl(card.image, 200)} alt="" loading="lazy" className="w-14 h-[70px] object-cover shrink-0 bg-stone" />
       )}
       <span className="flex-1 min-w-0 flex flex-col gap-0.5">
-        <span className={`text-[10.5px] uppercase tracking-[0.16em] ${c ? 'opacity-75' : 'text-coral'}`}>{card.kind === 'sale' ? 'Sale' : 'Coupon'}</span>
+        <span className={`text-[10.5px] uppercase tracking-[0.16em] ${c ? 'opacity-75' : 'text-coral'}`}>{card.kind === 'soon' ? 'New drop' : card.kind === 'sale' ? 'Sale' : 'Coupon'}</span>
         <span className="text-[15px] leading-snug truncate">{card.title}</span>
         <span className={`text-[12px] truncate ${c ? 'opacity-80' : 'text-graphite'}`}>{card.sub}</span>
         {card.kind === 'sale' && <span className="text-[12px] text-graphite"><Countdown at={card.endsAt} /></span>}
+        {card.kind === 'soon' && <span className="text-[12px] text-graphite"><Countdown at={card.endsAt} label="Drops in" /></span>}
       </span>
       {card.kind === 'coupon'
         ? <CopyCode code={card.code} light={light} />
-        : <span className="shrink-0 text-[11px] uppercase tracking-[0.12em] underline underline-offset-4">Shop</span>}
+        : <span className="shrink-0 text-[11px] uppercase tracking-[0.12em] underline underline-offset-4">{card.kind === 'soon' ? 'See drop' : 'Shop'}</span>}
     </>
   );
   const cls = `flex items-center gap-3 p-3 min-w-0 ${c ? '' : 'border border-rule bg-white'}`;
@@ -86,5 +87,19 @@ export default function PromoBanners({ place, data: given, className = '' }) {
     <section aria-label="Offers" className={`grid gap-2 ${place === 'cart' ? 'grid-cols-1' : 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3'} ${className}`}>
       {cards.map((card) => <PromoCard key={card.key} card={card} />)}
     </section>
+  );
+}
+
+// A drop's own banner photo (Products → Collections), wide on top of its
+// page in the shop, with the countdown while it's still to come.
+export function DropHero({ banner }) {
+  if (!banner?.image) return null;
+  return (
+    <div className="relative mt-4 aspect-[16/7] md:aspect-[16/5] bg-stone overflow-hidden">
+      <img src={imgUrl(banner.image, 1800)} alt={banner.name || ''} className="w-full h-full object-cover" />
+      {banner.soon !== false && banner.launch_at && (
+        <span className="absolute left-3 bottom-3 bg-white px-2.5 py-1 text-[12px]"><Countdown at={banner.launch_at} label="Drops in" /></span>
+      )}
+    </div>
   );
 }

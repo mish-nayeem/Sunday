@@ -1,6 +1,7 @@
 import { supabase } from './supabaseClient.js'
 import { fetchSetting, saveSetting } from './siteSettings.js'
 import { fetchLiveSales } from './sales.js'
+import { dropKey } from './lookbook.js'
 
 // The shop's promo banners — running sales and coupon boxes — all from
 // site_settings, so no table of their own:
@@ -8,7 +9,13 @@ import { fetchLiveSales } from './sales.js'
 //   promo_boxes   [{ id, color, code, text, target, drop, product_id, on }]
 //                 The five coupon boxes (Website → Banners). Written by hand
 //                 because the coupons table is secret from visitors.
-//   promo_places  { sale: [...], coupon: [...] }
+//   drop_banners  { [dropKey]: { name, image, launch_at, soon } }
+//                 Each collection's banner photo (Products → Collections),
+//                 shown wide on top of its drop page and, small, on a sale or
+//                 coupon for that drop. launch_at is copied in when the
+//                 collection gets a launch time; soon (default on) =
+//                 announce it before, as a NEW DROP card with a countdown.
+//   promo_places  { soon: [...], sale: [...], coupon: [...] }
 //                 Where each kind shows: 'home', 'shop', 'cart'.
 //
 // A sale makes its own banner while it runs (Marketing → Sales).
@@ -41,11 +48,40 @@ export const PLACES = [
 ]
 
 export const DEFAULT_PLACES = {
+  soon: ['home', 'shop'],
   sale: ['home', 'shop', 'cart'],
   coupon: ['home', 'shop', 'cart'],
 }
 
 const dropLink = (name) => `/shop?drop=${encodeURIComponent(name)}`
+
+export async function fetchDropBanners() {
+  const { value, error } = await fetchSetting('drop_banners')
+  return { banners: value && typeof value === 'object' && !Array.isArray(value) ? value : {}, error }
+}
+
+export function dropBannerFor(name, banners) {
+  return name ? banners?.[dropKey(name)] || null : null
+}
+
+// Saves one collection's entry, merged into what's already there.
+export async function saveDropBanner(name, patch) {
+  const { banners, error } = await fetchDropBanners()
+  if (error) return { error }
+  const k = dropKey(name)
+  const next = { ...banners, [k]: { ...(banners[k] || {}), name, ...patch } }
+  return saveSetting('drop_banners', next)
+}
+
+// A renamed collection keeps its banner.
+export async function renameDropBanner(from, to) {
+  const { banners, error } = await fetchDropBanners()
+  if (error || !banners[dropKey(from)]) return { error }
+  const next = { ...banners }
+  next[dropKey(to)] = { ...next[dropKey(from)], name: to }
+  delete next[dropKey(from)]
+  return saveSetting('drop_banners', next)
+}
 
 export async function fetchBoxes() {
   const { value, error } = await fetchSetting('promo_boxes')
@@ -87,7 +123,7 @@ let cacheAt = 0
 // Everything a page needs to draw its banners, in one go (kept a minute).
 export async function fetchPromos() {
   if (cache && Date.now() - cacheAt < 60_000) return cache
-  const [{ boxes: allBoxes }, { places }, sales, live] = await Promise.all([fetchBoxes(), fetchPlaces(), fetchLiveSales(), fetchLiveCodes()])
+  const [{ banners }, { boxes: allBoxes }, { places }, sales, live] = await Promise.all([fetchDropBanners(), fetchBoxes(), fetchPlaces(), fetchLiveSales(), fetchLiveCodes()])
   // Only codes checkout takes right now: switched on, started, not ended,
   // not used up. Without the answer, the boxes' own on/off decides.
   const boxes = live ? allBoxes.filter((b) => live.has(String(b.code || '').trim().toUpperCase())) : allBoxes
@@ -95,7 +131,7 @@ export async function fetchPromos() {
   for (const s of sales) for (const id of s.product_ids || []) ids.add(String(id))
   for (const b of boxes) if (b.on && b.code && b.target === 'product' && b.product_id) ids.add(String(b.product_id))
   const thumbs = await fetchThumbs([...ids])
-  cache = { boxes, places, sales, thumbs }
+  cache = { banners, boxes, places, sales, thumbs }
   cacheAt = Date.now()
   return cache
 }
@@ -126,13 +162,20 @@ export async function pruneCouponBoxes(coupons) {
   }
 }
 
-// The banner cards for one place, in order: sales, then coupons.
+// The banner cards for one place, in order: coming drops, sales, coupons.
 // Each card: { key, kind, title, sub, endsAt, image, link, code, color }.
 export function promoCards(data, place, now = Date.now()) {
   if (!data) return []
-  const { boxes, places, sales, thumbs } = data
+  const { banners = {}, boxes, places, sales, thumbs } = data
   const cards = []
   const firstPhoto = (id) => thumbs[String(id)]?.images?.[0] || null
+
+  if ((places.soon || []).includes(place)) {
+    for (const b of Object.values(banners)) {
+      if (b?.soon === false || !b?.launch_at || new Date(b.launch_at).getTime() <= now) continue
+      cards.push({ key: `soon-${b.name}`, kind: 'soon', title: `${b.name} · dropping soon`, sub: 'New drop', endsAt: b.launch_at, image: b.image || null, link: dropLink(b.name) })
+    }
+  }
 
   if (places.sale.includes(place)) {
     for (const s of sales) {
@@ -143,6 +186,7 @@ export function promoCards(data, place, now = Date.now()) {
       let link = '/shop'
       if (s.drop_name) {
         sub = `On the ${s.drop_name} drop`
+        image = dropBannerFor(s.drop_name, banners)?.image || null
         link = dropLink(s.drop_name)
       } else if (ids.length) {
         sub = ids.length === 1 ? (thumbs[String(ids[0])]?.name || 'On one piece') : `On ${ids.length} pieces`
@@ -159,6 +203,7 @@ export function promoCards(data, place, now = Date.now()) {
       let image = null
       let link = null
       if (b.target === 'drop' && b.drop) {
+        image = dropBannerFor(b.drop, banners)?.image || null
         link = dropLink(b.drop)
       } else if (b.target === 'product' && b.product_id) {
         image = firstPhoto(b.product_id)
