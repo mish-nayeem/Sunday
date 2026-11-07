@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { supabase } from '@/lib/supabaseClient';
 import { imgUrl } from '@/lib/storage';
+import { focusStyle, focusZoom } from '@/lib/focus';
 import { addRecentlyViewed, getRecentlyViewed } from '@/lib/cartStore';
 import { sectionFor, isSoldOut, formatPrice } from '@/lib/catalog';
 import ProductCard from '@/components/products/ProductCard';
@@ -180,13 +181,14 @@ export default function ProductDetail() {
             {(images.length ? images : [null]).map((img, i) => (
               <div key={i} className="aspect-[4/5] bg-stone">
                 {img && (
-                  <button type="button" onClick={() => setViewer(i)} className="block w-full h-full cursor-zoom-in" aria-label={`View photo ${i + 1} full screen`}>
+                  <button type="button" onClick={() => setViewer(i)} className="block w-full h-full overflow-hidden cursor-zoom-in" aria-label={`View photo ${i + 1} full screen`}>
                     <img
                       data-pdp-photo
-                      src={imgUrl(img, 1000)}
+                      src={imgUrl(img, Math.min(2400, Math.round(1000 * focusZoom(product.image_focus?.[img]))))}
                       alt={`${product.name}, photo ${i + 1}`}
                       loading={i < 2 ? 'eager' : 'lazy'}
                       decoding="async"
+                      style={product.image_focus?.[img] ? focusStyle(product.image_focus[img]) : undefined}
                       className="w-full h-full object-cover"
                     />
                   </button>
@@ -212,13 +214,14 @@ export default function ProductDetail() {
               {(images.length ? images : [null]).map((img, i) => (
                 <div key={i} className="shrink-0 w-full snap-center aspect-[4/5] bg-stone md:mb-1">
                   {img && (
-                    <button type="button" onClick={() => setViewer(i)} className="block w-full h-full cursor-zoom-in" aria-label={`View photo ${i + 1} full screen`}>
+                    <button type="button" onClick={() => setViewer(i)} className="block w-full h-full overflow-hidden cursor-zoom-in" aria-label={`View photo ${i + 1} full screen`}>
                       <img
                         data-pdp-photo
-                        src={imgUrl(img, 1200)}
+                        src={imgUrl(img, Math.min(2400, Math.round(1200 * focusZoom(product.image_focus?.[img]))))}
                         alt={`${product.name}, photo ${i + 1}`}
                         loading={i === 0 ? 'eager' : 'lazy'}
                         decoding="async"
+                        style={product.image_focus?.[img] ? focusStyle(product.image_focus[img]) : undefined}
                         className="w-full h-full object-cover"
                       />
                     </button>

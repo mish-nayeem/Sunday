@@ -801,3 +801,130 @@
 }
 
 .pf-cat.pf-cat-new { border-style: dashed; color: var(--cobalt); }
+/* Editing one colour: pass the shared details on to the others. */
+.pf-share {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin: 18px 0 0;
+  padding: 12px 14px;
+  border: 1px solid var(--steel-line);
+  border-radius: 12px;
+  font-size: 12px;
+  line-height: 1.5;
+  cursor: pointer;
+}
+.pf-share input { margin-top: 2px; accent-color: var(--cobalt); }
+
+/* OTHER COLOURS: keep this product on its own, or join another's colours. */
+.pf-colour-acts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;
+}
+.pf-colour-btn,
+.pf-colour-pick {
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  padding: 7px 10px;
+  border: 1px solid var(--steel-line);
+  background: var(--paper);
+  color: var(--ink);
+  border-radius: 6px;
+  cursor: pointer;
+  max-width: 100%;
+}
+.pf-colour-btn:hover,
+.pf-colour-pick:hover { border-color: var(--ink); }
+
+/* Dragging photos into order: the ⠿ grip (and the photo itself with a
+   mouse), the one being moved, and the box while files are dragged over. */
+.pf-img-grip {
+  position: absolute;
+  top: 4px;
+  left: 4px;
+  width: 22px;
+  height: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  line-height: 1;
+  color: #fff;
+  background: rgba(22, 22, 15, 0.72);
+  border-radius: 4px;
+  user-select: none;
+  -webkit-user-select: none;
+}
+.pf-img.dragging { opacity: 0.55; }
+.pf-img.dragging img { outline: 2px solid var(--cobalt); outline-offset: 2px; }
+.pf-images.dropping {
+  outline: 2px dashed var(--cobalt);
+  outline-offset: 6px;
+  border-radius: 6px;
+}
+
+/* ✥ Adjust: under each photo, and the photo placed in its card's shape. */
+.pf-img-adjust {
+  display: block;
+  width: 100%;
+  margin-top: 4px;
+  font-size: 10.5px;
+  letter-spacing: 0.04em;
+  padding: 4px 0;
+  border: 1px solid var(--steel-line);
+  background: var(--paper);
+  color: var(--ink);
+  border-radius: 4px;
+  cursor: pointer;
+}
+.pf-img-adjust.set { border-color: var(--cobalt); color: var(--cobalt); }
+.pf-img-adjust.on { background: var(--cobalt); border-color: var(--cobalt); color: #fff; }
+
+.pf-focus {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  align-items: flex-start;
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px dashed var(--steel-line);
+}
+.pf-focus-frame {
+  width: 220px;
+  max-width: 100%;
+  aspect-ratio: 4 / 5;
+  border-radius: 6px;
+  background: var(--paper-dim);
+}
+.pf-focus-side { flex: 1 1 220px; min-width: 0; }
+.pf-focus-note { font-size: 12.5px; line-height: 1.6; margin: 0 0 12px; }
+.pf-focus-acts { display: flex; flex-wrap: wrap; gap: 8px; }
+
+/* ✥ Adjust → zoom */
+.pf-zoom { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin: 0 0 12px; }
+.pf-zoom-label { font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--steel); }
+.pf-zoom-range { flex: 1 1 120px; min-width: 100px; accent-color: var(--ink); }
+.pf-zoom-btn {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 1px solid var(--steel-line);
+  background: var(--paper);
+  color: var(--ink);
+  font-size: 15px;
+  line-height: 1;
+  cursor: pointer;
+}
+.pf-zoom-btn:disabled { opacity: 0.4; cursor: default; }
+.pf-zoom-val { font-size: 11px; color: var(--steel); min-width: 38px; }
+.pf-zoom-reset {
+  font-size: 11px;
+  background: none;
+  border: 0;
+  color: var(--steel);
+  text-decoration: underline;
+  cursor: pointer;
+  padding: 0;
+}

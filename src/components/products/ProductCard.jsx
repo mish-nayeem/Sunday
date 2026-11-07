@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { imgUrl } from '@/lib/storage';
+import { focusStyle, focusZoom } from '@/lib/focus';
 import QuickAdd from './QuickAdd';
 import { isSoldOut, formatPrice } from '@/lib/catalog';
 import { useLiveSales, withSale } from '@/lib/pricing';
@@ -21,7 +22,7 @@ export default function ProductCard({ product: raw, colours = [] }) {
   const timer = useRef(null);
   const showing = useRef(0);
   const go = (next) => {
-    const src = imgUrl(images[next], 600);
+    const src = imgUrl(images[next], Math.min(2000, Math.round(600 * focusZoom(product.image_focus?.[images[next]]))));
     const pre = new Image();
     pre.src = src;
     (pre.decode ? pre.decode() : Promise.resolve()).catch(() => {}).then(() => {
@@ -54,7 +55,7 @@ export default function ProductCard({ product: raw, colours = [] }) {
       <div className="relative aspect-[4/5] bg-stone overflow-hidden">
         <Link
           to={`/product/${product.id}`}
-          className="absolute inset-0"
+          className="absolute inset-0 overflow-hidden"
           tabIndex={-1}
           aria-hidden="true"
           onMouseEnter={startSlides}
@@ -66,10 +67,11 @@ export default function ProductCard({ product: raw, colours = [] }) {
           {images.map((src, i) => (i === 0 || hovered) && (
             <img
               key={src}
-              src={imgUrl(src, 600)}
+              src={imgUrl(src, Math.min(2000, Math.round(600 * focusZoom(product.image_focus?.[src]))))}
               alt={i === 0 ? product.name : ''}
               loading={i === 0 ? 'lazy' : 'eager'}
               decoding="async"
+              style={product.image_focus?.[src] ? focusStyle(product.image_focus[src]) : undefined}
               className={`absolute inset-0 w-full h-full object-cover ${
                 i === slide ? 'z-[2] opacity-100 transition-opacity duration-700' : i === under ? 'z-[1] opacity-100' : 'z-0 opacity-0'
               }`}

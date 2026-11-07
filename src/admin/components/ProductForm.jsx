@@ -1,4 +1,7 @@
 import { useRef, useState } from 'react'
+import useDragSort from '../lib/useDragSort.js'
+import FocusDrag from './FocusDrag.jsx'
+import { parseFocus, formatFocus, MAX_ZOOM } from '../lib/focus.js'
 import { toLocalInput, launchLabel } from '../lib/schedule.js'
 import { supabase } from '../lib/supabaseClient.js'
 import { imgUrl, uploadImage } from '../lib/images.js'
@@ -56,6 +59,7 @@ function fromRow(row) {
     details: row.details ?? '',
     sizeChart: row.size_chart ?? null,
     colourGroup: row.colour_group ?? '',
+    imageFocus: row.image_focus ?? {},
     publishAt: toLocalInput(row.publish_at),
   }
 }
@@ -128,27 +132,26 @@ function asNewColour(row, ids) {
     sku: undefined,
     variant: '',
     images: [],
+    imageFocus: {},
     sizesOut: [],
     stock: counts ? Object.fromEntries((base.sizes || []).map((s) => [s, 0])) : null,
+    // In the piece's colour group — a new one for the piece if it had none
+    // (the piece itself joins it on save).
+    colourGroup: (row.colour_group || '').trim() || newGroupFor(row),
   }
 }
 
-// Same name = same piece. The colour group a product should carry: the one
-// it already has, else the group a same-named product already uses, else a
-// tag made from the name when another product shares it. `relink` lists
-// same-named products with no group yet, to be given this one.
+// Colours of one piece share a colour group — set by + Add another colour,
+// or by "Join the colours of…" in the form. The same name alone links
+// nothing: two different pieces can be called the same.
 export function tagOf(name) {
-  return name.trim().toUpperCase().replace(/[^A-Z0-9]+/g, '-').replace(/^-|-$/g, '')
+  return String(name || '').trim().toUpperCase().replace(/[^A-Z0-9]+/g, '-').replace(/^-|-$/g, '')
 }
 
-function colourLink(p, all) {
-  const key = p.name.trim().toLowerCase()
-  const same = all.filter((r) => String(r.id) !== String(p.id) && (r.name || '').trim().toLowerCase() === key)
-  const own = (p.colourGroup || '').trim()
-  if (own) return { group: own, relink: same.filter((r) => !r.colour_group).map((r) => r.id) }
-  if (!same.length) return { group: '', relink: [] }
-  const group = same.find((r) => r.colour_group)?.colour_group || tagOf(p.name)
-  return { group, relink: same.filter((r) => !r.colour_group).map((r) => r.id) }
+// A colour group of its own for a piece: its name and a short random tail,
+// so another piece with the same name never lands in it by accident.
+export function newGroupFor(p) {
+  return [tagOf(p.name || ''), Math.random().toString(36).slice(2, 7).toUpperCase()].filter(Boolean).join('-')
 }
 
 // The size chart a product in this category starts with: the one on the
@@ -241,11 +244,26 @@ export default function ProductForm({ existing, copyFrom = null, allProducts = [
   // piece whose other colours are being added (QuickColours).
   const [quickBase, setQuickBase] = useState(null)
 
-  // The other colours this product will be shown with (same name), for the
-  // OTHER COLOURS line.
+  // Another product this one is to join as a colour (picked under OTHER
+  // COLOURS): it gets the shared group on save, if it had none.
+  const [joinWith, setJoinWith] = useState(() => (copyFrom && !(copyFrom.colour_group || '').trim() ? copyFrom.id : null))
+
+  // The other colours this product will be shown with: its colour group.
+  const group = (p.colourGroup || '').trim()
   const otherColours = allProducts.filter((r) =>
-    String(r.id) !== String(p.id) && p.name.trim() && (r.name || '').trim().toLowerCase() === p.name.trim().toLowerCase()
+    String(r.id) !== String(p.id) && (
+      (group && (r.colour_group || '').trim() === group) ||
+      (joinWith && String(r.id) === String(joinWith))
+    )
   )
+
+  // Editing one colour: the piece's other colours as the form opened (its
+  // colour group). Saving can pass the shared details on to them; each keeps
+  // its own name, photos, colour name, stock — and a price of its own.
+  const siblings = existing && (existing.colour_group || '').trim()
+    ? allProducts.filter((r) => String(r.id) !== String(existing.id) && (r.colour_group || '').trim() === existing.colour_group.trim())
+    : []
+  const [shareWithColours, setShareWithColours] = useState(true)
 
   const knownLabels = mergeLabels(detailLabels, rememberedLabels())
   const [detailRows, setDetailRows] = useState(() => {
@@ -334,7 +352,25 @@ export default function ProductForm({ existing, copyFrom = null, allProducts = [
   }
 
   async function handleFiles(e) {
-    const files = [...e.target.files]
+    await uploadFiles([...(e.target.files || [])])
+  }
+
+  // Photos dragged in from the computer onto the IMAGES box.
+  const [dropping, setDropping] = useState(false)
+  function onFilesOver(e) {
+    if (![...(e.dataTransfer?.types || [])].includes('Files')) return
+    e.preventDefault()
+    setDropping(true)
+  }
+  function onFilesDrop(e) {
+    if (![...(e.dataTransfer?.types || [])].includes('Files')) return
+    e.preventDefault()
+    setDropping(false)
+    if (uploading) return
+    uploadFiles([...e.dataTransfer.files].filter((f) => f.type.startsWith('image/')))
+  }
+
+  async function uploadFiles(files) {
     if (files.length === 0) return
 
     setUploading(true)
@@ -354,6 +390,21 @@ export default function ProductForm({ existing, copyFrom = null, allProducts = [
       if (fileRef.current) fileRef.current.value = ''
     }
   }
+
+  // ✥ Adjust: the photo whose place in its card is being set, if any.
+  const [adjusting, setAdjusting] = useState(null)
+  function setFocus(url, focus) {
+    setP((prev) => {
+      const next = { ...(prev.imageFocus || {}) }
+      if (focus) next[url] = focus
+      else delete next[url]
+      return { ...prev, imageFocus: next }
+    })
+  }
+
+  // Drag a photo by its ⠿ (or the photo itself, with a mouse) to a new place.
+  const imageDrag = useDragSort(p.images, (next) => setP((prev) => ({ ...prev, images: next })), () => {})
+  const finePointer = typeof window !== 'undefined' && window.matchMedia?.('(pointer: fine)').matches
 
   function removeImage(url) {
     setP((prev) => ({ ...prev, images: prev.images.filter((i) => i !== url) }))
@@ -416,7 +467,7 @@ export default function ProductForm({ existing, copyFrom = null, allProducts = [
   function validate() {
     if (!p.id.trim()) return 'Product ID is missing — reload the page and try again'
     if (!p.name.trim()) return 'Name is required'
-    // The colour's name is optional — colours of a piece link by its name.
+    // The colour's name is optional — colours of a piece link by their colour group.
     if (copyFrom && p.variant.trim() && p.variant.trim().toLowerCase() === (copyFrom.variant || '').trim().toLowerCase()) {
       return `${copyFrom.name} already comes in ${copyFrom.variant} — give this colour its own name`
     }
@@ -443,13 +494,43 @@ export default function ProductForm({ existing, copyFrom = null, allProducts = [
     // (PC240), which is what the product page and cart print as its code.
     // An older product keeps whatever SKU it already had.
     const id = p.id.trim()
-    const link = colourLink({ ...p, id }, allProducts)
+    // Its colour group as set in the form: kept, left (blank — a piece of
+    // its own), or another piece's joined.
+    const link = { group: (p.colourGroup || '').trim(), relink: joinWith ? [joinWith] : [] }
     const { error: saveError, id: savedId } = await saveProduct(
       { ...p, id, colourGroup: link.group, sku: p.sku?.trim() || id.toUpperCase(), price: Number(p.price) },
       isNewRecord
     )
 
-    // The same-named products that weren't linked yet join this one's group.
+    // The other colours take the same details: category, collection,
+    // description, details, size chart and sizes — and the price, unless a
+    // colour has a price of its own (different from this one's before the
+    // edit). Their photos, colour name, stock and launch time stay their own;
+    // a size added here starts at 0 for them, a size dropped here leaves them.
+    if (!saveError && shareWithColours && siblings.length && link.group && link.group === (existing.colour_group || '').trim()) {
+      const oldPrice = Number(existing.price)
+      await Promise.all(siblings.map((r) => {
+        const counts = stockMap(r) ? stockForSizes(r, p.sizes) : null
+        const row = {
+          price: Number(r.price) === oldPrice ? Number(p.price) : Number(r.price),
+          cost_price: p.cost === '' || p.cost == null ? null : Number(p.cost),
+          category: p.category || null,
+          drop_name: p.drop?.trim() || null,
+          description: p.description ?? '',
+          details: p.details ?? '',
+          size_chart: p.sizeChart ?? null,
+          sizes: p.sizes,
+          sizes_out: (r.sizes_out || []).filter((z) => p.sizes.includes(z)),
+        }
+        if (counts) {
+          row.size_stock = counts
+          row.quantity = Object.values(counts).reduce((n, v) => n + v, 0)
+        }
+        return supabase.from('products').update(row).eq('id', r.id)
+      }))
+    }
+
+    // The product picked under "Join the colours of…", if it had no group yet.
     if (!saveError && link.group && link.relink.length) {
       await supabase.from('products').update({ colour_group: link.group }).in('id', link.relink)
     }
@@ -551,12 +632,18 @@ export default function ProductForm({ existing, copyFrom = null, allProducts = [
         <Box
           title="IMAGES"
           wide
-          tip={<>Upload every angle of the piece: <strong>front, back, a close-up, then folded or worn</strong>. The <strong>MAIN</strong> photo is the shop card; the <strong>second</strong> one shows when a customer hovers the card. On the product page all photos stack in the middle column in this order. Best size: portrait <strong>4:5</strong> (e.g. 1600 × 2000 px) on a plain light background, so every card lines up. Use ← → to reorder, or "Set as main".</>}
+          tip={<>Upload every angle of the piece: <strong>front, back, a close-up, then folded or worn</strong>. The <strong>MAIN</strong> photo is the shop card; the <strong>second</strong> one shows when a customer hovers the card. On the product page all photos stack in the middle column in this order. Best size: portrait <strong>4:5</strong> (e.g. 1600 × 2000 px) on a plain light background, so every card lines up. Drag a photo (or its ⠿) to a new place, use ← →, or "Set as main". Photos can also be dragged in from the computer. <strong>✥ Adjust</strong> moves and zooms a photo inside its card.</>}
         >
-          <div className="pf-images">
+          <div
+            className={`pf-images ${dropping ? 'dropping' : ''}`}
+            onDragOver={onFilesOver}
+            onDragLeave={() => setDropping(false)}
+            onDrop={onFilesDrop}
+          >
             {p.images.map((url, i) => (
-              <div className="pf-img" key={url}>
-                <img src={imgUrl(url, { w: 200 })} alt="" />
+              <div className={`pf-img ${imageDrag.dragging === i ? 'dragging' : ''}`} key={url} {...imageDrag.row(i)}>
+                <img src={imgUrl(url, { w: 200 })} alt="" draggable={false} {...(finePointer ? imageDrag.handle(i) : {})} />
+                <span className="pf-img-grip" {...imageDrag.handle(i)}>⠿</span>
                 {i === 0 ? (
                   <span className="pf-img-main mono">MAIN</span>
                 ) : (
@@ -570,11 +657,19 @@ export default function ProductForm({ existing, copyFrom = null, allProducts = [
                   <span>{i + 1}</span>
                   <button onClick={() => moveImage(i, 1)} disabled={i === p.images.length - 1}>→</button>
                 </div>
+                <button
+                  type="button"
+                  className={`pf-img-adjust mono ${p.imageFocus?.[url] ? 'set' : ''} ${adjusting === url ? 'on' : ''}`}
+                  onClick={() => setAdjusting((a) => (a === url ? null : url))}
+                  title="Move and zoom the photo inside its card, like a Facebook cover"
+                >
+                  ✥ {p.imageFocus?.[url] ? 'Adjusted' : 'Adjust'}
+                </button>
               </div>
             ))}
 
             <label className={`pf-upload mono ${uploading ? 'busy' : ''}`}>
-              {uploading ? 'Uploading…' : '+ Add images'}
+              {uploading ? 'Uploading…' : dropping ? 'Drop to upload' : '+ Add images'}
               <input
                 ref={fileRef}
                 type="file"
@@ -585,6 +680,63 @@ export default function ProductForm({ existing, copyFrom = null, allProducts = [
               />
             </label>
           </div>
+
+          {/* The photo in the shop card's own shape (4:5), dragged until the
+              part you want is in frame — a small or wide photo then fills
+              the card with no empty bars. */}
+          {adjusting && p.images.includes(adjusting) && (
+            <div className="pf-focus">
+              <FocusDrag
+                className="pf-focus-frame"
+                zoom
+                src={imgUrl(adjusting, { w: 1000 })}
+                value={p.imageFocus?.[adjusting] || '50% 50%'}
+                onChange={(focus) => setFocus(adjusting, focus)}
+              />
+              <div className="pf-focus-side">
+                <p className="pf-focus-note">
+                  This is the photo as its <strong>shop card</strong> shows it. Drag it up, down or sideways until the
+                  right part is in the frame, and zoom in to make it bigger. The same framing is used on the product
+                  page. Press <strong>Save changes</strong> at the bottom to keep it.
+                </p>
+                {(() => {
+                  const [fx, fy, fz] = parseFocus(p.imageFocus?.[adjusting] || '50% 50%')
+                  const zoomTo = (z) => setFocus(adjusting, formatFocus(fx, fy, z))
+                  return (
+                    <div className="pf-zoom">
+                      <span className="pf-zoom-label mono">Zoom</span>
+                      <button type="button" className="pf-zoom-btn mono" aria-label="Zoom out" disabled={fz <= 1} onClick={() => zoomTo(fz - 0.1)}>−</button>
+                      <input
+                        type="range"
+                        className="pf-zoom-range"
+                        aria-label="Zoom"
+                        min="1"
+                        max={MAX_ZOOM}
+                        step="0.01"
+                        value={fz}
+                        onChange={(e) => zoomTo(Number(e.target.value))}
+                      />
+                      <button type="button" className="pf-zoom-btn mono" aria-label="Zoom in" disabled={fz >= MAX_ZOOM} onClick={() => zoomTo(fz + 0.1)}>+</button>
+                      <span className="pf-zoom-val mono">{Math.round(fz * 100)}%</span>
+                      {(fz > 1 || fx !== 50 || fy !== 50) && (
+                        <button type="button" className="pf-zoom-reset mono" onClick={() => setFocus(adjusting, '50% 50%')}>
+                          Reset
+                        </button>
+                      )}
+                    </div>
+                  )
+                })()}
+                <div className="pf-focus-acts">
+                  {p.imageFocus?.[adjusting] && (
+                    <button type="button" className="pf-colour-btn mono" onClick={() => setFocus(adjusting, null)}>
+                      Back to centred
+                    </button>
+                  )}
+                  <button type="button" className="pf-colour-btn mono" onClick={() => setAdjusting(null)}>Done</button>
+                </div>
+              </div>
+            </div>
+          )}
         </Box>
 
         {/* ---- ID, price, cost ---- */}
@@ -635,22 +787,65 @@ export default function ProductForm({ existing, copyFrom = null, allProducts = [
             <input value={p.variant} onChange={(e) => set('variant', e.target.value)} placeholder="Bone White" />
           </label>
 
-          {/* No colour-group box to fill in: products with the same name are
-              colours of one piece and link up by themselves when saved. */}
+          {/* Colours link only on purpose — + Add another colour, or the
+              picker here. The same name alone joins nothing. */}
           <div className="pf-field">
-            <FieldLabel tip="Products with the same name are colours of one piece. Each colour is its own card in the shop with small colour swatches under it, and the product page shows a swatch for every colour. Use + Add another colour at the top, or give another product the same name.">
+            <FieldLabel tip="The other colours of this piece: each colour is its own card in the shop with small colour swatches under it, and the product page shows a swatch for every colour. Use + Add another colour at the top, or join an existing product here. A product that only shares the name stays on its own.">
               OTHER COLOURS
             </FieldLabel>
             <div className="pf-colours mono">
-              {otherColours.length ? otherColours.map((c) => c.variant || c.id).join(' · ') : 'None yet'}
+              {otherColours.length
+                ? otherColours.map((c) => [c.name, c.variant].filter(Boolean).join(' — ') || c.id).join(' · ')
+                : 'None — this product is on its own'}
+            </div>
+            <div className="pf-colour-acts">
+              {otherColours.length > 0 && (
+                <button type="button" className="pf-colour-btn mono" onClick={() => { set('colourGroup', ''); setJoinWith(null) }}>
+                  Keep this product on its own
+                </button>
+              )}
+              <select
+                className="pf-colour-pick mono"
+                value=""
+                onChange={(e) => {
+                  const r = allProducts.find((x) => String(x.id) === e.target.value)
+                  if (!r) return
+                  if ((r.colour_group || '').trim()) {
+                    set('colourGroup', r.colour_group.trim())
+                    setJoinWith(null)
+                  } else {
+                    set('colourGroup', newGroupFor(r))
+                    setJoinWith(r.id)
+                  }
+                }}
+              >
+                <option value="">Join the colours of…</option>
+                {allProducts
+                  .filter((r) => String(r.id) !== String(p.id) && !otherColours.some((c) => String(c.id) === String(r.id)))
+                  .map((r) => (
+                    <option key={r.id} value={r.id}>
+                      {[r.name, r.variant].filter(Boolean).join(' — ')} ({String(r.sku || r.id).toUpperCase()})
+                    </option>
+                  ))}
+              </select>
             </div>
           </div>
         </Box>
 
         {/* ---- Collection / drop ---- */}
-        <Box title="COLLECTION / DROP" tip="Optional. Group pieces released together, e.g. EID 2026. A drop gets its own page (Shop → Drops in the menu) and its own lookbook. Pick an existing one so the spelling matches, or type a new name.">
+        <Box title="COLLECTION / DROP" tip="Optional — a product with no collection shows in the shop under its category as usual. Group pieces released together, e.g. EID 2026. A drop gets its own page (Shop → Drops in the menu) and its own lookbook. Pick an existing one so the spelling matches, or type a new name.">
           {drops.length > 0 && (
             <div className="pf-cats">
+              {/* A product needn't be in a collection: it shows in the shop
+                  under its category all the same. */}
+              <button
+                type="button"
+                className={`pf-cat ${!(p.drop || '').trim() ? 'on' : ''}`}
+                onClick={() => set('drop', '')}
+              >
+                <span className="pf-box" />
+                No collection
+              </button>
               {[...new Set([...drops, p.drop].filter(Boolean))].map((d) => (
                 <button
                   type="button"
@@ -1025,6 +1220,17 @@ export default function ProductForm({ existing, copyFrom = null, allProducts = [
           )}
         </Box>
       </div>
+
+      {siblings.length > 0 && (
+        <label className="pf-share mono">
+          <input type="checkbox" checked={shareWithColours} onChange={(e) => setShareWithColours(e.target.checked)} />
+          <span>
+            Use these details for the other {siblings.length === 1 ? 'colour' : `${siblings.length} colours`} too
+            ({siblings.map((c) => c.variant || c.name || c.id).join(', ')}) — price, category, collection, description,
+            details, size chart and sizes. Their own name, photos, colour name and stock stay as they are — and a colour with a price of its own keeps it.
+          </span>
+        </label>
+      )}
 
       {/* ---- Actions ---- */}
       <div className="pf-actions">
