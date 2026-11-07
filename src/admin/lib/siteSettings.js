@@ -46,3 +46,19 @@ export async function fetchHeroExtras() {
   const countdown = c.value && typeof c.value === 'object' && c.value.at ? c.value : null
   return { button, countdown, error: b.error || c.error }
 }
+
+// The footer's newsletter words — Admin → Homepage → Footer text. Stored as
+// site_settings 'footer_about'. An empty box falls back to these.
+export const DEFAULT_FOOTER_ABOUT = {
+  heading: 'Newsletter',
+  text: 'Get an email when new arrivals land. No more than a few a month.',
+}
+
+export async function fetchFooterAbout() {
+  const { value } = await fetchSetting('footer_about')
+  if (!value || typeof value !== 'object') return DEFAULT_FOOTER_ABOUT
+  return {
+    heading: String(value.heading ?? '').trim() || DEFAULT_FOOTER_ABOUT.heading,
+    text: String(value.text ?? '').trim() || DEFAULT_FOOTER_ABOUT.text,
+  }
+}

@@ -63,6 +63,23 @@ sunday_supabase_schema.sql   the first schema, run by hand once; never run it ag
 
 - A collection is optional. A product without one shows in the shop under its category.
 
+## Website, in the admin
+
+Admin → Website has five tabs:
+
+- **Homepage:**
+  - hero photos (✥ Adjust moves and zooms, kept on Save);
+  - drop sections, the hero button and the countdown;
+  - the **footer text**;
+  - link previews.
+- **Lookbook:** photos per drop. The 👁 on a drop hides its lookbook from the shop. **Delete lookbook** removes all its photos.
+- **Side menu:** the SHOP and DROPS menus.
+- **About us:** photo and text blocks, with the text written like a document.
+- **Banners:**
+  - running sales show by themselves;
+  - five coupon boxes;
+  - you choose whether each kind shows on the homepage, the shop or the bag.
+
 ## Running it on your computer
 
 You need Node 22.

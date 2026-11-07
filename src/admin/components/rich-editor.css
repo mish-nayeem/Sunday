@@ -1,0 +1,65 @@
+@import './rich-text.css';
+
+/* The admin's editor: a toolbar of small buttons over a writing box. */
+.re { border: 1px solid var(--steel-line); border-radius: 12px; background: var(--paper, #fff); }
+.re-bar {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 10px;
+  padding: 7px 8px;
+  border-bottom: 1px solid var(--steel-line);
+  background: var(--paper-dim, #f5f5f2);
+  border-radius: 12px 12px 0 0;
+}
+.re-group { display: inline-flex; gap: 2px; align-items: center; }
+.re-pop-wrap { position: relative; }
+.re-btn {
+  min-width: 30px;
+  height: 30px;
+  padding: 0 7px;
+  border: 1px solid transparent;
+  border-radius: 7px;
+  background: none;
+  color: var(--ink);
+  font: inherit;
+  font-size: 13px;
+  line-height: 1;
+  cursor: pointer;
+}
+.re-btn.wide { font-size: 11.5px; font-weight: 600; }
+.re-btn:hover { background: rgba(0, 0, 0, 0.06); }
+.re-btn.on { background: var(--ink); color: #fff; }
+.re-a { font-weight: 700; text-decoration: underline; text-decoration-color: #ff4426; text-decoration-thickness: 3px; }
+.re-mark { background: #fff3a3; padding: 0 3px; border-radius: 3px; }
+.re-pop {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  z-index: 5;
+  display: flex;
+  flex-direction: column;
+  min-width: 120px;
+  padding: 4px;
+  background: #fff;
+  border: 1px solid var(--steel-line);
+  border-radius: 10px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+}
+.re-pop-item { padding: 7px 10px; border: 0; background: none; text-align: left; border-radius: 6px; cursor: pointer; color: var(--ink); font-family: 'Inter', sans-serif; }
+.re-pop-item:hover { background: rgba(0, 0, 0, 0.06); }
+.re-swatches { flex-direction: row; flex-wrap: wrap; gap: 6px; min-width: 0; width: 170px; padding: 8px; }
+.re-swatch { width: 22px; height: 22px; border-radius: 50%; border: 1px solid rgba(0, 0, 0, 0.15); cursor: pointer; padding: 0; }
+.re-swatch.none { background: linear-gradient(135deg, #fff 45%, #ff4426 45%, #ff4426 55%, #fff 55%) !important; }
+.re-box {
+  min-height: 140px;
+  max-height: 60vh;
+  overflow-y: auto;
+  padding: 14px 16px;
+  outline: none;
+  cursor: text;
+}
+.re-box:focus { box-shadow: inset 0 0 0 1px var(--cobalt, #2a4dff); border-radius: 0 0 12px 12px; }
+.re-box:empty::before { content: attr(data-placeholder); color: var(--steel); pointer-events: none; }

@@ -388,3 +388,47 @@
   .lk-item-thumb { display: none; }
   .lk-drop-zone { min-height: 96px; }
 }
+/* 👁 show / hide (EyeToggle.jsx) — catalog rows and collection cards. */
+.eye-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border-radius: 50%;
+  border: 1px solid transparent;
+  background: none;
+  color: var(--ink);
+  cursor: pointer;
+  justify-self: center;
+}
+.eye-toggle:hover { border-color: var(--steel-line); }
+.eye-toggle.shut { color: var(--signal); }
+.eye-toggle:disabled { opacity: 0.5; cursor: default; }
+
+
+/* Deleting a whole drop's lookbook. */
+.lk-del { display: flex; flex-direction: column; align-items: flex-start; gap: 10px; }
+.lk-del-what { font-size: 12px; color: var(--steel); line-height: 1.5; }
+.lk-del-menu { display: flex; align-items: center; gap: 8px; font-size: 12px; cursor: pointer; }
+.lk-del .lk-confirm { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; font-size: 12px; }
+.lk-del-note { font-size: 12px; color: var(--cobalt); padding: 4px 2px; }
+
+/* A drop tile and its 👁 (show / hide the lookbook on the shop). */
+.admin .main .lk-drop-wrap { position: relative; min-width: 0; display: flex; }
+.admin .main .lk-drop-wrap > .lk-drop { flex: 1; min-width: 0; }
+.admin .main .lk-drop-eye {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  width: 30px;
+  height: 30px;
+  display: grid;
+  place-items: center;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.12);
+}
+.admin .main .lk-drop-wrap.off > .lk-drop { opacity: 0.5; }
+.lk-drop-wrap.off .lk-drop-count { color: var(--signal); }

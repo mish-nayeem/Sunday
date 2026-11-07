@@ -125,3 +125,7 @@
   .about-tools { grid-column: 1 / -1; }
   .about-swap { opacity: 1; }
 }
+
+/* A block's text editor and its Save. */
+.about-text-edit { display: flex; flex-direction: column; gap: 8px; }
+.about-text-save { justify-content: flex-end; }

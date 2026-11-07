@@ -2,12 +2,14 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Volume2, VolumeX, ShoppingBag } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { imgUrl } from '@/lib/storage';
+import { focusStyle, focusZoom } from '@/lib/focus';
 import heroImage from '@/assets/hero.jpeg';
 import { fetchHeroSlides, slidesFor, isVideo, PHONE_QUERY } from '@/admin/lib/hero.js';
 import { fetchHeroExtras, DEFAULT_HERO_BUTTON } from '@/admin/lib/siteSettings.js';
 import { useCountdown } from '@/admin/components/DropCountdown.jsx';
 import { fetchFeatures, dropShopLink } from '@/admin/lib/features.js';
 import { jsonLd } from '@/lib/jsonLd';
+import PromoBanners from '@/components/home/PromoBanners';
 
 // The panel saves labels in capitals; the storefront writes in sentence case.
 const sentence = (text) => (text ? text[0].toUpperCase() + text.slice(1).toLowerCase() : '');
@@ -187,12 +189,12 @@ function Hero({ slides, button, countdown }) {
         ) : (
           <img
             key={s.id}
-            src={s.id === 'default' ? s.image_url : imgUrl(s.image_url, isPhone ? 900 : 2000)}
+            src={s.id === 'default' ? s.image_url : imgUrl(s.image_url, Math.min(3000, Math.round((isPhone ? 900 : 2000) * focusZoom(s.focus))))}
             alt={s.label || 'SUNDAY campaign'}
             fetchpriority={i === 0 ? 'high' : undefined}
             loading={i === 0 ? 'eager' : 'lazy'}
             className={cls}
-            style={{ objectPosition: s.focus || 'center' }}
+            style={focusStyle(s.focus)}
           />
         );
       })}
@@ -256,6 +258,7 @@ export default function Home() {
       }) }} />
 
       <Hero slides={slides} button={extras.button} countdown={extras.countdown} />
+      <PromoBanners place="home" className="px-4 md:px-6 pt-4" />
 
       {features.length > 0 && (
         <div className="pt-2 md:pt-3">

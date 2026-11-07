@@ -85,10 +85,13 @@ let cached = null;
 
 async function loadMenus() {
   if (cached) return cached;
-  const [{ data: rows }, { data: drops }] = await Promise.all([
+  const [{ data: rows }, { data: drops }, { data: hiddenRow }] = await Promise.all([
     supabase.from('nav_categories').select('*').eq('active', true).order('sort_order'),
     supabase.from('products').select('drop_name').not('drop_name', 'is', null),
+    supabase.from('site_settings').select('value').eq('key', 'lookbook_hidden').maybeSingle(),
   ]);
+  // Lookbooks the admin hid (👁 in Admin → Lookbook), by drop key.
+  const lookHidden = new Set((Array.isArray(hiddenRow?.value) ? hiddenRow.value : []).map((n) => String(n).trim().replace(/\s+/g, ' ').toLowerCase()));
   const toItem = (r) => {
     const to = rowLink(r);
     return { key: `${r.menu}-${r.id}`, label: rowLabel(r), to, drop: r.menu === 'drops' ? dropOf(to) : '' };
@@ -102,11 +105,12 @@ async function loadMenus() {
       ? exploreRows.map(toItem)
       : [...new Set((drops || []).map((d) => d.drop_name).filter(Boolean))].sort()
         .map((name) => ({ key: name, label: name, to: lookbookLink(name), drop: name })),
+    lookHidden,
   };
   return cached;
 }
 
-const FALLBACK = { shop: DEFAULT_SHOP, explore: [] };
+const FALLBACK = { shop: DEFAULT_SHOP, explore: [], lookHidden: new Set() };
 
 export function useMenus() {
   const [menus, setMenus] = useState(cached || FALLBACK);

@@ -1,8 +1,8 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Link, useParams, useSearchParams } from 'react-router-dom';
+import { Link, Navigate, useParams, useSearchParams } from 'react-router-dom';
 import { supabase } from '@/lib/supabaseClient';
 import { imgUrl } from '@/lib/storage';
-import { fetchLooks, dropKey } from '@/admin/lib/lookbook.js';
+import { fetchLooks, dropKey, fetchHiddenLookbooks } from '@/admin/lib/lookbook.js';
 import { useMenus, dropLink, lookbookLink } from '@/lib/menus';
 import LookView from '@/components/lookbook/LookView';
 
@@ -19,6 +19,15 @@ export default function Lookbook() {
   const menus = useMenus();
   const [looks, setLooks] = useState(null);
   const [products, setProducts] = useState(new Map());
+
+  // A lookbook the admin hid (👁) isn't shown: its visitors go to the drop's
+  // products instead.
+  const [hidden, setHidden] = useState(false);
+  useEffect(() => {
+    let alive = true;
+    fetchHiddenLookbooks().then((set) => alive && setHidden(set.has(dropKey(drop)))).catch(() => {});
+    return () => { alive = false; };
+  }, [drop]);
 
   useEffect(() => {
     let cancelled = false;
@@ -51,8 +60,10 @@ export default function Lookbook() {
   };
 
   // The other drops' lookbooks, for hopping between drops without the menu.
-  const drops = menus.explore.filter((m) => m.drop);
+  const drops = menus.explore.filter((m) => m.drop && !menus.lookHidden?.has(dropKey(m.drop)));
   const items = open ? itemsOf(open) : [];
+
+  if (hidden) return <Navigate to={dropLink(drop)} replace />;
 
   return (
     <div className="pb-20">

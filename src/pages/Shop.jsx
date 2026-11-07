@@ -8,6 +8,7 @@ import { useMenus, dropLink } from '@/lib/menus';
 import { dropKey } from '@/admin/lib/lookbook.js';
 import { fetchSetting } from '@/admin/lib/siteSettings.js';
 import { imgUrl } from '@/lib/storage';
+import PromoBanners from '@/components/home/PromoBanners';
 
 // The params that say which list is showing; sort, size and stock only refine it.
 const LIST_KEYS = ['category', 'type', 'drop', 'filter', 'search'];
@@ -190,6 +191,8 @@ export default function Shop() {
           <X size={13} /> Clear search
         </button>
       )}
+
+      <PromoBanners place="shop" className="pt-6" />
 
       <div className="pt-6">
         {loading ? (

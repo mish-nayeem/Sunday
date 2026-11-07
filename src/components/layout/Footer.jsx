@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
+import { fetchFooterAbout, DEFAULT_FOOTER_ABOUT } from '@/admin/lib/siteSettings.js';
 import { Link } from 'react-router-dom';
 import { supabase } from '@/lib/supabaseClient';
 import { SECTIONS } from '@/lib/catalog';
@@ -71,6 +72,9 @@ function FooterGroup({ col }) {
 export default function Footer() {
   const [email, setEmail] = useState('');
   const [status, setStatus] = useState('idle'); // idle | sending | done | error
+  // The heading and line over the sign-up — Admin → Homepage → Footer text.
+  const [about, setAbout] = useState(DEFAULT_FOOTER_ABOUT);
+  useEffect(() => { fetchFooterAbout().then(setAbout).catch(() => {}); }, []);
 
   const handleSubscribe = async (e) => {
     e.preventDefault();
@@ -88,8 +92,8 @@ export default function Footer() {
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-10">
         <div className="flex flex-col gap-10 md:flex-1 md:min-w-0">
         <div className="max-w-sm">
-          <p className="font-heading text-[22px] leading-tight mb-2">Newsletter</p>
-          <p className="text-graphite mb-4">Get an email when new arrivals land. No more than a few a month.</p>
+          <p className="font-heading text-[22px] leading-tight mb-2">{about.heading}</p>
+          <p className="text-graphite mb-4 whitespace-pre-line">{about.text}</p>
           {status === 'done' ? (
             <p>You’re on the list.</p>
           ) : (
