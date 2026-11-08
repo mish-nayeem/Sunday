@@ -25,7 +25,7 @@ export default function WhatsAppButton() {
       aria-label="Chat with us on WhatsApp"
       // Cream circle with an orange ring, the message icon drawn in the
       // same orange (the logo's coral).
-      className={`fixed bottom-5 right-5 z-30 w-12 h-12 bg-[#F6F1E7] text-coral border-[1.5px] border-coral rounded-full items-center justify-center shadow-sm hover:bg-[#EFE7D8] transition-colors ${onProduct ? 'hidden md:flex' : 'flex'}`}
+      className={`fixed bottom-5 right-5 z-30 w-12 h-12 bg-cream text-coral border-[1.5px] border-coral rounded-full items-center justify-center shadow-sm hover:bg-[#DDCAB2] transition-colors ${onProduct ? 'hidden md:flex' : 'flex'}`}
     >
       <MessageCircle size={20} strokeWidth={1.5} />
     </a>

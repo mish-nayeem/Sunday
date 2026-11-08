@@ -74,12 +74,12 @@ function Disclosure({ title, children }) {
         type="button"
         onClick={() => setOpen(!open)}
         aria-expanded={open}
-        className="w-full flex items-center justify-between py-4 text-left text-[13px]"
+        className="w-full flex items-center justify-between py-3 text-left text-[13px]"
       >
         {title}
         <span aria-hidden="true" className="text-[16px] leading-none">{open ? '−' : '+'}</span>
       </button>
-      {open && <div className="pb-5 text-[13px] leading-relaxed text-graphite whitespace-pre-line">{children}</div>}
+      {open && <div className="pb-4 text-[13px] leading-relaxed text-graphite whitespace-pre-line">{children}</div>}
     </div>
   );
 }
@@ -149,7 +149,7 @@ export function ProductHeader({ product, as: Heading = 'h1', kicker }) {
   return (
     <>
       {kicker || (
-        <nav className="text-[12px] text-graphite mb-4" aria-label="Breadcrumb">
+        <nav className="text-[12px] text-graphite mb-2" aria-label="Breadcrumb">
           <Link to="/shop" className="hover:text-ink">Shop</Link>
           {section && (
             <>
@@ -163,8 +163,8 @@ export function ProductHeader({ product, as: Heading = 'h1', kicker }) {
         <Heading className="font-heading text-[28px] lg:text-[26px] leading-tight">{product.name}</Heading>
         <div className="pt-1.5"><ShareButton product={product} /></div>
       </div>
-      {product.variant && <p className="text-[14px] text-graphite mt-1">{product.variant}</p>}
-      <p className="mt-2 text-[15px]">
+      {product.variant && <p className="text-[14px] text-graphite mt-0.5">{product.variant}</p>}
+      <p className="mt-1 text-[15px]">
         {onSale && <span className="text-graphite line-through mr-2">{formatPrice(product.compare_at)}</span>}
         <span className={onSale ? 'text-coral' : ''}>{formatPrice(product.price)}</span>
       </p>
@@ -181,7 +181,7 @@ export function ProductHeader({ product, as: Heading = 'h1', kicker }) {
 // Product details, sizing and delivery, each folded.
 export function ProductDisclosures({ product }) {
   return (
-    <div className="mt-8 border-b border-rule">
+    <div className="mt-5 border-b border-rule">
       <Disclosure title="Product details">
         {[product.description, product.details, product.care_instructions, product.sku && `Style no. ${product.sku}`]
           .filter(Boolean).join('\n\n')}
