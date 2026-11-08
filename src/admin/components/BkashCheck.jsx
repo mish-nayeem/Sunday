@@ -76,7 +76,8 @@ export default function BkashCheck({ orders, onChange }) {
       ...(mail?.sent?.customer ? { customer_mail_sent_at: now } : {}),
     })
 
-    const who = order ? `${order.customer_name} · ${taka(order.advance_amount)}` : ''
+    const full = order?.payment_method === 'bkash_full'
+    const who = order ? `${order.customer_name} · ${taka(order.advance_amount)}${full ? ' paid in full — added to Revenue' : ''}` : ''
     let tail = 'No email on this order — call to confirm.'
     if (order?.customer_email) {
       tail = mail?.sent?.customer
@@ -92,9 +93,10 @@ export default function BkashCheck({ orders, onChange }) {
     <section className="panel bk">
       <div className="panel-label mono" style={{ marginBottom: '6px' }}>BKASH CHECK</div>
       <div className="panel-note" style={{ marginBottom: '16px' }}>
-        Outside-Dhaka orders wait here until their advance is confirmed. Copy the
-        TrxID from your bKash app and paste it below — if it matches an order,
-        that customer gets their confirmation email.
+        Orders paid by bKash — the advance, or the whole order — wait here until
+        the payment is confirmed. Copy the TrxID from your bKash app and paste it
+        below — if it matches an order, that customer gets their confirmation
+        email, and a <b>full payment</b> goes into Revenue straight away.
       </div>
 
       <form className="bk-form" onSubmit={verify}>
@@ -118,7 +120,7 @@ export default function BkashCheck({ orders, onChange }) {
       </div>
 
       {waiting.length === 0 ? (
-        <div className="empty mono">Nothing waiting — every advance has been checked.</div>
+        <div className="empty mono">Nothing waiting — every bKash payment has been checked.</div>
       ) : (
         <div className="bk-table">
           <div className="bk-row bk-th mono">
@@ -127,7 +129,7 @@ export default function BkashCheck({ orders, onChange }) {
             <span>PHONE</span>
             <span>EMAIL</span>
             <span>TRXID</span>
-            <span>ADVANCE</span>
+            <span>PAID</span>
             <span>PLACED</span>
           </div>
           {waiting.map((o) => (
@@ -137,7 +139,7 @@ export default function BkashCheck({ orders, onChange }) {
               <span className="mono">{o.customer_phone}</span>
               <span className="bk-email">{o.customer_email || '—'}</span>
               <span className="mono bk-trx">{o.advance_trx_id || '—'}</span>
-              <span className="mono">{taka(o.advance_amount)}</span>
+              <span className="mono">{taka(o.advance_amount)}{o.payment_method === 'bkash_full' && <span className="bk-full"> · FULL</span>}</span>
               <span className="mono dim">{when(o.created_at)}</span>
             </div>
           ))}
@@ -155,7 +157,7 @@ export default function BkashCheck({ orders, onChange }) {
                 <span className="mono">{o.customer_phone}</span>
                 <span className="bk-email">{o.customer_email || '—'}</span>
                 <span className="mono bk-trx">{o.advance_trx_id}</span>
-                <span className="mono">{taka(o.advance_amount)}</span>
+                <span className="mono">{taka(o.advance_amount)}{o.payment_method === 'bkash_full' && <span className="bk-full"> · FULL</span>}</span>
                 <span className="mono dim">
                   {o.customer_email && !o.customer_mail_sent_at ? (
                     <button

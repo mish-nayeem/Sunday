@@ -105,3 +105,6 @@
   font-size: 12px;
   cursor: pointer;
 }
+
+/* Paid in full: counts toward Revenue once verified. */
+.bk-full { color: var(--accent, #FF7254); font-size: 10px; letter-spacing: 0.08em; }

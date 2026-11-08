@@ -148,7 +148,7 @@ export default function DropProfit({ orders, products }) {
         tip={
           <>
             <p><b>Sales come in by themselves</b> from the orders of this drop's products — sale prices and coupons included (a coupon on a mixed order is split by value).</p>
-            <p><b>Revenue</b> = what reached you: delivered pieces less the courier's 1%, less any returned parcel's unpaid delivery or 2nd parcel you paid. Delivery charges aren't revenue — the courier keeps them.</p>
+            <p><b>Revenue</b> = what reached you: delivered pieces (and pieces paid in full by bKash, once verified) less the courier's 1% on cash collected, less any returned parcel's unpaid delivery or 2nd parcel you paid. Delivery charges aren't revenue — the courier keeps them.</p>
             <p><b>Costs you add here</b> whenever: ads by date, and anything else by name (production, shoot, packaging…).</p>
             <p><b>Profit</b> = revenue − ads − other costs.</p>
           </>
@@ -272,7 +272,7 @@ export default function DropProfit({ orders, products }) {
                   </tbody>
                 </table>
                 <p className="ir-fine">
-                  Revenue counts delivered orders; {taka(f.toCollect)} more comes in as the rest are delivered. Delivery charges aren't counted — the courier keeps them.
+                  Revenue counts delivered orders and verified full bKash payments; {taka(f.toCollect)} more comes in as the rest are delivered. Delivery charges aren't counted — the courier keeps them.
                   {f.returnedPieces > 0 && ` ${f.returnedPieces} piece${f.returnedPieces === 1 ? '' : 's'} came back (returned parcels).`}
                 </p>
               </section>

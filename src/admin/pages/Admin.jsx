@@ -810,6 +810,26 @@ export default function Admin() {
   // Returned: the delivery charge, Paid / Unpaid.
   function renderMoneySplit(o) {
     const m = orderMoney(o)
+    // Paid in full by bKash and the TrxID verified: already in Revenue.
+    if (m.paidUpFront && o.status !== 'delivered') {
+      return (
+        <div className="osplit">
+          <div className="osplit-head mono">
+            PAID IN FULL · BKASH ✓
+            <InfoTip>
+              <p>The customer paid the whole order by bKash and the TrxID was verified in bKash check, so the product price is in Revenue now — it doesn't wait for delivery.</p>
+              <p>The rider collects nothing at the door, so there is no courier {Math.round(COD_FEE_RATE * 100)}%. The delivery charge the customer paid goes to the courier.</p>
+            </InfoTip>
+          </div>
+          <div className="orow dim"><span>Courier · delivery (customer paid)</span><span className="mono">− {taka(m.delivery)}</span></div>
+          <div className="orow dim"><span>Courier · rider collects</span><span className="mono">{taka(0)}</span></div>
+          <div className="orow osplit-you">
+            <span>Your revenue · in revenue</span>
+            <span className="mono">{taka(m.toShop)}</span>
+          </div>
+        </div>
+      )
+    }
     if (o.status === 'delivered' || m.expected) {
       return (
         <div className="osplit">
@@ -817,7 +837,7 @@ export default function Admin() {
             AFTER THE COURIER
             <InfoTip>
               <p>The courier keeps the delivery charge and {Math.round(COD_FEE_RATE * 100)}% of the product price it collects.</p>
-              <p><b>Receivable amount</b> = product price − {Math.round(COD_FEE_RATE * 100)}%: what reaches you. {m.expected ? 'It is added to Revenue once this order is delivered.' : 'This order is delivered, so it is in Revenue.'}</p>
+              <p><b>Receivable amount</b> = product price − {Math.round(COD_FEE_RATE * 100)}%: what reaches you. {m.awaitingCheck ? 'Paid in full by bKash: verify its TrxID in bKash check and it goes into Revenue right away.' : m.expected ? 'It is added to Revenue once this order is delivered.' : 'This order is delivered, so it is in Revenue.'}</p>
             </InfoTip>
           </div>
           <div className="orow dim"><span>Courier · delivery</span><span className="mono">− {taka(m.delivery)}</span></div>
@@ -829,7 +849,7 @@ export default function Admin() {
             </div>
           )}
           <div className="orow osplit-you">
-            <span>Receivable amount{m.expected ? ' · after delivery' : ' · in revenue'}</span>
+            <span>Receivable amount{m.awaitingCheck ? ' · after the bKash check' : m.expected ? ' · after delivery' : ' · in revenue'}</span>
             <span className="mono">{m.receivable < 0 ? `− ${taka(-m.receivable)}` : taka(m.receivable)}</span>
           </div>
         </div>
