@@ -19,11 +19,10 @@ function useWide() {
 }
 
 // The left column of the product page, for one piece of the look: which
-// piece it is, then the same name, price and details as its product page.
-function Details({ product, index, count }) {
+// the same name, price and details as its product page.
+function Details({ product }) {
   return (
     <div className="max-w-sm">
-      <p className="text-[11px] uppercase tracking-[0.16em] text-graphite mb-3">Piece {index + 1} of {count}</p>
       <ProductHeader product={product} as="h2" />
       <ProductDisclosures product={product} />
       <Link to={`/product/${product.id}`} className="inline-block mt-5 text-[12px] underline underline-offset-4">
@@ -108,7 +107,7 @@ export default function LookView({ look, items: rawItems, drop }) {
         <aside className="sticky top-36 self-start pt-2">
           {current ? (
             <>
-              <Details product={current} index={shown} count={items.length} />
+              <Details product={current} />
               {items.length > 1 && (
                 <div className="max-w-sm mt-8">
                   <p className="mb-3 text-[11px] uppercase tracking-[0.16em] text-graphite">In this look</p>
@@ -140,7 +139,7 @@ export default function LookView({ look, items: rawItems, drop }) {
         </div>
 
         {items.map((p, i) => (
-          <div key={p.id} ref={block(i)} data-index={i} data-piece={p.id} className="mx-auto max-w-[620px] pt-6 lg:pt-10">
+          <div key={p.id} ref={block(i)} data-index={i} data-piece={p.id} className={`mx-auto max-w-[620px] ${i === 0 ? 'pt-0' : 'pt-6 lg:pt-10'}`}>
             <div className="space-y-3">
               {(p.images || []).filter(Boolean).slice(0, 2).map((src, k) => (
                 <div key={src} className="aspect-[4/5] bg-stone overflow-hidden">
@@ -150,7 +149,7 @@ export default function LookView({ look, items: rawItems, drop }) {
             </div>
             {!wide && (
               <div className="pt-5 pb-4 space-y-5">
-                <Details product={p} index={i} count={items.length} />
+                <Details product={p} />
                 <BuyBox product={p} />
               </div>
             )}

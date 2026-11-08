@@ -92,11 +92,11 @@ export default function Lookbook() {
       </div>
 
       {open && (
-        <section className="px-4 md:px-6 pt-8 md:pt-12" aria-label="Look">
+        <section className="px-4 md:px-6 pt-3 md:pt-4" aria-label="Look">
           <button type="button" onClick={() => showLook('')} className="text-[11px] uppercase tracking-[0.16em] text-graphite hover:text-ink">
             ← All looks
           </button>
-          <div className="mt-6">
+          <div className="mt-3">
             <LookView look={open} items={items} drop={drop} />
           </div>
         </section>
