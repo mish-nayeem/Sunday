@@ -54,8 +54,8 @@ export default function Footer() {
   };
 
   return (
-    <footer className="mt-auto px-4 md:px-6 pb-8 text-[13px]">
-      <div className="border-t border-rule pt-8 md:pt-10 flex flex-col lg:flex-row lg:items-start lg:justify-between gap-10 lg:gap-8">
+    <footer className="mt-auto px-4 md:px-6 pb-4 text-[13px]">
+      <div className="border-t border-rule pt-6 md:pt-7 flex flex-col lg:flex-row lg:items-start lg:justify-between gap-6 lg:gap-8">
         {/* Sign-up */}
         <div className="w-full lg:max-w-[340px] lg:shrink-0">
           <label htmlFor="footer-email" className="block text-[11px] uppercase tracking-[0.16em] text-graphite mb-1">
@@ -90,8 +90,8 @@ export default function Footer() {
         </div>
 
         {/* One row of links (two columns on a phone) */}
-        <nav aria-label="Footer" className="lg:pt-6">
-          <ul className="grid grid-cols-2 sm:flex sm:flex-wrap gap-x-6 lg:gap-x-5 2xl:gap-x-8 gap-y-4 lg:justify-end">
+        <nav aria-label="Footer" className="lg:pt-5">
+          <ul className="grid grid-cols-2 sm:flex sm:flex-wrap gap-x-6 lg:gap-x-5 2xl:gap-x-8 gap-y-3 lg:justify-end">
             {LINKS.map((l) => (
               <li key={l.to}><Link to={l.to} className={linkCls}>{l.label}</Link></li>
             ))}
@@ -104,8 +104,19 @@ export default function Footer() {
         </nav>
       </div>
 
-      {/* Clear of the round chat button fixed in the corner. */}
-      <p className="mt-10 text-[12px] text-graphite pr-16">© {new Date().getFullYear()} SUNDAY · Dhaka, Bangladesh</p>
+      {/* The small print, and in the middle the sun — SUNDAY's coral circle
+          on cream — which takes you home. Clear of the chat button on the right. */}
+      <div className="mt-6 flex flex-col gap-3 sm:grid sm:grid-cols-[1fr_auto_1fr] sm:items-center">
+        <p className="order-2 sm:order-none text-[12px] text-graphite">© {new Date().getFullYear()} SUNDAY · Dhaka, Bangladesh</p>
+        <Link
+          to="/"
+          aria-label="SUNDAY home"
+          className="order-1 sm:order-none self-center group w-9 h-9 rounded-full bg-[#FFEED6] ring-1 ring-black/10 flex items-center justify-center transition-transform hover:scale-110"
+        >
+          <span aria-hidden="true" className="w-4 h-4 rounded-full bg-[#FF7254]" />
+        </Link>
+        <span aria-hidden="true" />
+      </div>
     </footer>
   );
 }
