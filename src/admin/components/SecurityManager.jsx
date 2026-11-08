@@ -158,9 +158,10 @@ export default function SecurityManager({ orders, blockList, setBlockList, attem
         wide
         title="TURNED-AWAY ATTEMPTS"
         tip={<>
-          <p>Every website order that was refused, newest first, with the name, phone, email and internet connection (IP) it came with.</p>
+          <p>Every website order and support portal try that was refused, newest first, with the name, phone, email and internet connection (IP) it came with.</p>
           <p><b>Too many orders:</b> more than 10 in an hour from one connection — usually someone testing or spamming.</p>
           <p><b>Blocked:</b> a number or connection on your block list tried again.</p>
+          <p><b>Portal guesses:</b> more than 10 wrong order number / phone tries in an hour on the Returns & exchanges portal — someone guessing to see other people's orders. The portal stops answering that connection for the hour.</p>
           <p>The same IP again and again with different numbers is a sign of fake orders: <b>Block IP</b> stops that connection.</p>
         </>}
         side={`${attempts.length}`}
@@ -172,7 +173,7 @@ export default function SecurityManager({ orders, blockList, setBlockList, attem
               <div>
                 <div className="mini-name">
                   {a.name || 'No name given'}
-                  <span className={`sec-why mono ${a.action === 'blocked_customer' ? 'blocked' : ''}`}>{a.action === 'blocked_customer' ? 'BLOCKED' : 'TOO MANY'}</span>
+                  <span className={`sec-why mono ${a.action === 'blocked_customer' ? 'blocked' : ''}`}>{a.action === 'blocked_customer' ? 'BLOCKED' : a.action === 'support_lookup' ? 'PORTAL GUESSES' : 'TOO MANY'}</span>
                 </div>
                 <div className="mono dim">{a.phone || '—'}{a.email ? ` · ${a.email}` : ''} · {a.ip || 'unknown IP'} · {when(a.created_at)}</div>
               </div>

@@ -124,7 +124,8 @@ export function linkOf(b) {
     case 'products': return (b.product_ids || []).length ? `/shop?offer=${encodeURIComponent(b.id)}` : null
     case 'drop': return b.drop ? `/shop?drop=${encodeURIComponent(b.drop)}` : null
     case 'all': return '/shop'
-    case 'url': return /^(https:\/\/|\/)/.test(b.url || '') ? b.url : null
+    // https://… or a path on this site — never //host or /\host.
+    case 'url': return /^(https:\/\/|\/(?![\/\\]))/.test(b.url || '') && !String(b.url).includes('\\') ? b.url : null
     default: return null
   }
 }

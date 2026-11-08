@@ -29,7 +29,9 @@ export default function Login() {
   const destination = (address) => {
     if (isAdminEmail(address)) return '/admin';
     const next = params.get('next') || '/';
-    return next.startsWith('/') && !next.startsWith('//') && !next.startsWith('/admin') ? next : '/';
+    // A path on this site only: not //host or /\host (both leave the site),
+    // and no backslashes at all.
+    return /^\/(?![\/\\])/.test(next) && !next.includes('\\') && !next.startsWith('/admin') ? next : '/';
   };
 
   useEffect(() => {
