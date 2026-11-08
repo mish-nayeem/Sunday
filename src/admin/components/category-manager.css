@@ -148,3 +148,7 @@
   .mm-row { grid-template-columns: 22px minmax(0, 1fr); }
   .mm-row .mm-link, .mm-row .cm-tools { grid-column: 2; }
 }
+
+/* Rows that only show and hide (defaults, More in the menu). */
+.mm-row span.cm-name { display: flex; align-items: center; }
+.mm-link.dim { justify-content: center; font-size: 11px; color: #8a8a8a; overflow-wrap: anywhere; }

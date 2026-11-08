@@ -39,6 +39,7 @@ import ProductForm from '../components/ProductForm.jsx'
 import { collectLabels, lastLabels } from '../lib/details.js'
 import HeroManager from '../components/HeroManager.jsx'
 import MenuManager from '../components/MenuManager.jsx'
+import MenuOptions from '../components/MenuOptions.jsx'
 import ShopTilesManager from '../components/ShopTilesManager.jsx'
 import LookbookManager from '../components/LookbookManager.jsx'
 import CollectionManager from '../components/CollectionManager.jsx'
@@ -2541,6 +2542,7 @@ export default function Admin() {
           <div className="ab-grid">
             <MenuManager menu="shop" drops={collectionNames} products={products} />
             <MenuManager menu="drops" drops={collectionNames} products={products} />
+            <MenuOptions />
           </div>
         )}
         {!loading && tab === 'marketing' && (

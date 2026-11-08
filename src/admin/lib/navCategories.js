@@ -1,6 +1,6 @@
 import { supabase } from './supabaseClient.js'
 import { fetchProducts } from './products.js'
-import { DEFAULT_SHOP, rowLink, typeOf } from '@/lib/menus'
+import { DEFAULT_SHOP, rowLink, typeOf, lookbookLink, MENU_OPTIONS_KEY, menuOptionsOf } from '@/lib/menus'
 
 // One table backs both nav dropdowns; `menu` says which one a row belongs to.
 // SHOP rows match a product's category, DROPS rows match its drop name.
@@ -134,4 +134,48 @@ export async function ensureShopCategory(key, label) {
     order = DEFAULT_SHOP.length
   }
   return createNavCategory({ label: label.trim().toUpperCase(), link: `/shop?type=${encodeURIComponent(key)}`, sortOrder: order, menu: SHOP_MENU })
+}
+
+// ---------- The rest of the menu (site_settings 'menu_options') ----------
+
+export async function fetchMenuOptions() {
+  const { data, error } = await supabase.from('site_settings').select('value').eq('key', MENU_OPTIONS_KEY).maybeSingle()
+  if (error) console.error('[Supabase] fetchMenuOptions failed:', error.message)
+  return { options: menuOptionsOf(data?.value), error }
+}
+
+export async function saveMenuOptions(options) {
+  const { error } = await supabase
+    .from('site_settings')
+    .upsert({ key: MENU_OPTIONS_KEY, value: options, updated_at: new Date().toISOString() })
+  if (error) console.error('[Supabase] saveMenuOptions failed:', error.message)
+  return { error }
+}
+
+// A tab with rows of its own is the admin's from then on: even with every
+// row hidden, the site shows it empty rather than the default list.
+export async function markMenuCustom(menu) {
+  const { options, error } = await fetchMenuOptions()
+  if (error || options.custom[menu]) return { error }
+  return saveMenuOptions({ ...options, custom: { ...options.custom, [menu]: true } })
+}
+
+// The default list a tab shows while it has no rows, written out as rows so
+// each can be shown or hidden. SHOP: all products, collections, categories.
+// EXPLORE: every drop's lookbook.
+export async function seedDefaultRows(menu, drops = []) {
+  const list = menu === SHOP_MENU
+    ? DEFAULT_SHOP.map((d) => ({ label: d.label.toUpperCase(), link: d.to }))
+    : drops.map((d) => ({ label: String(d).toUpperCase(), link: lookbookLink(d) }))
+  if (!list.length) return { rows: [], error: null }
+  const { data, error } = await supabase
+    .from('nav_categories')
+    .insert(list.map((r, i) => ({ ...r, menu, sort_order: i })))
+    .select('*')
+  if (error) {
+    console.error('[Supabase] seedDefaultRows failed:', error.message)
+    return { rows: [], error }
+  }
+  await markMenuCustom(menu)
+  return { rows: data || [], error: null }
 }

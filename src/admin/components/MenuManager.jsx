@@ -6,6 +6,8 @@ import {
   deleteNavCategory,
   reorderNavCategories,
   ensureShopCategory,
+  seedDefaultRows,
+  markMenuCustom,
 } from '../lib/navCategories.js'
 import { linkChoices, rowLink, dropOf, lookbookLink, categoryOptions, categoryKey, DEFAULT_SHOP } from '@/lib/menus'
 import { IconX } from './Icons.jsx'
@@ -24,7 +26,7 @@ const TABS = {
   },
   drops: {
     title: 'EXPLORE TAB',
-    intro: 'The EXPLORE tab of the side menu: your drops’ lookbooks. Each row opens that drop’s lookbook, where tapping a photo shows the products worn in it to shop one by one. A drop you create in Products → Collections appears here by itself. The same drops are listed under SHOP → Shop by collection for drop-wise shopping.',
+    intro: 'The EXPLORE tab of the side menu: your drops’ lookbooks — and any other page you add here (About, Size guide, a link…). Each row opens that drop’s lookbook, where tapping a photo shows the products worn in it to shop one by one. A drop you create in Products → Collections appears here by itself. The same drops are listed under SHOP → Shop by collection for drop-wise shopping.',
     empty: 'Nothing here yet, so the site lists every drop a product carries, A to Z.',
   },
 }
@@ -50,6 +52,8 @@ export default function MenuManager({ menu, drops = [], products = [] }) {
     if (error) setError(`Couldn't load the ${config.title} — has the side-menu migration run in Supabase? (${error.message})`)
     setRows(categories)
     setLoading(false)
+    // Rows of its own: from now on hiding them all leaves the tab empty.
+    if (categories.length) markMenuCustom(menu)
   }
 
   useEffect(() => { load() }, [menu])
@@ -109,6 +113,20 @@ export default function MenuManager({ menu, drops = [], products = [] }) {
   }, [products])
 
   const visible = rows.filter((r) => r.active)
+
+  // While the tab has no rows the site shows a default list. Each default
+  // can be hidden too: the first switch writes the list out as rows.
+  const defaults = menu === 'shop'
+    ? DEFAULT_SHOP.map((d) => ({ label: d.label.toUpperCase(), link: d.to }))
+    : drops.map((d) => ({ label: String(d).toUpperCase(), link: lookbookLink(d) }))
+  function hideDefault(link) {
+    run(async () => {
+      const { rows: made, error } = await seedDefaultRows(menu, drops)
+      if (error) return { error }
+      const row = made.find((r) => r.link === link)
+      return row ? updateNavCategory(row.id, { active: false }) : { error: null }
+    })
+  }
   const linkSelect = (value, onChange, label, allowNew = false) => {
     const known = value === NEW_CATEGORY || choices.some(([v]) => v === value)
     return (
@@ -124,7 +142,7 @@ export default function MenuManager({ menu, drops = [], products = [] }) {
   return (
     <AdminBox
       title={config.title}
-      side={loading ? '' : `${visible.length} showing${rows.length > visible.length ? ` · ${rows.length - visible.length} hidden` : ''}`}
+      side={loading ? '' : rows.length ? `${visible.length} showing${rows.length > visible.length ? ` · ${rows.length - visible.length} hidden` : ''}` : `${defaults.length} showing · default list`}
       tip={
         <>
           <p>{config.intro}</p>
@@ -142,7 +160,9 @@ export default function MenuManager({ menu, drops = [], products = [] }) {
           <span className={menu === 'drops' ? 'on' : ''}>EXPLORE</span>
         </div>
         <div className={`mm-preview-list mono ${menu === 'drops' ? 'right' : ''}`}>
-          {visible.length ? visible.map((r) => <span key={r.id}>{r.label}</span>) : <em>{config.empty}</em>}
+          {rows.length
+            ? (visible.length ? visible.map((r) => <span key={r.id}>{r.label}</span>) : <em>Everything is hidden — this tab shows empty.</em>)
+            : (defaults.length ? defaults.map((d) => <span key={d.link}>{d.label}</span>) : <em>{config.empty}</em>)}
         </div>
       </div>
 
@@ -183,7 +203,23 @@ export default function MenuManager({ menu, drops = [], products = [] }) {
       )}
 
       {loading && <div className="ab-empty mono">Loading…</div>}
-      {!loading && rows.length === 0 && <div className="ab-empty mono">{config.empty}</div>}
+      {!loading && rows.length === 0 && (
+        <>
+          <div className="ab-empty mono">{config.empty} Switch any of them to Hidden to take it off.</div>
+          <div className="cm-list">
+            {defaults.map((d, i) => (
+              <div className="mm-row" key={d.link}>
+                <span className="cm-pos mono">{i + 1}</span>
+                <span className="cm-name mono">{d.label}</span>
+                <span className="mm-link mono dim">{d.link}</span>
+                <span className="cm-tools">
+                  <button type="button" className="ab-switch mono on" onClick={() => hideDefault(d.link)} disabled={busy}>Showing</button>
+                </span>
+              </div>
+            ))}
+          </div>
+        </>
+      )}
 
       <div className="cm-list">
         {rows.map((r, i) => {

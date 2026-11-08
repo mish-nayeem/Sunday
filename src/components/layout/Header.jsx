@@ -3,7 +3,7 @@ import { Link, useLocation } from 'react-router-dom';
 import { Menu, X, Search, User, ShoppingBag } from 'lucide-react';
 import { getCartCount, subscribeCart, openCartDrawer } from '@/lib/cartStore';
 import { useAuth } from '@/lib/AuthContext';
-import { useMenus, dropLink, lookbookLink } from '@/lib/menus';
+import { useMenus, dropLink } from '@/lib/menus';
 import SearchOverlay from './SearchOverlay';
 import logo from '@/assets/logo.png';
 
@@ -79,7 +79,12 @@ export default function Header() {
   const menus = useMenus();
   const drops = menus.explore.filter((m) => m.drop);
   // EXPLORE leaves out lookbooks the admin hid; the drops still shop.
-  const lookDrops = drops.filter((d) => !menus.lookHidden?.has(String(d.drop).trim().replace(/\s+/g, ' ').toLowerCase()));
+  const lookKey = (d) => String(d).trim().replace(/\s+/g, ' ').toLowerCase();
+  // EXPLORE: every row the admin shows — a drop's lookbook (unless that
+  // lookbook is hidden), or any other page.
+  const exploreItems = menus.explore.filter((m) => !(m.drop && m.to.startsWith('/lookbook/') && menus.lookHidden?.has(lookKey(m.drop))));
+  const opts = menus.options || {};
+  const links = opts.links || {};
   const isHome = location.pathname === '/';
   const overHero = isHome && !pastHero;
 
@@ -210,7 +215,7 @@ export default function Header() {
               ))}
               {/* Shop by collection: the drops, each opening its products in
                   the shop. Opens on hover with a mouse, on tap on a phone. */}
-              {menuTab === 'shop' && drops.length > 0 && (
+              {menuTab === 'shop' && opts.shopByCollection !== false && drops.length > 0 && (
                 <li onMouseEnter={() => setCollectionsOpen(true)} onMouseLeave={() => setCollectionsOpen(false)}>
                   <button
                     type="button"
@@ -230,19 +235,23 @@ export default function Header() {
                   )}
                 </li>
               )}
-              {/* EXPLORE: the drops' lookbooks only. */}
-              {menuTab === 'explore' && lookDrops.map((d) => (
-                <li key={d.key}><Link to={lookbookLink(d.drop)} className="text-graphite hover:text-ink">{d.label}</Link></li>
+              {/* EXPLORE: the rows set in Admin → Side menu. */}
+              {menuTab === 'explore' && exploreItems.map((item) => (
+                <li key={item.key}>
+                  {/^https?:/.test(item.to)
+                    ? <a href={item.to} target="_blank" rel="noreferrer" className="text-graphite hover:text-ink">{item.label}</a>
+                    : <Link to={item.to} className="text-graphite hover:text-ink">{item.label}</Link>}
+                </li>
               ))}
-              {menuTab === 'explore' && lookDrops.length === 0 && (
+              {menuTab === 'explore' && exploreItems.length === 0 && (
                 <li className="normal-case tracking-normal text-[13px] text-graphite">New lookbooks will show here.</li>
               )}
             </ul>
 
             <ul className="mt-12 pt-6 border-t border-black/10 space-y-3 text-[12px] text-graphite">
-              <li><Link to="/wishlist" className="hover:text-ink">Wishlist</Link></li>
-              <li><Link to="/order-tracking" className="hover:text-ink">Track an order</Link></li>
-              <li><Link to="/support/portal" className="hover:text-ink">Returns and exchanges</Link></li>
+              {links.wishlist !== false && <li><Link to="/wishlist" className="hover:text-ink">Wishlist</Link></li>}
+              {links.track !== false && <li><Link to="/order-tracking" className="hover:text-ink">Track an order</Link></li>}
+              {links.returns !== false && <li><Link to="/support/portal" className="hover:text-ink">Returns and exchanges</Link></li>}
               {isAdmin && <li><Link to="/admin" className="hover:text-ink">Admin</Link></li>}
               <li>
                 {isAuthenticated
