@@ -86,7 +86,7 @@ function InfoBody({ page }) {
               <section key={i}>
                 {block.heading && <h2 className="font-heading text-[22px] mb-3">{block.heading}</h2>}
                 <div className="overflow-x-auto">
-                  <table className="w-full text-[13px]">
+                  <table className="w-full text-[12px]">
                     <thead>
                       <tr className="border-b border-ink">
                         {(block.head || []).map((h) => (

@@ -42,7 +42,7 @@ export function SizeTable({ chart }) {
   return (
     <>
       <div className="overflow-x-auto">
-        <table className="w-full text-[13px]">
+        <table className="w-full text-[12px]">
           <thead>
             <tr className="border-b border-ink">
               <th className="text-left font-normal py-2 pr-4 text-graphite"></th>
@@ -52,7 +52,7 @@ export function SizeTable({ chart }) {
           <tbody>
             {c.rows.map((r) => (
               <tr key={r.label} className="border-b border-rule">
-                <td className="py-2 pr-4">{r.label}</td>
+                <td className="py-2 pr-4 text-[11px] tracking-[0.04em]">{r.label}</td>
                 {c.columns.map((col, i) => <td key={col} className="py-2 px-2 tabular-nums">{r.values?.[i] ?? ''}</td>)}
               </tr>
             ))}

@@ -253,10 +253,12 @@ export default function Checkout() {
     }
 
     // Send confirmation email + PDF invoice via Brevo (only fires if customer gave an email).
+    // A bKash order's email waits for the admin's TrxID check (Orders → bKash
+    // check sends it then); the function refuses it before that anyway.
     // Awaited (not fire-and-forget): a full page navigation right after firing this off
     // can abort the in-flight request before it reaches Supabase, so we wait for it here.
     // Still never blocks the order itself — a failure here is only logged, not thrown.
-    if (form.email) {
+    if (form.email && paymentMethod === 'cod') {
       try {
         const { error: mailError } = await supabase.functions.invoke('send-order-confirmation', { body: { order_id: oid } });
         if (mailError) console.error('Order confirmation email failed:', await mailError.context?.clone?.().text?.().catch(() => '') || mailError.message);
@@ -283,7 +285,7 @@ export default function Checkout() {
     // it was placed with (track_order needs both) — kept for this tab, so a
     // reload of that page still finds it.
     try { sessionStorage.setItem(`sunday_order_mobile:${oid}`, form.mobile); } catch { /* storage off */ }
-    navigate(`/order-confirmation/${oid}`, { state: { mobile: form.mobile } });
+    navigate(`/order-confirmation/${oid}`, { state: { mobile: form.mobile, email: form.email || '' } });
   };
 
   return (

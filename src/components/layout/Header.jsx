@@ -188,14 +188,14 @@ export default function Header() {
                 role="tab"
                 aria-selected={menuTab === key}
                 onClick={() => setMenuTab(key)}
-                // The open tab in dark ink, cream lettering — unmistakably the one
+                // The open tab in a dark cream, the other a pale one — unmistakably the one
                 // chosen; the other stays light.
-                className={`text-left px-5 text-[11px] font-semibold uppercase tracking-[0.12em] transition-colors ${menuTab === key ? 'bg-ink text-[#F6F1E7]' : 'bg-[#EAE2D3] text-graphite hover:text-ink'}`}
+                className={`text-left px-5 text-[11px] font-semibold uppercase tracking-[0.12em] transition-colors ${menuTab === key ? 'bg-[#D6C3A3] text-ink' : 'bg-[#EFE8DC] text-graphite hover:text-ink'}`}
               >
                 {label}
               </button>
             ))}
-            <button type="button" onClick={() => setMenuOpen(false)} aria-label="Close menu" className="w-14 flex items-center justify-center bg-[#EAE2D3]">
+            <button type="button" onClick={() => setMenuOpen(false)} aria-label="Close menu" className="w-14 flex items-center justify-center bg-[#EFE8DC]">
               <X size={22} strokeWidth={1.25} />
             </button>
           </div>
