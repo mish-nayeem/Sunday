@@ -19,8 +19,9 @@ export const PAGE_HELP = {
   'products:margin': 'Price, cost and margin for every product that has a cost filled in. Cost is never shown to customers.',
   'products:collections': 'Drops (collections) like EID 2026: rename one, schedule its launch time for all its products at once, add products to it. Each drop gets a page in the shop menu and a lookbook.',
 
+  'customers:accounts': 'Everyone who signed in on the site, with their orders. Filter, then copy the emails or download a CSV for email marketing.',
   'customers:repeat': 'Customers by phone number: how many ordered once and how many came back, and what each group spent. Regulars are the ones who ordered more than once.',
-  'customers:reviews': 'Reviews customers left on product pages.',
+  'customers:reviews': 'Reviews customers left on product pages. Approve one to show it; waiting ones first.',
   'customers:wishlist': 'Customers waiting for a sold-out size. Raising that size’s stock from 0 emails them automatically; Email them sends it again by hand.',
 
   'marketing:audience': 'Everyone who ordered or joined the email list, with what they spent. Copy the emails to use in an email tool or for Facebook/Instagram ads.',
@@ -56,7 +57,7 @@ export const PANEL_HELP = {
   'COST & MARGIN': 'Margin = (price − cost) ÷ price. Fill in Cost inside a product to include it here.',
   'COLLECTED · NEW VS REPEAT': 'Money from delivered orders, split between first-time and returning customers.',
   'REGULARS': 'Customers with more than one order, most orders first.',
-  'REVIEWS': 'Newest first.',
+  'REVIEWS': 'A new review shows on its product page only once you approve it. Hide takes a live one off; Delete removes it for good.',
   'RESTOCK DEMAND': 'Sold-out sizes customers asked to be told about, busiest first.',
   'AD SPEND / ROAS': 'ROAS = revenue ÷ spend. Above 1 means the ads paid for themselves.',
   'EMAIL CAMPAIGNS': 'Open rate and click rate as percentages, from your email tool.',

@@ -1636,3 +1636,20 @@ body:has(.trow.dragging) { user-select: none; cursor: grabbing; }
 .oitem.crossed .oitem-price { text-decoration: line-through; color: var(--signal); }
 .oitem.crossed .oitem-name { color: var(--steel); }
 .oitem-ask { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 6px; font-size: 11.5px; color: var(--ink); }
+
+/* Customers → Reviews: the state beside the product's name, and the buttons. */
+.review-state {
+  margin-left: 8px;
+  font-size: 9.5px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 2px 7px;
+  border-radius: 999px;
+  vertical-align: middle;
+  background: var(--steel-line);
+  color: var(--ink);
+}
+.review-state.pending { background: var(--cobalt); color: #fff; }
+.review-state.rejected { opacity: 0.6; }
+.review-acts { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+.review-acts .courier-btn { margin: 0; }
