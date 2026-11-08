@@ -829,8 +829,26 @@ export async function fetchAllReviews() {
     console.error('[Supabase] fetchAllReviews failed:', error.message)
     return { reviews: [], error }
   }
-  // SUNDAY's reviews table names the reviewer author_name.
-  return { reviews: data.map((r) => ({ ...r, customer_name: r.author_name })), error: null }
+  // SUNDAY's reviews table names the reviewer author_name, and keeps
+  // approval as is_approved: approved shows on the product page, anything
+  // else waits.
+  return {
+    reviews: data.map((r) => ({ ...r, customer_name: r.author_name, status: r.is_approved ? 'approved' : 'pending' })),
+    error: null,
+  }
+}
+
+// Customers → Reviews: approve (shows on the product page) or hide it.
+export async function setReviewApproved(id, approved) {
+  const { error } = await supabase.from('reviews').update({ is_approved: approved }).eq('id', id)
+  if (error) console.error('[Supabase] setReviewApproved failed:', error.message)
+  return { error }
+}
+
+export async function deleteReview(id) {
+  const { error } = await supabase.from('reviews').delete().eq('id', id)
+  if (error) console.error('[Supabase] deleteReview failed:', error.message)
+  return { error }
 }
 
 // ---------- Marketing (manual entry) ----------

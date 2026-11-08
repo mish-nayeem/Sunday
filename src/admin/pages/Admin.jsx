@@ -25,6 +25,8 @@ import {
   repeatVsNew,
   costAndMargin,
   fetchAllReviews,
+  setReviewApproved,
+  deleteReview,
   adSpendApi,
   emailCampaignsApi,
   socialStatsApi,
@@ -39,6 +41,7 @@ import ProductForm from '../components/ProductForm.jsx'
 import { collectLabels, lastLabels } from '../lib/details.js'
 import HeroManager from '../components/HeroManager.jsx'
 import MenuManager from '../components/MenuManager.jsx'
+import AccountsManager from '../components/AccountsManager.jsx'
 import MenuOptions from '../components/MenuOptions.jsx'
 import ShopTilesManager from '../components/ShopTilesManager.jsx'
 import LookbookManager from '../components/LookbookManager.jsx'
@@ -205,6 +208,7 @@ const PRODUCTS_SUBS = [
 ]
 
 const CUSTOMERS_SUBS = [
+  { key: 'accounts', label: 'Accounts' },
   { key: 'repeat', label: 'Repeat vs new' },
   { key: 'reviews', label: 'Reviews' },
   { key: 'wishlist', label: 'Wishlist' },
@@ -241,6 +245,7 @@ const ANALYTICS_SUBS = [
 // this browser, so it survives a reload without touching the database.
 const THEMES = [
   { key: 'burgundy', label: 'Burgundy & white' },
+  { key: 'sun', label: 'Orange & cream' },
 ]
 
 const THEME_KEY = 'sunday_admin_theme'
@@ -590,8 +595,22 @@ export default function Admin() {
   const [analyticsSub, setAnalyticsSub] = useState(() => savedPlace('analyticsSub', 'summary', ANALYTICS_SUBS))
   const [supportSub, setSupportSub] = useState(() => savedPlace('supportSub', 'requests', SUPPORT_SUBS))
   const [productsSub, setProductsSub] = useState(() => savedPlace('productsSub', 'catalog', PRODUCTS_SUBS))
-  const [customersSub, setCustomersSub] = useState(() => savedPlace('customersSub', 'repeat', CUSTOMERS_SUBS))
+  const [customersSub, setCustomersSub] = useState(() => savedPlace('customersSub', 'accounts', CUSTOMERS_SUBS))
   const [allReviews, setAllReviews] = useState([])
+  const [reviewBusy, setReviewBusy] = useState(null)
+  const pendingReviews = allReviews.filter((r) => r.status === 'pending').length
+
+  // Customers → Reviews: approve / hide / delete, kept in the list at once.
+  async function handleReview(r, action) {
+    if (action === 'delete' && !window.confirm('Delete this review for good?')) return
+    setReviewBusy(r.id)
+    const { error } = action === 'delete' ? await deleteReview(r.id) : await setReviewApproved(r.id, action === 'approved')
+    setReviewBusy(null)
+    if (error) return window.alert(`Couldn't save: ${error.message}`)
+    setAllReviews((list) => action === 'delete'
+      ? list.filter((x) => x.id !== r.id)
+      : list.map((x) => (x.id === r.id ? { ...x, is_approved: action === 'approved', status: action === 'approved' ? 'approved' : 'pending' } : x)))
+  }
   const [marketingSub, setMarketingSub] = useState(() => savedPlace('marketingSub', 'audience', MARKETING_SUBS))
   const [lastSiteTab, setLastSiteTab] = useState(() => savedPlace('lastSiteTab', 'hero', SITE_TABS))
   const [marginView, setMarginView] = useState(() => savedPlace('marginView', 'product'))
@@ -2389,10 +2408,12 @@ export default function Admin() {
                 className={`subtab ${customersSub === s.key ? 'active' : ''}`}
                 onClick={() => setCustomersSub(s.key)}
               >
-                {s.label}
+                {s.label}{s.key === 'reviews' && pendingReviews > 0 ? ` (${pendingReviews})` : ''}
               </button>
             ))}
           </div>
+
+          {customersSub === 'accounts' && <AccountsManager orders={orders} onOpenOrder={openOrder} />}
 
           {customersSub === 'repeat' && (
           <>
@@ -2455,16 +2476,32 @@ export default function Admin() {
 
           {customersSub === 'reviews' && (
           <section className="panel">
-            <div className="panel-label mono" style={{ marginBottom: '18px' }}>REVIEWS<InfoTip>{PANEL_HELP['REVIEWS']}</InfoTip></div>
+            <div className="panel-label mono" style={{ marginBottom: '6px' }}>REVIEWS<InfoTip>{PANEL_HELP['REVIEWS']}</InfoTip></div>
+            <div className="panel-note" style={{ marginBottom: '18px' }}>
+              A new review waits here and shows on its product page only once
+              it's approved. Waiting ones first.
+            </div>
             {allReviews.length === 0 && <div className="empty mono">No reviews yet.</div>}
-            {allReviews.map((r) => {
+            {[...allReviews]
+              .sort((a, b) => (a.status === 'pending' ? 0 : 1) - (b.status === 'pending' ? 0 : 1))
+              .map((r) => {
               const product = products.find((p) => String(p.id) === String(r.product_id))
+              const live = r.status === 'approved'
               return (
-                <div className="mini-row" key={r.id}>
-                  <div>
-                    <div className="mini-name">{product ? product.name : r.product_id}</div>
+                <div className="mini-row review-row" key={r.id}>
+                  <div style={{ minWidth: 0 }}>
+                    <div className="mini-name">
+                      {product ? product.name : (r.product_name || r.product_id)}
+                      <span className={`review-state mono ${live ? 'approved' : 'pending'}`}>{live ? 'Live' : 'Waiting'}</span>
+                    </div>
                     <div className="mini-id mono" style={{ marginTop: '3px' }}>
                       {r.customer_name}{r.comment ? ` — ${r.comment}` : ''}
+                    </div>
+                    <div className="review-acts">
+                      {live
+                        ? <button className="courier-btn ghost mono" disabled={reviewBusy === r.id} onClick={() => handleReview(r, 'hidden')}>Hide</button>
+                        : <button className="courier-btn mono" disabled={reviewBusy === r.id} onClick={() => handleReview(r, 'approved')}>Approve</button>}
+                      <button className="courier-btn ghost mono" disabled={reviewBusy === r.id} onClick={() => handleReview(r, 'delete')}>Delete</button>
                     </div>
                   </div>
                   <div className="mono dim">{'★'.repeat(r.rating)}{'☆'.repeat(5 - r.rating)}</div>
