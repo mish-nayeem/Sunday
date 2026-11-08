@@ -3,7 +3,29 @@ import { Link, useNavigate } from 'react-router-dom';
 import { X } from 'lucide-react';
 import { supabase } from '@/lib/supabaseClient';
 import { imgUrl } from '@/lib/storage';
-import { SECTIONS, formatPrice } from '@/lib/catalog';
+import { CATEGORY_LABELS, formatPrice } from '@/lib/catalog';
+
+const titleCase = (t) => String(t || '').replace(/_/g, ' ').replace(/(^|\s)\S/g, (c) => c.toUpperCase());
+
+// Browse, before anything is typed: the categories that have the newest
+// products, newest first, and the newest pieces themselves.
+let latestCache = null;
+async function loadLatest() {
+  if (latestCache) return latestCache;
+  const { data } = await supabase
+    .from('products')
+    .select('id,name,price,images,category,created_at')
+    .order('created_at', { ascending: false })
+    .limit(60);
+  const list = data || [];
+  const cats = [];
+  for (const p of list) if (p.category && !cats.includes(p.category)) cats.push(p.category);
+  latestCache = {
+    categories: cats.slice(0, 8).map((c) => ({ key: c, label: CATEGORY_LABELS[c] || titleCase(c) })),
+    products: list.slice(0, 6),
+  };
+  return latestCache;
+}
 
 // Full-width search panel under the header. Results update as you type;
 // Enter opens the full result list on the shop page.
@@ -11,6 +33,7 @@ export default function SearchOverlay({ open, onClose }) {
   const [query, setQuery] = useState('');
   const [results, setResults] = useState([]);
   const [searching, setSearching] = useState(false);
+  const [latest, setLatest] = useState(latestCache);
   const inputRef = useRef(null);
   const navigate = useNavigate();
 
@@ -25,6 +48,10 @@ export default function SearchOverlay({ open, onClose }) {
       document.body.style.overflow = '';
     };
   }, [open, onClose]);
+
+  useEffect(() => {
+    if (open && !latest) loadLatest().then(setLatest).catch(() => {});
+  }, [open, latest]);
 
   useEffect(() => {
     const q = query.trim();
@@ -57,32 +84,54 @@ export default function SearchOverlay({ open, onClose }) {
     <div className="fixed inset-0 z-[95]" role="dialog" aria-modal="true" aria-label="Search">
       <div className="absolute inset-0 bg-black/30" onClick={onClose} />
       <div className="relative bg-white max-h-[90vh] overflow-y-auto">
-        <form onSubmit={submit} className="h-16 px-4 md:px-6 flex items-center gap-4 border-b border-rule">
+        <form onSubmit={submit} className="h-14 px-4 md:px-6 flex items-center gap-4 border-b border-rule">
           <input
             ref={inputRef}
             type="search"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search shirts, polos, trousers"
-            className="flex-1 min-w-0 bg-transparent outline-none font-heading text-[22px] md:text-[28px] placeholder:text-graphite/60"
+            placeholder="Search"
+            className="flex-1 min-w-0 bg-transparent border-0 outline-none focus:outline-none focus-visible:outline-none ring-0 focus:ring-0 shadow-none text-[15px] placeholder:text-graphite/60"
           />
           <button type="button" onClick={onClose} aria-label="Close search" className="p-1">
             <X size={22} strokeWidth={1.5} />
           </button>
         </form>
 
-        <div className="px-4 md:px-6 py-6">
+        <div className="px-4 md:px-6 py-5">
           {q.length < 2 ? (
-            <div>
-              <p className="text-[12px] text-graphite mb-3">Browse</p>
-              <div className="flex flex-wrap gap-x-6 gap-y-2">
-                {SECTIONS.map((s) => (
-                  <Link key={s.key} to={`/shop?category=${s.key}`} onClick={onClose} className="text-[14px] hover:underline underline-offset-4">
-                    {s.label}
-                  </Link>
-                ))}
+            !latest ? null : (
+              <div>
+                {latest.categories.length > 0 && (
+                  <>
+                    <p className="text-[11px] uppercase tracking-[0.14em] text-graphite mb-2.5">Browse</p>
+                    <div className="flex flex-wrap gap-x-5 gap-y-2">
+                      {latest.categories.map((c) => (
+                        <Link key={c.key} to={`/shop?type=${encodeURIComponent(c.key)}`} onClick={onClose} className="text-[13px] hover:underline underline-offset-4">
+                          {c.label}
+                        </Link>
+                      ))}
+                    </div>
+                  </>
+                )}
+                {latest.products.length > 0 && (
+                  <>
+                    <p className="text-[11px] uppercase tracking-[0.14em] text-graphite mt-5 mb-2.5">Just in</p>
+                    <div className="grid grid-cols-3 sm:grid-cols-6 gap-x-3 gap-y-4 max-w-3xl">
+                      {latest.products.map((p) => (
+                        <Link key={p.id} to={`/product/${p.id}`} onClick={onClose} className="group">
+                          <div className="aspect-[4/5] bg-stone mb-1.5 overflow-hidden">
+                            {p.images?.[0] && <img src={imgUrl(p.images[0], 240)} alt="" loading="lazy" className="w-full h-full object-cover" />}
+                          </div>
+                          <p className="text-[11px] leading-snug truncate group-hover:underline underline-offset-2">{p.name}</p>
+                          <p className="text-[11px] text-graphite">{formatPrice(p.price)}</p>
+                        </Link>
+                      ))}
+                    </div>
+                  </>
+                )}
               </div>
-            </div>
+            )
           ) : searching && results.length === 0 ? (
             <p className="text-[13px] text-graphite">Searching…</p>
           ) : results.length === 0 ? (
