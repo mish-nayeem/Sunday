@@ -10,6 +10,7 @@ import { useCountdown } from '@/admin/components/DropCountdown.jsx';
 import { fetchFeatures, dropShopLink } from '@/admin/lib/features.js';
 import { jsonLd } from '@/lib/jsonLd';
 import PromoBanners from '@/components/home/PromoBanners';
+import CustomBanners from '@/components/home/CustomBanner';
 
 // The panel saves labels in capitals; the storefront writes in sentence case.
 const sentence = (text) => (text ? text[0].toUpperCase() + text.slice(1).toLowerCase() : '');
@@ -258,6 +259,7 @@ export default function Home() {
       }) }} />
 
       <Hero slides={slides} button={extras.button} countdown={extras.countdown} />
+      <CustomBanners place="home" className="px-4 md:px-6 pt-4" />
       <PromoBanners place="home" className="px-4 md:px-6 pt-4" />
 
       {features.length > 0 && (
@@ -267,6 +269,8 @@ export default function Home() {
             : <DropFeature key={f.id} f={f} isPhone={isPhone} />))}
         </div>
       )}
+
+      <CustomBanners place="home-end" className="px-4 md:px-6 pt-6 pb-2" />
     </div>
   );
 }

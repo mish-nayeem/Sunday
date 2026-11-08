@@ -9,6 +9,9 @@ import { dropKey } from '@/admin/lib/lookbook.js';
 import { fetchSetting } from '@/admin/lib/siteSettings.js';
 import { imgUrl } from '@/lib/storage';
 import PromoBanners, { DropHero } from '@/components/home/PromoBanners';
+import CustomBanners from '@/components/home/CustomBanner';
+import { fetchCustomBanners } from '@/admin/lib/customBanners.js';
+import { fetchLiveSales } from '@/admin/lib/sales.js';
 import { fetchDropBanners, dropBannerFor } from '@/admin/lib/promos.js';
 
 // The params that say which list is showing; sort, size and stock only refine it.
@@ -65,6 +68,11 @@ export default function Shop() {
   const search = params.get('search') || '';
   const type = params.get('type') || '';
   const drop = params.get('drop') || '';
+  // From a banner (Website → Banners → Your banners): the products it's
+  // about — picked by hand (?offer=<banner>) or on a sale (?sale=<id>).
+  const offer = params.get('offer') || '';
+  const saleId = params.get('sale') || '';
+  const [offerTitle, setOfferTitle] = useState('');
   // Each collection's banner photo (Products → Collections), on top of its page.
   const [dropBanners, setDropBanners] = useState({});
   useEffect(() => { fetchDropBanners().then(({ banners }) => setDropBanners(banners)).catch(() => {}); }, []);
@@ -124,7 +132,37 @@ export default function Shop() {
       if (error && sortDef.value === 'featured') {
         ({ data } = await filtered().order('created_at', { ascending: false }).limit(limit));
       }
-      const rows = drop ? (data || []).filter((p) => dropKey(p.drop_name) === dropKey(drop)) : data || [];
+      let rows = drop ? (data || []).filter((p) => dropKey(p.drop_name) === dropKey(drop)) : data || [];
+      if (offer || saleId) {
+        // Only that offer's products, whatever else the address says.
+        let ids = null;
+        let dropOf = '';
+        let title = '';
+        if (offer) {
+          const { banners } = await fetchCustomBanners();
+          const b = banners.find((x) => x.id === offer);
+          ids = (b?.product_ids || []).map(String);
+          title = b?.title || b?.name || 'Offer';
+        } else {
+          const s = (await fetchLiveSales()).find((x) => String(x.id) === saleId);
+          if (s) {
+            title = `${s.name ? `${s.name} · ` : ''}${s.percent}% off`;
+            if (s.product_ids?.length) ids = s.product_ids.map(String);
+            else if (s.drop_name) dropOf = s.drop_name;
+          } else {
+            ids = [];
+            title = 'This sale has ended';
+          }
+        }
+        if (ids) {
+          const { data: picked } = ids.length ? await supabase.from('products').select('*').in('id', ids) : { data: [] };
+          rows = (picked || []).sort((a, b) => ids.indexOf(String(a.id)) - ids.indexOf(String(b.id)));
+        } else if (dropOf) {
+          const { data: all } = await supabase.from('products').select('*').not('drop_name', 'is', null).limit(1000);
+          rows = (all || []).filter((p) => dropKey(p.drop_name) === dropKey(dropOf));
+        }
+        if (!cancelled) setOfferTitle(title);
+      } else if (!cancelled) setOfferTitle('');
       if (!cancelled) {
         setProducts(rows);
         setLoading(false);
@@ -132,7 +170,7 @@ export default function Shop() {
     };
     load();
     return () => { cancelled = true; };
-  }, [category, type, drop, filter, search, sort]);
+  }, [category, type, drop, filter, search, sort, offer, saleId]);
 
   const visible = useMemo(() => products.filter((p) => {
     if (inStockOnly && isSoldOut(p)) return false;
@@ -197,6 +235,13 @@ export default function Shop() {
       )}
 
       {drop && <DropHero banner={dropBannerFor(drop, dropBanners)} />}
+      {offerTitle && (
+        <div className="pt-6 flex flex-wrap items-baseline justify-between gap-3">
+          <h1 className="font-heading text-[28px] md:text-[36px] leading-tight">{offerTitle}</h1>
+          <Link to="/shop" className="text-[13px] underline underline-offset-4">See everything</Link>
+        </div>
+      )}
+      {!offerTitle && <CustomBanners place="shop" className="pt-6" />}
       <PromoBanners place="shop" className="pt-6" />
 
       <div className="pt-6">
