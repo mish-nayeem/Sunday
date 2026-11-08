@@ -245,6 +245,7 @@ const ANALYTICS_SUBS = [
 // this browser, so it survives a reload without touching the database.
 const THEMES = [
   { key: 'burgundy', label: 'Burgundy & white' },
+  { key: 'sun', label: 'Orange & cream' },
 ]
 
 const THEME_KEY = 'sunday_admin_theme'

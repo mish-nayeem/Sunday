@@ -756,3 +756,57 @@ html:has(.admin)::-webkit-scrollbar-thumb:hover { background: rgba(120, 130, 125
 .admin .chip.on.returned { background: var(--pill-returned); border-color: var(--pill-returned); }
 .admin .ocard.returned { opacity: 0.7; }
 .admin .cs-status.returned, .admin .today-status.returned, .admin .main .obulk-btn.returned { color: var(--pill-returned) !important; }
+
+/* ---------- SUNDAY sun: orange & cream, minimal ----------
+   Cream everywhere — a slightly deeper cream sidebar, a near-white cream for
+   cards — with SUNDAY's orange as the one accent. No shadows or glass: thin
+   warm hairlines carry the structure. */
+.admin[data-theme='sun'] {
+  --paper: #fffdf9;
+  --paper-dim: #fbf6ee;
+  --ink: #2b2118;
+  --steel: #7a6a58;
+  --steel-line: rgba(43, 33, 24, 0.1);
+  --cobalt: #e8603c;
+  --signal: #d2452a;
+  --side-bg: #f3e9d9;
+  --side-text: #2b2118;
+  --side-muted: rgba(43, 33, 24, 0.62);
+  --side-hover: rgba(232, 96, 60, 0.1);
+  --card-shadow: none;
+  --glass: #fffdf9;
+  --glass-hover: #fff8f0;
+  --glass-shine: none;
+  --glass-bg: #fffdf9;
+  --glass-border: rgba(232, 96, 60, 0.22);
+  --detail-bg: #fffdf9;
+  --detail-border: rgba(232, 96, 60, 0.2);
+  --order-edge: rgba(43, 33, 24, 0.12);
+  --order-edge-strong: rgba(232, 96, 60, 0.55);
+  --pill-pending: #b0700c;
+  --pill-shipped: #1a63b0;
+  --pill-delivered: #0b7a3b;
+  --pill-cancelled: #c0392b;
+}
+.admin[data-theme='sun'] .side {
+  box-shadow: none;
+  border-right: 1px solid rgba(43, 33, 24, 0.08);
+}
+.admin[data-theme='sun'] .nav-dot { background: rgba(232, 96, 60, 0.35); }
+.admin[data-theme='sun'] .side-nav button.on .nav-dot { background: var(--cobalt); }
+.admin[data-theme='sun'] .side-brand .display { color: var(--cobalt); }
+.admin[data-theme='sun'] :is(.panel, .stat-card, .ab-box) { border: 1px solid var(--steel-line); box-shadow: none; }
+.admin[data-theme='sun'] .display {
+  font-family: var(--admin-font);
+  font-weight: 800;
+  letter-spacing: 0.02em;
+}
+.admin[data-theme='sun'] .side-brand .display { letter-spacing: 0.08em; }
+.admin[data-theme='sun'] .side-brand { padding-bottom: 36px; }
+@media screen and (min-width: 761px) {
+  .admin[data-theme='sun'] { height: 100vh; overflow: hidden; }
+  .admin[data-theme='sun'] .side { height: 100vh; overscroll-behavior: contain; }
+  .admin[data-theme='sun'] .main { height: 100vh; overflow-y: auto; overscroll-behavior: contain; }
+}
+.theme-swatch[data-swatch='sun'] { background: linear-gradient(135deg, #e8603c 50%, #f3e9d9 50%); box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.12); }
+.theme-swatch[data-swatch='burgundy'] { background: linear-gradient(135deg, #7a1f2b 50%, #ffffff 50%); box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.12); }
