@@ -2,6 +2,7 @@
 // title and panel. Keyed `tab` or `tab:subtab`; panels by their label.
 
 export const PAGE_HELP = {
+  'overview:today': 'The morning look: orders and sales today against yesterday, orders waiting to be packed (and how long), parcels on the way, return requests and sizes running out — each opens the list behind it.',
   'overview:stats': 'The shop at a glance. Every number is a button: tap Pending, Shipped, Delivered or Cancelled to open those orders. Revenue counts delivered orders, because cash on delivery is only money once it arrives — and orders paid in full by bKash as soon as their TrxID is verified in bKash check.',
   'overview:trend': 'Sales over time. Sales by month switches between pieces, orders and taka; Daily momentum shows the last two weeks day by day.',
   'overview:recent': 'Where orders came from: the link a customer clicked before buying (Instagram, Facebook, a tracked link from Marketing → Tracked links). Orders typed in from DMs show as their source.',
