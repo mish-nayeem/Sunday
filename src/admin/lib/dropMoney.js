@@ -1,6 +1,6 @@
 import { supabase } from './supabaseClient.js'
 import { dropKey } from './lookbook.js'
-import { COD_FEE_RATE, returnFeePaid } from './admin.js'
+import { COD_FEE_RATE, returnFeePaid, paidInFull, paidUpFront } from './admin.js'
 
 // Drops and their money: what each drop sold (from the orders, by itself)
 // and what it cost (typed in — drop_costs, see
@@ -82,15 +82,17 @@ export function dropFigures(orders, drop, from, to) {
       if (c != null) f.unitCost += c * Number(it.qty)
     }
 
-    if (o.status === 'delivered') {
+    // Paid in full by bKash and verified: collected already, delivered or not.
+    if (o.status === 'delivered' || paidUpFront(o)) {
       // The 1% was taken on what the rider collected — refunds came later.
-      const collected = net + (Number(o.refunded) || 0) * share
+      // Paid in full by bKash, the rider collected nothing.
+      const collected = paidInFull(o) ? 0 : net + (Number(o.refunded) || 0) * share
       const cod = collected * COD_FEE_RATE
       f.delivered += net
       f.codFee += cod
       f.shopPaidParcels += (Number(o.exchange_fee_unpaid) || 0) * share
     } else {
-      f.toCollect += net * (1 - COD_FEE_RATE)
+      f.toCollect += net * (paidInFull(o) ? 1 : 1 - COD_FEE_RATE)
     }
   }
   f.revenue = f.delivered - f.codFee - f.shopPaidParcels

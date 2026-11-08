@@ -43,6 +43,13 @@ export function returnFeePaid(o) {
   return (Number(o.advance_amount) || 0) >= (Number(o.delivery_fee) || 0)
 }
 
+// Paid in full by bKash at checkout, and the TrxID matched in Orders →
+// bKash check (verify_advance): the money is already ours, so it counts as
+// revenue from that moment — no waiting for delivery. The rider collects
+// nothing at the door, so the courier's 1% doesn't apply either.
+export const paidInFull = (o) => o?.payment_method === 'bkash_full'
+export const paidUpFront = (o) => paidInFull(o) && !!o?.advance_verified_at
+
 // One order's money, split three ways: what the customer paid for the
 // products, what the courier keeps, and what's left for us. Only delivered
 // and returned orders have any — the rest haven't settled yet.
@@ -56,7 +63,8 @@ export function orderMoney(o) {
     // The courier's 1% was taken on what the rider collected — before any
     // refund given back later — so it's worked out on that, not on what's
     // left after the refund.
-    const collected = items + (Number(o.refunded) || 0)
+    // Paid in full by bKash: the rider collected nothing, so no 1%.
+    const collected = paidInFull(o) ? 0 : items + (Number(o.refunded) || 0)
     const codFee = Math.round(collected * COD_FEE_RATE * 100) / 100
     // An exchange's second parcel: its delivery charge is the courier's
     // too. Paid by the customer it passes straight through; paid by us
@@ -73,14 +81,20 @@ export function orderMoney(o) {
       courier: fee + codFee + exchange,
       toShop: items - codFee - exchangeUnpaid,
       receivable: items - codFee - exchangeUnpaid,
+      paidUpFront: paidUpFront(o),
     }
+  }
+  // Paid in full by bKash and verified: in revenue already, on its way or not.
+  if ((o.status === 'pending' || o.status === 'shipped') && paidUpFront(o)) {
+    const items = itemsNet(o)
+    return { items, collected: 0, delivery: fee, codFee: 0, courier: 0, toShop: items, receivable: items, paidUpFront: true }
   }
   // Not delivered yet: what will reach us once it is — the receivable.
   // Nothing counts toward revenue until then.
   if (o.status === 'pending' || o.status === 'shipped') {
     const items = itemsNet(o)
-    const codFee = Math.round(items * COD_FEE_RATE * 100) / 100
-    return { items, delivery: fee, codFee, courier: 0, toShop: 0, receivable: items - codFee, expected: true }
+    const codFee = paidInFull(o) ? 0 : Math.round(items * COD_FEE_RATE * 100) / 100
+    return { items, collected: paidInFull(o) ? 0 : items, delivery: fee, codFee, courier: 0, toShop: 0, receivable: items - codFee, expected: true, awaitingCheck: paidInFull(o) }
   }
   // SUNDAY's courier-returned parcels show as cancelled on the order board
   // (sunday_status keeps 'returned'), but their delivery charge still counts.
@@ -455,18 +469,19 @@ export function computeStats(orders) {
   // Revenue is what reaches us: delivered orders' products less the
   // courier's COD fee (the delivery charge was never ours — the courier keeps
   // it), less the delivery charge of any returned parcel nobody paid for.
-  // COD money isn't real until it lands, so nothing open counts.
+  // COD money isn't real until it lands, so nothing open counts — except
+  // an order paid in full by bKash whose TrxID has been verified.
   let revenue = 0
   let courierTook = 0
   let returnLoss = 0
-  for (const o of [...delivered, ...returned]) {
+  for (const o of [...delivered, ...returned, ...open.filter(paidUpFront)]) {
     const m = orderMoney(o)
     revenue += m.toShop
     courierTook += m.courier
     if (m.toShop < 0) returnLoss -= m.toShop
   }
   // Still to collect: what those orders will bring in after the courier.
-  const openValue = open.reduce((sum, o) => sum + orderMoney(o).receivable, 0)
+  const openValue = open.filter((o) => !paidUpFront(o)).reduce((sum, o) => sum + orderMoney(o).receivable, 0)
 
   // Pieces, not orders — one order can carry several units of several products.
   // Cancelled orders never counted as a sale, so they're left out.

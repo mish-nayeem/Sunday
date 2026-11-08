@@ -1,11 +1,67 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Menu, X, Search, User, ShoppingBag } from 'lucide-react';
 import { getCartCount, subscribeCart, openCartDrawer } from '@/lib/cartStore';
 import { useAuth } from '@/lib/AuthContext';
-import { useMenus, dropLink, lookbookLink } from '@/lib/menus';
+import { useMenus, dropLink } from '@/lib/menus';
 import SearchOverlay from './SearchOverlay';
 import logo from '@/assets/logo.png';
+
+// The person icon: Log in when signed out; signed in, a small menu with
+// the account's email, its shortcuts and Sign out.
+function AccountMenu({ className }) {
+  const { isAuthenticated, isAdmin, user, logout } = useAuth();
+  const [open, setOpen] = useState(false);
+  const box = useRef(null);
+  const location = useLocation();
+
+  useEffect(() => { setOpen(false); }, [location.pathname]);
+  useEffect(() => {
+    if (!open) return undefined;
+    const away = (e) => { if (box.current && !box.current.contains(e.target)) setOpen(false); };
+    const esc = (e) => { if (e.key === 'Escape') setOpen(false); };
+    document.addEventListener('pointerdown', away);
+    document.addEventListener('keydown', esc);
+    return () => { document.removeEventListener('pointerdown', away); document.removeEventListener('keydown', esc); };
+  }, [open]);
+
+  if (!isAuthenticated) {
+    return (
+      <Link to="/login" className={className} aria-label="Log in">
+        <User size={21} strokeWidth={1.5} />
+      </Link>
+    );
+  }
+
+  const item = 'block w-full text-left px-4 py-2.5 hover:bg-stone transition-colors';
+  return (
+    <div ref={box} className="relative">
+      <button type="button" className={className} onClick={() => setOpen((v) => !v)} aria-haspopup="menu" aria-expanded={open} aria-label="Account">
+        <User size={21} strokeWidth={1.5} />
+        <span aria-hidden="true" className="absolute top-1.5 right-1.5 w-1.5 h-1.5 rounded-full bg-coral" />
+      </button>
+      {open && (
+        <div role="menu" className="absolute right-0 top-full mt-2 w-60 bg-white text-ink border border-rule shadow-lg text-[13px] z-50">
+          <p className="px-4 pt-3 pb-2.5 border-b border-rule">
+            <span className="block text-[11px] uppercase tracking-[0.14em] text-graphite">Signed in as</span>
+            <span className="block truncate">{user?.email}</span>
+          </p>
+          <div className="py-1">
+            <Link role="menuitem" to="/wishlist" className={item}>Wishlist</Link>
+            <Link role="menuitem" to="/order-tracking" className={item}>Track an order</Link>
+            <Link role="menuitem" to="/support/portal" className={item}>Returns and exchanges</Link>
+            {isAdmin && <Link role="menuitem" to="/admin" className={item}>Admin</Link>}
+          </div>
+          <div className="border-t border-rule py-1">
+            <button role="menuitem" type="button" className={`${item} text-coral`} onClick={() => { setOpen(false); logout(); }}>
+              Sign out
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
 
 // Menu icon on the left, the wordmark in the centre, search, account and bag
 // icons on the right. On the homepage it sits see-through over the hero,
@@ -23,7 +79,12 @@ export default function Header() {
   const menus = useMenus();
   const drops = menus.explore.filter((m) => m.drop);
   // EXPLORE leaves out lookbooks the admin hid; the drops still shop.
-  const lookDrops = drops.filter((d) => !menus.lookHidden?.has(String(d.drop).trim().replace(/\s+/g, ' ').toLowerCase()));
+  const lookKey = (d) => String(d).trim().replace(/\s+/g, ' ').toLowerCase();
+  // EXPLORE: every row the admin shows — a drop's lookbook (unless that
+  // lookbook is hidden), or any other page.
+  const exploreItems = menus.explore.filter((m) => !(m.drop && m.to.startsWith('/lookbook/') && menus.lookHidden?.has(lookKey(m.drop))));
+  const opts = menus.options || {};
+  const links = opts.links || {};
   const isHome = location.pathname === '/';
   const overHero = isHome && !pastHero;
 
@@ -89,9 +150,7 @@ export default function Header() {
             <button type="button" className={icon} onClick={() => setSearchOpen(true)} aria-label="Search">
               <Search size={21} strokeWidth={1.5} />
             </button>
-            <Link to={isAdmin ? '/admin' : isAuthenticated ? '/wishlist' : '/login'} className={icon} aria-label={isAuthenticated ? 'Account' : 'Log in'}>
-              <User size={21} strokeWidth={1.5} />
-            </Link>
+            <AccountMenu className={`relative ${icon}`} />
             <button type="button" data-bag-icon className={`relative ${icon} ${bump ? 'bag-bump' : ''}`} onClick={openCartDrawer} aria-label={`Bag, ${cartCount} items`}>
               <ShoppingBag size={21} strokeWidth={1.5} />
               {cartCount > 0 && (
@@ -156,7 +215,7 @@ export default function Header() {
               ))}
               {/* Shop by collection: the drops, each opening its products in
                   the shop. Opens on hover with a mouse, on tap on a phone. */}
-              {menuTab === 'shop' && drops.length > 0 && (
+              {menuTab === 'shop' && opts.shopByCollection !== false && drops.length > 0 && (
                 <li onMouseEnter={() => setCollectionsOpen(true)} onMouseLeave={() => setCollectionsOpen(false)}>
                   <button
                     type="button"
@@ -176,23 +235,27 @@ export default function Header() {
                   )}
                 </li>
               )}
-              {/* EXPLORE: the drops' lookbooks only. */}
-              {menuTab === 'explore' && lookDrops.map((d) => (
-                <li key={d.key}><Link to={lookbookLink(d.drop)} className="text-graphite hover:text-ink">{d.label}</Link></li>
+              {/* EXPLORE: the rows set in Admin → Side menu. */}
+              {menuTab === 'explore' && exploreItems.map((item) => (
+                <li key={item.key}>
+                  {/^https?:/.test(item.to)
+                    ? <a href={item.to} target="_blank" rel="noreferrer" className="text-graphite hover:text-ink">{item.label}</a>
+                    : <Link to={item.to} className="text-graphite hover:text-ink">{item.label}</Link>}
+                </li>
               ))}
-              {menuTab === 'explore' && lookDrops.length === 0 && (
+              {menuTab === 'explore' && exploreItems.length === 0 && (
                 <li className="normal-case tracking-normal text-[13px] text-graphite">New lookbooks will show here.</li>
               )}
             </ul>
 
             <ul className="mt-12 pt-6 border-t border-black/10 space-y-3 text-[12px] text-graphite">
-              <li><Link to="/wishlist" className="hover:text-ink">Wishlist</Link></li>
-              <li><Link to="/order-tracking" className="hover:text-ink">Track an order</Link></li>
-              <li><Link to="/support/portal" className="hover:text-ink">Returns and exchanges</Link></li>
+              {links.wishlist !== false && <li><Link to="/wishlist" className="hover:text-ink">Wishlist</Link></li>}
+              {links.track !== false && <li><Link to="/order-tracking" className="hover:text-ink">Track an order</Link></li>}
+              {links.returns !== false && <li><Link to="/support/portal" className="hover:text-ink">Returns and exchanges</Link></li>}
               {isAdmin && <li><Link to="/admin" className="hover:text-ink">Admin</Link></li>}
               <li>
                 {isAuthenticated
-                  ? <button type="button" className="hover:text-ink" onClick={() => { setMenuOpen(false); logout(); }}>Log out</button>
+                  ? <button type="button" className="hover:text-ink" onClick={() => { setMenuOpen(false); logout(); }}>Sign out</button>
                   : <Link to="/login" className="hover:text-ink">Log in</Link>}
               </li>
             </ul>

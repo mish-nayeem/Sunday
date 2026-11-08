@@ -81,15 +81,36 @@ export function linkChoices(drops = [], extraCategories = []) {
   ];
 }
 
+// The rest of the side menu, switched on and off in Admin → Side menu
+// (site_settings 'menu_options'). `custom` remembers that a tab has rows of
+// its own, so hiding every row empties it instead of bringing the default
+// list back.
+export const MENU_OPTIONS_KEY = 'menu_options';
+export const DEFAULT_MENU_OPTIONS = {
+  custom: { shop: false, drops: false },
+  shopByCollection: true,
+  links: { wishlist: true, track: true, returns: true },
+};
+export function menuOptionsOf(value) {
+  const v = value && typeof value === 'object' ? value : {};
+  return {
+    custom: { ...DEFAULT_MENU_OPTIONS.custom, ...(v.custom || {}) },
+    shopByCollection: v.shopByCollection !== false,
+    links: { ...DEFAULT_MENU_OPTIONS.links, ...(v.links || {}) },
+  };
+}
+
 let cached = null;
 
 async function loadMenus() {
   if (cached) return cached;
-  const [{ data: rows }, { data: drops }, { data: hiddenRow }] = await Promise.all([
+  const [{ data: rows }, { data: drops }, { data: hiddenRow }, { data: optionsRow }] = await Promise.all([
     supabase.from('nav_categories').select('*').eq('active', true).order('sort_order'),
     supabase.from('products').select('drop_name').not('drop_name', 'is', null),
     supabase.from('site_settings').select('value').eq('key', 'lookbook_hidden').maybeSingle(),
+    supabase.from('site_settings').select('value').eq('key', MENU_OPTIONS_KEY).maybeSingle(),
   ]);
+  const options = menuOptionsOf(optionsRow?.value);
   // Lookbooks the admin hid (👁 in Admin → Lookbook), by drop key.
   const lookHidden = new Set((Array.isArray(hiddenRow?.value) ? hiddenRow.value : []).map((n) => String(n).trim().replace(/\s+/g, ' ').toLowerCase()));
   const toItem = (r) => {
@@ -100,17 +121,18 @@ async function loadMenus() {
   const exploreRows = (rows || []).filter((r) => r.menu === 'drops');
 
   cached = {
-    shop: shopRows.length ? shopRows.map(toItem) : DEFAULT_SHOP,
-    explore: exploreRows.length
+    shop: shopRows.length || options.custom.shop ? shopRows.map(toItem) : DEFAULT_SHOP,
+    explore: exploreRows.length || options.custom.drops
       ? exploreRows.map(toItem)
       : [...new Set((drops || []).map((d) => d.drop_name).filter(Boolean))].sort()
         .map((name) => ({ key: name, label: name, to: lookbookLink(name), drop: name })),
     lookHidden,
+    options,
   };
   return cached;
 }
 
-const FALLBACK = { shop: DEFAULT_SHOP, explore: [], lookHidden: new Set() };
+const FALLBACK = { shop: DEFAULT_SHOP, explore: [], lookHidden: new Set(), options: DEFAULT_MENU_OPTIONS };
 
 export function useMenus() {
   const [menus, setMenus] = useState(cached || FALLBACK);

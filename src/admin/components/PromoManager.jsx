@@ -13,6 +13,7 @@ import {
   BOX_COLORS, PLACES, colorOf, promoCards,
   fetchBoxes, fetchPlaces, fetchDropBanners, clearPromoCache,
 } from '../lib/promos.js'
+import BannerBuilder from './BannerBuilder.jsx'
 import './promo-manager.css'
 
 const KINDS = [
@@ -96,6 +97,9 @@ export default function PromoManager({ products }) {
 
   return (
     <div className="pm">
+      {/* Banners designed here or uploaded from Canva. */}
+      <BannerBuilder products={products} />
+
       <DraftNote draft={kept} />
       <AdminBox
         wide

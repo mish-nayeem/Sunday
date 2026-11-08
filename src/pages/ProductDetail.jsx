@@ -170,14 +170,14 @@ export default function ProductDetail() {
         // the wheel carries on and the whole page moves down to You may also
         // like and the footer.
         <div className="grid grid-cols-[minmax(240px,1fr)_minmax(320px,440px)_minmax(240px,1fr)] gap-16 xl:gap-28 px-6 h-[calc(100vh-4rem)]">
-          <div className="h-full overflow-y-auto hide-scrollbar py-10">
+          <div className="h-full overflow-y-auto hide-scrollbar py-6">
             <div className="max-w-sm">
               {header}
               {disclosures}
               {shopTheLook}
             </div>
           </div>
-          <div className="h-full overflow-y-auto hide-scrollbar py-10 space-y-3">
+          <div className="h-full overflow-y-auto hide-scrollbar py-6 space-y-3">
             {(images.length ? images : [null]).map((img, i) => (
               <div key={i} className="aspect-[4/5] bg-stone">
                 {img && (
@@ -196,7 +196,7 @@ export default function ProductDetail() {
               </div>
             ))}
           </div>
-          <div className="h-full overflow-y-auto hide-scrollbar py-10 flex">
+          <div className="h-full overflow-y-auto hide-scrollbar py-6 flex">
             <div className="w-full max-w-sm ml-auto my-auto">
               {buy.panel}
             </div>
@@ -236,7 +236,7 @@ export default function ProductDetail() {
             )}
           </div>
 
-          <div className="px-4 md:px-8 pt-6 md:pt-10 pb-12">
+          <div className="px-4 md:px-8 pt-4 md:pt-6 pb-8">
             <div className="md:sticky md:top-24">
               {header}
               <div ref={panelRef}>{buy.panel}</div>
@@ -252,8 +252,8 @@ export default function ProductDetail() {
       )}
 
       {related.length > 0 && (
-        <section className="px-4 md:px-6 pt-16 pb-28 md:py-24">
-          <h2 className="font-heading text-[24px] md:text-[28px] mb-6">You may also like</h2>
+        <section className={`px-4 md:px-6 pt-8 md:pt-10 ${recent.length ? 'pb-8 md:pb-10' : 'pb-28 md:pb-12'}`}>
+          <h2 className="font-heading text-[22px] md:text-[26px] mb-4">You may also like</h2>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-x-2 md:gap-x-3 gap-y-8">
             {related.map((p) => <ProductCard key={p.id} product={p} />)}
           </div>
@@ -261,8 +261,8 @@ export default function ProductDetail() {
       )}
 
       {recent.length > 0 && (
-        <section className="px-4 md:px-6 pb-28 md:pb-24">
-          <h2 className="font-heading text-[24px] md:text-[28px] mb-6">Recently viewed</h2>
+        <section className={`px-4 md:px-6 ${related.length ? '' : 'pt-8 md:pt-10'} pb-28 md:pb-12`}>
+          <h2 className="font-heading text-[22px] md:text-[26px] mb-4">Recently viewed</h2>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-x-2 md:gap-x-3 gap-y-8">
             {recent.map((p) => <ProductCard key={p.id} product={p} />)}
           </div>
