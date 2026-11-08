@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, Link, useLocation } from 'react-router-dom';
 import { supabase } from '@/lib/supabaseClient';
 import { motion } from 'framer-motion';
-import { CheckCircle2, Package, MessageCircle } from 'lucide-react';
+import { CheckCircle2, Package, MessageCircle, Clock } from 'lucide-react';
 
 export default function OrderConfirmation() {
   const { orderId } = useParams();
@@ -49,6 +49,10 @@ export default function OrderConfirmation() {
     );
   }
 
+  // Paid by bKash (outside Dhaka's advance, or the whole order): we check
+  // the TrxID first, and the confirmation email goes out once it's verified.
+  const awaitingCheck = Number(order.advance_amount) > 0;
+  const email = location.state?.email || '';
   const whatsappNumber = settings?.whatsapp_number || '8801700000000';
   const whatsappMessage = encodeURIComponent(`Hi SUNDAY, I'd like to confirm my order ${order.order_id}.`);
 
@@ -60,7 +64,9 @@ export default function OrderConfirmation() {
           <p className="text-[11px] tracking-[0.3em] uppercase text-gold mb-2">Order Placed</p>
           <h1 className="text-2xl md:text-4xl font-light tracking-wide mb-4">Thank You, {order.full_name}!</h1>
           <p className="text-sm text-charcoal/60 mb-10">
-            Your order has been received. We'll contact you on <span className="font-medium">{order.mobile}</span> to confirm delivery.
+            {awaitingCheck
+              ? <>Your order has been received. We'll confirm it in a moment.</>
+              : <>Your order has been received. We'll contact you on <span className="font-medium">{order.mobile}</span> to confirm delivery.</>}
           </p>
 
           <div className="bg-ivory p-6 md:p-8 text-left mb-8">
@@ -108,7 +114,22 @@ export default function OrderConfirmation() {
             )}
           </div>
 
+          {awaitingCheck && (
+            <div className="flex gap-3 items-start text-left border border-coral/40 bg-[#FFF4EC] p-5 mb-8">
+              <Clock size={18} strokeWidth={1.5} className="shrink-0 mt-0.5 text-coral" />
+              <div className="text-sm leading-relaxed">
+                <p className="font-medium mb-1">We'll confirm your order in a moment</p>
+                <p className="text-charcoal/70">
+                  We're checking your bKash payment against the Transaction ID you gave.
+                  As soon as it's verified{email ? <> you'll get a confirmation email at <span className="font-medium">{email}</span></> : <> your order is confirmed and we'll call <span className="font-medium">{order.mobile}</span> if anything's needed</>}.
+                  Your order is saved — no need to order again.
+                </p>
+              </div>
+            </div>
+          )}
+
           <div className="flex flex-col sm:flex-row gap-3">
+            {!awaitingCheck && (
             <a
               href={`https://wa.me/${whatsappNumber}?text=${whatsappMessage}`}
               target="_blank" rel="noopener noreferrer"
@@ -116,6 +137,7 @@ export default function OrderConfirmation() {
             >
               <MessageCircle size={16} /> Confirm via WhatsApp
             </a>
+            )}
             <Link
               to="/order-tracking"
               className="flex-1 flex items-center justify-center gap-2 border border-charcoal text-[11px] tracking-[0.15em] uppercase py-4 hover:bg-mist transition-colors"

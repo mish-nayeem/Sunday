@@ -242,6 +242,14 @@ Deno.serve(async (req: Request) => {
     // admin (bKash check, manual orders) can send it whenever.
     const admin = await isAdminRequest(req, supabase);
     let claimed = false;
+    // Paid by bKash (outside Dhaka's advance, or the whole order): nothing
+    // goes out at checkout. The admin checks the TrxID in Orders → bKash
+    // check, and that sends this email.
+    const paidByBkash = order.payment_method === "bkash_advance" || order.payment_method === "bkash_full" ||
+      Number(order.advance_amount) > 0;
+    if (!admin && paidByBkash && !order.advance_verified_at) {
+      return jsonResponse({ skipped: true, reason: "waiting for the bKash check" });
+    }
     if (!admin) {
       const fresh = Date.now() - new Date(order.created_at).getTime() < 30 * 60 * 1000;
       if (!fresh) return jsonResponse({ skipped: true, reason: "not a new order" });
