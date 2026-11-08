@@ -7,7 +7,8 @@ import { useCornerTone } from '@/lib/imageTone';
 
 // The + in the bottom-right corner of a product photo on the grid: adds to
 // the bag without opening the product. One size → straight in. Otherwise a
-// row of every size opens along the bottom of the photo, the ones out of
+// row of every size opens along the bottom of the photo — small boxes that
+// fit the card's width (a second line if need be, never a sideways scroll), the ones out of
 // stock struck through and not tappable. It sits on top of the card's link,
 // so every tap here stops the link from opening the product. Black + on a
 // light photo, white on a dark one.
@@ -48,9 +49,9 @@ export default function QuickAdd({ product }) {
   const plusColour = tone === 'dark' ? 'text-white' : tone === 'light' ? 'text-ink' : 'text-white mix-blend-difference';
 
   return (
-    <div ref={ref} onClick={stop} className="absolute inset-x-0 bottom-0 z-[3] flex items-end justify-end gap-1.5 p-2 pointer-events-none">
+    <div ref={ref} onClick={stop} className="absolute inset-x-0 bottom-0 z-[3] flex items-end justify-end gap-1 p-1.5 md:p-2 pointer-events-none">
       {open && (
-        <div role="group" aria-label={`Add ${product.name} — pick a size`} className="pointer-events-auto mr-auto flex gap-1 overflow-x-auto [scrollbar-width:none]">
+        <div role="group" aria-label={`Add ${product.name} — pick a size`} className="pointer-events-auto mr-auto min-w-0 flex-1 flex flex-wrap gap-[3px]">
           {sizes.map((s) => {
             const ok = left.includes(s);
             return (
@@ -60,7 +61,7 @@ export default function QuickAdd({ product }) {
                 disabled={!ok}
                 onClick={(e) => ok && add(e, s)}
                 aria-label={ok ? `Add size ${s}` : `${s} — sold out`}
-                className="shrink-0 min-w-[30px] h-8 px-2 bg-white text-ink text-[11px] tracking-[0.04em] shadow-sm hover:bg-ink hover:text-white disabled:opacity-45 disabled:line-through disabled:hover:bg-white disabled:hover:text-ink disabled:cursor-not-allowed"
+                className="shrink-0 min-w-[24px] h-6 px-1 md:min-w-[30px] md:h-8 md:px-2 bg-white text-ink text-[10px] md:text-[11px] tracking-[0.02em] shadow-sm hover:bg-ink hover:text-white disabled:opacity-45 disabled:line-through disabled:hover:bg-white disabled:hover:text-ink disabled:cursor-not-allowed"
               >
                 {s}
               </button>
@@ -78,7 +79,7 @@ export default function QuickAdd({ product }) {
           if (sizes.length <= 1) add(e, left[0]);
           else setOpen((o) => !o);
         }}
-        className={`pointer-events-auto shrink-0 w-8 h-8 grid place-items-center ${plusColour} transition-transform hover:scale-110`}
+        className={`pointer-events-auto shrink-0 w-7 h-7 md:w-8 md:h-8 grid place-items-center ${plusColour} transition-transform hover:scale-110`}
       >
         <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" className={`transition-transform ${open ? 'rotate-45' : ''}`}>
           <path d="M12 5v14M5 12h14" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
