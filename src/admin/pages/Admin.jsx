@@ -42,6 +42,8 @@ import { collectLabels, lastLabels } from '../lib/details.js'
 import HeroManager from '../components/HeroManager.jsx'
 import MenuManager from '../components/MenuManager.jsx'
 import AccountsManager from '../components/AccountsManager.jsx'
+import TodayPanel from '../components/TodayPanel.jsx'
+import CommandSearch from '../components/CommandSearch.jsx'
 import MenuOptions from '../components/MenuOptions.jsx'
 import ShopTilesManager from '../components/ShopTilesManager.jsx'
 import LookbookManager from '../components/LookbookManager.jsx'
@@ -185,6 +187,7 @@ const SECTION_COLORS = {
 }
 
 const OVERVIEW_SUBS = [
+  { key: 'today', label: 'Today' },
   { key: 'stats', label: 'Key stats' },
   { key: 'trend', label: 'Sales trend' },
   { key: 'recent', label: 'Order sources' },
@@ -565,6 +568,22 @@ export default function Admin() {
   const [savingId, setSavingId] = useState(null)
   const [expanded, setExpanded] = useState(null)
   const [search, setSearch] = useState('')
+  // Header → Search (Ctrl+K / ⌘K, or /): orders, customers, products.
+  const [searchOpen, setSearchOpen] = useState(false)
+  useEffect(() => {
+    function onKey(e) {
+      const typing = /^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName) || e.target.isContentEditable
+      if ((e.key === 'k' || e.key === 'K') && (e.ctrlKey || e.metaKey)) {
+        e.preventDefault()
+        setSearchOpen((v) => !v)
+      } else if (e.key === '/' && !typing && !e.ctrlKey && !e.metaKey) {
+        e.preventDefault()
+        setSearchOpen(true)
+      }
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [])
   const [statusFilter, setStatusFilter] = useState('all')
   const [monthMetric, setMonthMetric] = useState('units')
   const [editing, setEditing] = useState(null) // null | 'new' | product row
@@ -584,7 +603,7 @@ export default function Admin() {
   const [bulkBusy, setBulkBusy] = useState(false)
   const [selecting, setSelecting] = useState(false)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
-  const [overviewSub, setOverviewSub] = useState(() => savedPlace('overviewSub', 'stats', OVERVIEW_SUBS))
+  const [overviewSub, setOverviewSub] = useState(() => savedPlace('overviewSub', 'today', OVERVIEW_SUBS))
   const [ordersSub, setOrdersSub] = useState(() => savedPlace('ordersSub', 'list', ORDERS_SUBS))
   const [returns, setReturns] = useState([])
   const [abandonedCarts, setAbandonedCarts] = useState([])
@@ -1629,10 +1648,17 @@ export default function Admin() {
             <div className="top-sub mono">{session.user?.email}</div>
           </div>
           <div className="top-right">
+            <div className="top-actions">
             <button type="button" className="top-refresh mono" onClick={refreshLive} disabled={refreshing} title="Check for new orders">
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" aria-hidden="true" className={refreshing ? 'spin' : ''}><path d="M21 12a9 9 0 1 1-2.6-6.4M21 4v5h-5" /></svg>
               {refreshing ? 'Checking…' : 'Refresh'}
             </button>
+            <button type="button" className="top-search mono" onClick={() => setSearchOpen(true)} title="Search orders, customers and products (Ctrl+K)">
+              <IconSearch width="13" height="13" />
+              Search
+              <kbd>Ctrl K</kbd>
+            </button>
+            </div>
             {THEMES.length > 1 && (
             <div className="theme-picker" role="radiogroup" aria-label="Dashboard theme">
               <span className="theme-picker-label">Theme</span>
@@ -1682,6 +1708,19 @@ export default function Admin() {
                 </button>
               ))}
             </div>
+
+            {overviewSub === 'today' && (
+              <TodayPanel
+                orders={orders}
+                products={products}
+                returns={returns}
+                newRequests={newRequests}
+                onOpenOrders={openOrders}
+                onOpenOrder={openOrder}
+                onOpenRequests={openRequests}
+                onOpenStock={() => { setProductsSub('stock'); goTab('products') }}
+              />
+            )}
 
             {overviewSub === 'stats' && (
               <>
@@ -2698,6 +2737,15 @@ export default function Admin() {
           {slips.map((o) => <PackingSlip key={o.id} order={o} />)}
         </div>
       )}
+      <CommandSearch
+        open={searchOpen}
+        onClose={() => setSearchOpen(false)}
+        orders={orders}
+        products={products}
+        onOpenOrder={openOrder}
+        onOpenProduct={(p) => { setProductsSub('catalog'); goTab('products'); setEditing(p) }}
+        onOpenCustomer={(phone) => { openOrders('all'); setSearch(phone) }}
+      />
     </div>
   )
 }
