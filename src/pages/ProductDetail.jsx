@@ -252,8 +252,8 @@ export default function ProductDetail() {
       )}
 
       {related.length > 0 && (
-        <section className="px-4 md:px-6 pt-16 pb-28 md:py-24">
-          <h2 className="font-heading text-[24px] md:text-[28px] mb-6">You may also like</h2>
+        <section className={`px-4 md:px-6 pt-8 md:pt-10 ${recent.length ? 'pb-8 md:pb-10' : 'pb-28 md:pb-12'}`}>
+          <h2 className="font-heading text-[22px] md:text-[26px] mb-4">You may also like</h2>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-x-2 md:gap-x-3 gap-y-8">
             {related.map((p) => <ProductCard key={p.id} product={p} />)}
           </div>
@@ -261,8 +261,8 @@ export default function ProductDetail() {
       )}
 
       {recent.length > 0 && (
-        <section className="px-4 md:px-6 pb-28 md:pb-24">
-          <h2 className="font-heading text-[24px] md:text-[28px] mb-6">Recently viewed</h2>
+        <section className={`px-4 md:px-6 ${related.length ? '' : 'pt-8 md:pt-10'} pb-28 md:pb-12`}>
+          <h2 className="font-heading text-[22px] md:text-[26px] mb-4">Recently viewed</h2>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-x-2 md:gap-x-3 gap-y-8">
             {recent.map((p) => <ProductCard key={p.id} product={p} />)}
           </div>

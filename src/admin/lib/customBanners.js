@@ -18,7 +18,7 @@ export const KEY = 'custom_banners'
 // Fonts a banner can be written in. 'heading' and 'body' are the site's
 // own; the rest come from Google Fonts, loaded only when a banner uses one.
 export const FONTS = [
-  { key: 'heading', label: 'SUNDAY heading (Newsreader)', css: 'var(--font-heading)' },
+  { key: 'heading', label: 'SUNDAY heading (Neue Montreal)', css: 'var(--font-heading)' },
   { key: 'body', label: 'SUNDAY text (Instrument Sans)', css: 'var(--font-body)' },
   { key: 'bebas', label: 'Bebas Neue — tall caps', css: "'Bebas Neue', sans-serif", google: 'Bebas+Neue' },
   { key: 'anton', label: 'Anton — bold', css: "'Anton', sans-serif", google: 'Anton' },
