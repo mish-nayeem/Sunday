@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import AdminBox from './AdminBox.jsx'
 import { supabase } from '../lib/supabaseClient.js'
 import { fetchSetting, saveSetting } from '../lib/siteSettings.js'
+import UnusedPhotos from './UnusedPhotos.jsx'
 import './usage-box.css'
 
 // Overview → how full SUNDAY's Supabase is against its plan, so a limit
@@ -106,6 +107,7 @@ export default function UsageBox() {
           <p>How full SUNDAY's Supabase is against its plan. Green under 70%, amber 70–90%, red over 90%. Over 80% also shows a warning at the top of Overview.</p>
           <p><b>Database</b>: orders, products, visits… <b>Storage</b>: photos, banners and videos you upload.</p>
           <p><b>Egress</b> (data sent out, photos included) Supabase only shows in its own dashboard — check it there once a month. Photos go through Cloudflare, which keeps it low.</p>
+          <p><b>Unused photos</b>: files no product, slide, look, setting or order uses any more (old uploads, deleted products). Deleting a product, slide or look now removes its photos too, unless something else still uses them.</p>
           <p>Bought Pro? Switch the plan here to <b>Pro</b> and the limits change.</p>
         </>
       }
@@ -136,6 +138,8 @@ export default function UsageBox() {
               {(state.usage.buckets || []).length === 0 ? <span>—</span> : state.usage.buckets.map((b) => <span key={b.bucket}>{b.bucket} · {b.files} files · {size(b.bytes)}</span>)}
             </div>
           </div>
+
+          <UnusedPhotos onDeleted={() => { cache = null; loadUsage().then(setState) }} />
         </>
       )}
     </AdminBox>

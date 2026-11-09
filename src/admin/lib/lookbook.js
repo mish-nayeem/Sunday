@@ -1,4 +1,5 @@
 import { supabase } from './supabaseClient.js'
+import { deleteWithPhotos } from './storageCleanup.js'
 import { fetchSetting, saveSetting } from './siteSettings.js'
 
 // Drop lookbooks: one row per photo (a "look"), made in Admin → Lookbook.
@@ -53,7 +54,7 @@ export async function updateLook(id, patch) {
 }
 
 export async function deleteLook(id) {
-  const { error } = await supabase.from('lookbook_looks').delete().eq('id', id)
+  const { error } = await deleteWithPhotos('lookbook_looks', 'id', [id], () => supabase.from('lookbook_looks').delete().eq('id', id))
   if (error) console.error('[Supabase] deleteLook failed:', error.message)
   return { error }
 }
