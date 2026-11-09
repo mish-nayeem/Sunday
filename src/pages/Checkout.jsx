@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
+import { metaTrack, metaCookies, metaContents } from '@/lib/metaPixel';
 import { useBotCheck, BOT_CHECK_MESSAGE } from '@/lib/botCheck';
 import { Link, useNavigate } from 'react-router-dom';
 import { supabase } from '@/lib/supabaseClient';
@@ -127,6 +128,21 @@ export default function Checkout() {
   const deliveryCharge = form.district ? (selectedMethod?.price || 0) : 0;
   const discount = coupon ? Math.min(coupon.discount, subtotal) : 0;
   const total = subtotal - discount + deliveryCharge;
+
+  // Meta: the shopper reached checkout (once per visit to this page).
+  const checkoutSent = useRef(false);
+  useEffect(() => {
+    if (checkoutSent.current || !cart.length) return;
+    checkoutSent.current = true;
+    metaTrack('InitiateCheckout', {
+      content_ids: cart.map((i) => String(i.productId)),
+      contents: metaContents(cart),
+      content_type: 'product',
+      num_items: cart.reduce((n, i) => n + Number(i.quantity || 0), 0),
+      value: subtotal,
+      currency: 'BDT',
+    });
+  }, [cart, subtotal]);
 
   // A checkout that's never finished shows up in Admin → Orders → Abandoned
   // cart, once there's a name or phone to follow up with.
@@ -260,6 +276,21 @@ export default function Checkout() {
     }
 
     const oid = result[0].order_id;
+
+    // Meta: the purchase from the browser (the Pixel) and from the server
+    // (Conversions API, which ad blockers can't stop), with the order number
+    // as the event id so it counts once. Neither can hold up the order.
+    metaTrack('Purchase', {
+      content_ids: cart.map((i) => String(i.productId)),
+      contents: metaContents(cart),
+      content_type: 'product',
+      num_items: cart.reduce((n, i) => n + Number(i.quantity || 0), 0),
+      value: Number(result[0].total) || total,
+      currency: 'BDT',
+    }, oid);
+    supabase.functions
+      .invoke('meta-capi', { body: { order_id: oid, url: window.location.href, ...metaCookies() } })
+      .catch(() => {});
     await markCartConverted(oid);
 
     // create_order has already taken the pieces off the shelf; cancelling or

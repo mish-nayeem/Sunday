@@ -437,3 +437,7 @@ verify_jwt = false
 # The bot check: shoppers (no login) send their Turnstile token here.
 [functions.turnstile-check]
 verify_jwt = false
+
+# Meta Conversions API: the checkout (no login) asks it to send the purchase.
+[functions.meta-capi]
+verify_jwt = false

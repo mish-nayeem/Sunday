@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { metaTrack } from '@/lib/metaPixel';
 import { useParams, Link } from 'react-router-dom';
 import { supabase } from '@/lib/supabaseClient';
 import { imgUrl } from '@/lib/storage';
@@ -61,6 +62,14 @@ export default function ProductDetail() {
       if (cancelled) return;
       if (!p) { setRaw(null); setLoading(false); return; }
       setRaw(p);
+      metaTrack('ViewContent', {
+        content_ids: [String(p.id)],
+        content_name: p.name,
+        content_type: 'product',
+        content_category: p.category || undefined,
+        value: Number(p.price) || 0,
+        currency: 'BDT',
+      });
       // Shop the look: the other pieces in any lookbook photo this one is in.
       const { data: looks } = await supabase.from('lookbook_looks').select('product_ids').contains('product_ids', [p.id]);
       const others = [...new Set((looks || []).flatMap((l) => l.product_ids || []))].filter((x) => x !== p.id).slice(0, 4);

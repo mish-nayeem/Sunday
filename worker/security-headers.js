@@ -8,6 +8,8 @@
 //   Supabase      — data, login, edge functions and photos (https + wss)
 //   Google Fonts  — the stylesheet and the font files
 //   Sentry        — error reports (when VITE_SENTRY_DSN is set)
+//   Meta Pixel    — connect.facebook.net (its script) and facebook.com (where
+//                   it reports); loads only once a Pixel ID is saved
 //   Turnstile     — Cloudflare's not-a-robot check (its script and the
 //                   frame its tick box sits in); loads only once set up
 // Photos and the hero video may come from any https host, so an old link
@@ -18,12 +20,12 @@ const SUPABASE = 'qgvadxivqtlgobfzbdxt.supabase.co'
 
 export const CSP = [
   "default-src 'self'",
-  "script-src 'self' https://challenges.cloudflare.com",
+  "script-src 'self' https://challenges.cloudflare.com https://connect.facebook.net",
   "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
   "font-src 'self' data: https://fonts.gstatic.com",
   "img-src 'self' data: blob: https:",
   "media-src 'self' blob: https:",
-  `connect-src 'self' https://${SUPABASE} wss://${SUPABASE} https://*.ingest.sentry.io https://*.ingest.us.sentry.io https://*.ingest.de.sentry.io`,
+  `connect-src 'self' https://${SUPABASE} wss://${SUPABASE} https://*.ingest.sentry.io https://*.ingest.us.sentry.io https://*.ingest.de.sentry.io https://www.facebook.com https://connect.facebook.net`,
   // The admin's email preview is an <iframe srcdoc>, on this site.
   "frame-src 'self' https://challenges.cloudflare.com",
   "object-src 'none'",
