@@ -43,6 +43,7 @@ import HeroManager from '../components/HeroManager.jsx'
 import MenuManager from '../components/MenuManager.jsx'
 import AccountsManager from '../components/AccountsManager.jsx'
 import TodayPanel from '../components/TodayPanel.jsx'
+import UsageBox, { UsageWarning } from '../components/UsageBox.jsx'
 import CommandSearch from '../components/CommandSearch.jsx'
 import MenuOptions from '../components/MenuOptions.jsx'
 import ShopTilesManager from '../components/ShopTilesManager.jsx'
@@ -1731,6 +1732,7 @@ export default function Admin() {
               onOpenOrder={openOrder}
               onOpenRequests={openRequests}
             />
+            <UsageWarning onOpen={() => setOverviewSub('today')} />
             <div className="subtabs mono">
               {OVERVIEW_SUBS.map((s) => (
                 <button
@@ -1755,6 +1757,7 @@ export default function Admin() {
                 onOpenStock={() => { setProductsSub('stock'); goTab('products') }}
               />
             )}
+            {overviewSub === 'today' && <div style={{ marginTop: 'var(--gap)' }}><UsageBox /></div>}
 
             {overviewSub === 'stats' && (
               <>
