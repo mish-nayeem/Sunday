@@ -78,16 +78,16 @@ export function imgUrl(url, { w, h, q, original = false } = {}) {
 
 // ---------- Upload ----------
 
-// Photos are shrunk in the browser before they go up, to 1.5 MB at most a
-// file: Supabase's free storage is small, and a camera original can be
-// 20–50 MB and 8000 px wide. It starts at 3600 px on the long side at 92%
-// and steps the quality, then the size, down only as far as it must to fit
-// — most photos stay 3000 px or more, plenty for full-screen zoom. Photos
-// that already fit go up untouched.
-const MAX_BYTES = 1.5 * 1024 * 1024
+// Photos are shrunk in the browser before they go up, to about 700 KB at
+// most a file: Supabase's free storage is 1 GB, and a camera original can be
+// 20–50 MB and 8000 px wide. It starts at 2400 px on the long side at 85%
+// and steps the quality, then the size, down only as far as it must to fit.
+// 2400 px is still sharper than the 2000 px full-screen view the shop serves
+// (imgUrl → original). Photos that already fit go up untouched.
+const MAX_BYTES = 700 * 1024
 const STEPS = [
-  [3600, 0.92], [3600, 0.85], [3000, 0.85], [3000, 0.78],
-  [2500, 0.8], [2200, 0.78], [2000, 0.75], [1600, 0.72],
+  [2400, 0.85], [2400, 0.8], [2200, 0.78], [2000, 0.76],
+  [1800, 0.74], [1600, 0.72],
 ]
 
 async function shrink(file) {

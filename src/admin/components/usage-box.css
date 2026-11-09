@@ -19,3 +19,18 @@
 .ub-plan button { border: none; background: none; padding: 4px 10px; font: inherit; font-size: 11px; color: var(--steel); cursor: pointer; }
 .ub-plan button.on { background: var(--cobalt); color: #fff; }
 .admin .main .ub-warn { display: block; width: 100%; text-align: left; margin: 0 0 12px; padding: 10px 14px; border-radius: 12px; border: 1px solid #e3b04b; background: #fff6e5; color: #7a4a00; font-size: 12px; cursor: pointer; }
+
+/* Unused photos (UnusedPhotos.jsx) */
+.up-wrap { margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--steel-line); }
+.up-btn, .up-bar button { border: 1px solid var(--steel-line); background: none; border-radius: 999px; padding: 4px 12px; font: inherit; font-size: 11px; color: var(--ink, inherit); cursor: pointer; }
+.up-btn:disabled, .up-bar button:disabled { opacity: 0.5; cursor: default; }
+.up-bar { display: flex; flex-wrap: wrap; gap: 8px; margin: 8px 0 10px; }
+.up-bar .up-del { border-color: var(--pill-cancelled, #c0392b); color: var(--pill-cancelled, #c0392b); }
+.up-grid { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 10px; }
+.up-grid li { position: relative; border: 1px solid var(--steel-line); border-radius: 10px; overflow: hidden; background: #fff; }
+.up-grid li.on { border-color: var(--pill-cancelled, #c0392b); }
+.up-grid label { display: block; cursor: pointer; }
+.up-grid input { position: absolute; top: 6px; left: 6px; z-index: 1; }
+.up-grid img, .up-grid video { display: block; width: 100%; aspect-ratio: 1; object-fit: cover; background: #f2f2f2; }
+.up-grid span { display: block; padding: 4px 6px 0; font-size: 10px; color: var(--steel); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.up-grid a { display: block; padding: 0 6px 5px; font-size: 10px; color: var(--cobalt); }

@@ -1,4 +1,5 @@
 import { supabase } from './supabaseClient.js'
+import { deleteWithPhotos } from './storageCleanup.js'
 
 // Public read — only active slides, in display order. Used by the homepage.
 export async function fetchHeroSlides() {
@@ -60,7 +61,7 @@ export async function updateHeroSlide(id, patch) {
 }
 
 export async function deleteHeroSlide(id) {
-  const { error } = await supabase.from('hero_slides').delete().eq('id', id)
+  const { error } = await deleteWithPhotos('hero_slides', 'id', [id], () => supabase.from('hero_slides').delete().eq('id', id))
 
   if (error) {
     console.error('[Supabase] deleteHeroSlide failed:', error.message)

@@ -1,4 +1,5 @@
 import { supabase } from './supabaseClient.js'
+import { deleteWithPhotos } from './storageCleanup.js'
 import { fromLocalInput } from './schedule.js'
 import { lowSizes, LOW_STOCK_AT } from './stock.js'
 // Only SUNDAY's own address opens the panel; the database's
@@ -976,7 +977,8 @@ export async function saveProduct(product, isNewRecord) {
 // already placed keep their lines: they're stored on the order itself.
 export async function deleteProducts(ids) {
   if (!ids.length) return { error: null }
-  const { error } = await supabase.from('products').delete().in('id', ids)
+  // Their photos leave Storage too, unless another row still uses them.
+  const { error } = await deleteWithPhotos('products', 'id', ids, () => supabase.from('products').delete().in('id', ids))
 
   if (error) {
     console.error('[Supabase] deleteProducts failed:', error.message)
@@ -987,7 +989,7 @@ export async function deleteProducts(ids) {
 }
 
 export async function deleteProduct(id) {
-  const { error } = await supabase.from('products').delete().eq('id', id)
+  const { error } = await deleteWithPhotos('products', 'id', [id], () => supabase.from('products').delete().eq('id', id))
 
   if (error) {
     console.error('[Supabase] deleteProduct failed:', error.message)
