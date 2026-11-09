@@ -34,3 +34,13 @@
   .sec-form { grid-template-columns: 1fr; }
   .sec-form .sec-reason { grid-column: auto; }
 }
+
+/* Security → Bot check. */
+.bot-row { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 10px; }
+.bot-field { display: flex; flex-direction: column; gap: 4px; flex: 1 1 260px; min-width: 0; }
+.bot-status { margin: 12px 0 8px; font-size: 12px; }
+.bot-status .ok { color: var(--pill-delivered, #0b7a3b); }
+.bot-status .bad { color: var(--pill-cancelled, #9b1c2e); }
+.bot-switch { display: flex; align-items: center; gap: 10px; margin: 8px 0; }
+.bot-steps { list-style: decimal; margin: 12px 0 0; padding-left: 18px; font-size: 12.5px; line-height: 1.6; }
+.bot-steps li { margin-bottom: 4px; }

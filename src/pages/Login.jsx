@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { useBotCheck, BOT_CHECK_MESSAGE } from '@/lib/botCheck';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { supabase } from '@/lib/supabaseClient';
 import { useAuth } from '@/lib/AuthContext';
@@ -48,20 +49,33 @@ export default function Login() {
     if (step === 'code') codeRef.current?.focus();
   }, [step]);
 
+  const bot = useBotCheck('login');
+
   const sendCode = async (e) => {
     e?.preventDefault();
     const address = email.trim().toLowerCase();
     if (!address) return;
     setBusy(true);
     setError('');
+    // The bot check, once set up: Supabase Auth checks the token itself
+    // (Authentication → Attack Protection → CAPTCHA). Each token is good once.
+    const captchaToken = bot.on ? bot.token : '';
+    if (bot.on && bot.enforce && !captchaToken) {
+      setBusy(false);
+      setError(BOT_CHECK_MESSAGE);
+      return;
+    }
     const { error: err } = await supabase.auth.signInWithOtp({
       email: address,
-      options: { shouldCreateUser: true },
+      options: { shouldCreateUser: true, ...(captchaToken ? { captchaToken } : {}) },
     });
+    if (bot.on) bot.reset();
     setBusy(false);
     if (err) {
       setError(
-        err.status === 429 || /rate|seconds/i.test(err.message)
+        /captcha/i.test(err.message)
+          ? BOT_CHECK_MESSAGE
+          : err.status === 429 || /rate|seconds/i.test(err.message)
           ? 'Too many codes asked for. Wait a minute and try again.'
           : 'We couldn’t send a code to that address. Check it and try again.'
       );
@@ -151,6 +165,10 @@ export default function Login() {
             </div>
           </form>
         )}
+
+        {/* The bot check: invisible unless Cloudflare wants a tick. Kept
+            across both steps, so "Send a new code" has one too. */}
+        <div ref={bot.box} className="mt-4 flex justify-center" />
       </div>
     </div>
   );

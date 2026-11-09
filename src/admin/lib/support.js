@@ -65,25 +65,36 @@ export async function savePortal(portal) {
 
 // ---------- Portal ----------
 
-export async function findOrder(orderId, contact) {
-  const { data, error } = await supabase.rpc('support_find_order', {
+// `pass`: the bot check's pass (src/lib/botCheck.js) once that's set up —
+// then the checked versions are asked, which the database requires while the
+// check is on. undefined = the plain ones, as before.
+async function rpcChecked(name, params, pass) {
+  if (pass === undefined) return supabase.rpc(name, params)
+  const res = await supabase.rpc(`${name}_checked`, { p_turnstile: pass || '', ...params })
+  // The database not updated yet: the plain way.
+  return res.error?.code === 'PGRST202' ? supabase.rpc(name, params) : res
+}
+
+export async function findOrder(orderId, contact, pass) {
+  const { data, error } = await rpcChecked('support_find_order', {
     p_order_id: orderId,
     p_contact: contact,
-  })
+  }, pass)
   if (error) {
     console.error('[Supabase] support_find_order failed:', error.message)
     return { order: null, error: 'Something went wrong. Please try again.' }
   }
   if (!data) return { order: null, error: "We couldn't find an order with those details." }
   // Too many wrong tries from this connection, or a blocked number.
+  if (data.error === 'BOT_CHECK') return { order: null, error: 'We couldn’t confirm you’re not a robot. Wait a moment (or tick the box if one shows) and try again.' }
   if (data.error) return { order: null, error: 'Too many tries. Please wait an hour, or message us on WhatsApp.' }
   return { order: data, error: null }
 }
 
 // `refundTo`: the bKash number money goes back to (a refund, or a cheaper
 // exchange's difference).
-export async function sendRequest({ orderId, contact, kind, reason, items, details, refundTo = '' }) {
-  const { data, error } = await supabase.rpc('support_request_return', {
+export async function sendRequest({ orderId, contact, kind, reason, items, details, refundTo = '', pass }) {
+  const { data, error } = await rpcChecked('support_request_return', {
     p_order_id: orderId,
     p_contact: contact,
     p_kind: kind,
@@ -91,7 +102,7 @@ export async function sendRequest({ orderId, contact, kind, reason, items, detai
     p_items: items,
     p_details: details,
     ...(refundTo ? { p_refund_to: refundTo } : {}),
-  })
+  }, pass)
   // The function's own messages ("Pick at least one item.") are written for
   // the customer, so they're shown as they are.
   if (error) return { id: null, error: error.message || 'Something went wrong. Please try again.' }

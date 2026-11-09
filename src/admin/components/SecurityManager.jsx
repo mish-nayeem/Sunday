@@ -4,6 +4,7 @@ import InfoTip from './InfoTip.jsx'
 import { blockCustomer, unblockCustomer, fetchSafety, saveSafety } from '../lib/safety.js'
 import { bdPhone } from '../../lib/phone.js'
 import { customerIndex, lookupCustomer } from '../lib/admin.js'
+import BotCheckSetup from './BotCheckSetup.jsx'
 import './security.css'
 
 const when = (iso) => new Date(iso).toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit' })
@@ -65,6 +66,7 @@ export default function SecurityManager({ orders, blockList, setBlockList, attem
 
   return (
     <div className="ab-grid">
+      <BotCheckSetup />
       <AdminBox
         wide
         title="WHAT CHECKOUT CHECKS BY ITSELF"
@@ -173,7 +175,7 @@ export default function SecurityManager({ orders, blockList, setBlockList, attem
               <div>
                 <div className="mini-name">
                   {a.name || 'No name given'}
-                  <span className={`sec-why mono ${a.action === 'blocked_customer' ? 'blocked' : ''}`}>{a.action === 'blocked_customer' ? 'BLOCKED' : a.action === 'support_lookup' ? 'PORTAL GUESSES' : 'TOO MANY'}</span>
+                  <span className={`sec-why mono ${a.action === 'blocked_customer' ? 'blocked' : ''}`}>{a.action === 'blocked_customer' ? 'BLOCKED' : a.action === 'support_lookup' ? 'PORTAL GUESSES' : a.action === 'bot_check' ? 'BOT CHECK' : 'TOO MANY'}</span>
                 </div>
                 <div className="mono dim">{a.phone || '—'}{a.email ? ` · ${a.email}` : ''} · {a.ip || 'unknown IP'} · {when(a.created_at)}</div>
               </div>
