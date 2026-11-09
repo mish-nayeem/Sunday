@@ -100,6 +100,9 @@ export function menuOptionsOf(value) {
   };
 }
 
+// A drop's name the way the database compares them: case and spaces don't count.
+const dropKeyOf = (name) => String(name || '').trim().replace(/\s+/g, ' ').toLowerCase();
+
 let cached = null;
 
 async function loadMenus() {
@@ -120,12 +123,23 @@ async function loadMenus() {
   const shopRows = (rows || []).filter((r) => r.menu === 'shop');
   const exploreRows = (rows || []).filter((r) => r.menu === 'drops');
 
+  // Collections hidden in Admin → Products → Collections (👁): their
+  // products are already gone for shoppers, so their menu rows go too —
+  // SHOP rows pointing at one, EXPLORE rows, Shop by collection — instead
+  // of leading to an empty page. Asked one by one: shoppers can't read the
+  // hidden list itself, only whether a name is on it.
+  const named = new Set([...(rows || []).map((r) => dropOf(rowLink(r))), ...(drops || []).map((d) => d.drop_name)].filter(Boolean));
+  const answers = await Promise.all([...named].map((name) =>
+    supabase.rpc('collection_hidden', { p_drop: name }).then(({ data }) => (data === true ? name : null), () => null)));
+  const hiddenDrops = new Set(answers.filter(Boolean).map(dropKeyOf));
+  const shown = (item) => !(dropOf(item.to) && hiddenDrops.has(dropKeyOf(dropOf(item.to))));
+
   cached = {
-    shop: shopRows.length || options.custom.shop ? shopRows.map(toItem) : DEFAULT_SHOP,
-    explore: exploreRows.length || options.custom.drops
+    shop: (shopRows.length || options.custom.shop ? shopRows.map(toItem) : DEFAULT_SHOP).filter(shown),
+    explore: (exploreRows.length || options.custom.drops
       ? exploreRows.map(toItem)
       : [...new Set((drops || []).map((d) => d.drop_name).filter(Boolean))].sort()
-        .map((name) => ({ key: name, label: name, to: lookbookLink(name), drop: name })),
+        .map((name) => ({ key: name, label: name, to: lookbookLink(name), drop: name }))).filter(shown),
     lookHidden,
     options,
   };
