@@ -1,3 +1,4 @@
+import { metaTrack } from '@/lib/metaPixel';
 // Simple cart + wishlist store using localStorage.
 // NOTE: This file was reconstructed from how it's called throughout the app
 // (Cart.jsx, Header.jsx, ProductDetail.jsx, Checkout.jsx, ProductCard.jsx,
@@ -52,6 +53,14 @@ function saveCart(cart) {
 }
 
 export function addToCart(product, size, quantity = 1) {
+  metaTrack('AddToCart', {
+    content_ids: [String(product.id)],
+    content_name: product.name,
+    content_type: 'product',
+    contents: [{ id: String(product.id), quantity, item_price: Number(product.price) || 0 }],
+    value: (Number(product.price) || 0) * quantity,
+    currency: 'BDT',
+  });
   const cart = getCart();
   const existing = cart.find((i) => i.productId === product.id && i.size === size);
   if (existing) {

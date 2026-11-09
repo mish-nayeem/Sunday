@@ -336,6 +336,11 @@ async function check() {
   } catch (e) {
     out.meta = { ok: false, message: String((e as Error).message) }
   }
+  // Conversions API (supabase/functions/meta-capi): only whether its token is
+  // there — the token itself never leaves Supabase.
+  out.capi = env('META_CAPI_TOKEN')
+    ? { ok: true, message: 'Token set' }
+    : { ok: false, message: 'NOT_CONFIGURED: META_CAPI_TOKEN' }
   return out
 }
 

@@ -83,6 +83,9 @@ import {
   IconClock,
   IconChat,
   IconImage,
+  IconGrid,
+  IconBag,
+  IconUser,
 } from '../components/Icons.jsx'
 import { SupportPages, SupportPortal } from '../components/SupportManager.jsx'
 import ReturnsManager from '../components/ReturnsManager.jsx'
@@ -252,6 +255,25 @@ const THEMES = [
 ]
 
 const THEME_KEY = 'sunday_admin_theme'
+
+// The sidebar folded down to its icons (computer), remembered like the theme.
+const MINI_KEY = 'sunday_admin_side_mini'
+
+function savedMini() {
+  try { return localStorage.getItem(MINI_KEY) === '1' } catch { return false }
+}
+
+// Shown when the sidebar is folded (the open sidebar keeps its dots).
+const NAV_ICONS = {
+  overview: IconGrid,
+  orders: IconBag,
+  products: IconTag,
+  customers: IconUser,
+  support: IconChat,
+  marketing: IconStar,
+  analytics: IconTrend,
+  site: IconImage,
+}
 
 function savedTheme() {
   try {
@@ -530,6 +552,13 @@ export default function Admin() {
   useAdminFonts()
   const [session, setSession] = useState(null)
   const [theme, setTheme] = useState(savedTheme)
+  const [mini, setMini] = useState(savedMini)
+  function toggleMini() {
+    setMini((v) => {
+      try { localStorage.setItem(MINI_KEY, v ? '0' : '1') } catch { /* not remembered */ }
+      return !v
+    })
+  }
   const [checkingAuth, setCheckingAuth] = useState(true)
 
   const [tab, setTab] = useState(() => savedPlace('tab', 'overview', Object.keys(TAB_LABELS).map((key) => ({ key }))))
@@ -1561,7 +1590,7 @@ export default function Admin() {
   return (
     // Black & orange is the dark theme with its own colours (data-accent), so
     // every rule written for the dark theme holds for it too.
-    <div className="admin" data-theme={theme === 'orange' ? 'dark' : theme} data-accent={theme === 'orange' ? 'orange' : undefined} data-tab={tab}>
+    <div className={`admin ${mini ? 'mini' : ''}`} data-theme={theme === 'orange' ? 'dark' : theme} data-accent={theme === 'orange' ? 'orange' : undefined} data-tab={tab}>
       <div className="admin-topbar">
         {/* Phones: one step back inside the panel, like the phone's own Back. */}
         {panelHistory.depth > 0 && (
@@ -1587,6 +1616,9 @@ export default function Admin() {
       )}
 
       <aside className={`side ${mobileMenuOpen ? 'open' : ''}`}>
+        <button type="button" className="side-fold" onClick={toggleMini} aria-label={mini ? 'Open the menu wide' : 'Fold the menu to icons'} title={mini ? 'Open wide' : 'Fold'}>
+          <IconChevron width="13" height="13" />
+        </button>
         <div className="side-brand">
           <span className="display">SUNDAY</span>
           <span className="mono side-sub">ADMIN</span>
@@ -1600,10 +1632,12 @@ export default function Admin() {
               className={tab === item.key || (item.key === 'site' && SITE_KEYS.includes(tab)) ? 'on' : ''}
               style={{ '--item-color': SECTION_COLORS[item.key] }}
               onClick={() => goTab(item.key === 'site' ? lastSiteTab : item.key)}
+              title={mini ? item.label : undefined}
             >
               <span className="nav-left">
                 <span className="nav-dot" />
-                {item.label}
+                {(() => { const Icon = NAV_ICONS[item.key]; return Icon ? <Icon className="nav-icon" width="16" height="16" /> : null })()}
+                <span className="nav-label">{item.label}</span>
               </span>
               {item.badge != null && <span className="badge">{item.badge}</span>}
             </button>

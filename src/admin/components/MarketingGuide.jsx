@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import AdminBox from './AdminBox.jsx'
 import { GUIDES } from './MarketingSetup.jsx'
 import { callMarketing, fetchMetaAdDaily } from '../lib/marketing.js'
+import MetaPixelSetup from './MetaPixelSetup.jsx'
 import './marketing-auto.css'
 
 // Marketing → Setup guide. Everything that has to be done once, in order,
@@ -51,6 +52,7 @@ export default function MarketingGuide() {
 
   return (
     <div className="mk">
+      <MetaPixelSetup />
       <AdminBox
         wide
         title="SETUP GUIDE — DO THESE ONCE, IN ORDER"
