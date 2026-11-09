@@ -9,6 +9,19 @@ import { fetchSetting, saveSetting } from '../lib/siteSettings.js'
 // and saved here; the secret key lives only in Supabase. Showing the check
 // and requiring it are separate switches, so it can run for a while before
 // orders depend on it.
+// One step of the guide, ticked once the panel can tell it's done.
+function Step({ n, title, done, children }) {
+  return (
+    <section className={`bot-step ${done ? 'done' : ''}`}>
+      <div className="bot-step-head">
+        <span className="bot-num mono">{done ? '✓' : n}</span>
+        <b>{title}</b>
+      </div>
+      <div className="bot-step-body">{children}</div>
+    </section>
+  )
+}
+
 export default function BotCheckSetup() {
   const [siteKey, setSiteKey] = useState('')
   const [saved, setSaved] = useState(null)
@@ -83,13 +96,79 @@ export default function BotCheckSetup() {
       </div>
       {note && <div className="ab-note mono">{note}</div>}
 
-      <ol className="bot-steps">
-        <li><b>Cloudflare</b> → Turnstile → <b>Add widget</b> → name "SUNDAY", hostname <code>sunday.mish-nayeem.workers.dev</code> (and your own domain later) → mode <b>Managed</b> → Create. It shows a <b>Site key</b> and a <b>Secret key</b>.</li>
-        <li><b>Site key</b> → paste above → Save key. The check starts showing (invisible for most people).</li>
-        <li><b>Secret key</b> → Supabase → Edge Functions → Secrets → <code>TURNSTILE_SECRET</code>. Never paste it in a chat or on this page.</li>
-        <li><b>Login too:</b> Supabase → Authentication → Attack Protection → <b>Enable CAPTCHA protection</b> → provider Turnstile → the same <b>Secret key</b> → Save. Only after step 2 — otherwise login stops working.</li>
-        <li>Place a test order and send yourself a login code. Both fine → switch <b>Require the check</b> on.</li>
-      </ol>
+      <div className="bot-guide">
+        <div className="bot-guide-head mono">SETUP GUIDE — DO THESE IN ORDER</div>
+
+        <Step n={1} title="Make the check in Cloudflare" done={Boolean(saved?.site_key)}>
+          <ol>
+            <li>Go to <b>dash.cloudflare.com</b> and log in (the same account the shop runs on).</li>
+            <li>In the left menu, open <b>Turnstile</b> (under "Application security" or "Protect &amp; Connect" — or type "Turnstile" in the search box at the top).</li>
+            <li>Click <b>Add widget</b> (or "Add site").</li>
+            <li><b>Widget name:</b> <code>SUNDAY</code>.</li>
+            <li><b>Hostnames:</b> add <code>sunday.mish-nayeem.workers.dev</code>. When the shop gets its own domain, come back and add that too (Edit → Hostnames).</li>
+            <li><b>Widget mode:</b> <b>Managed</b> — invisible for most people, a tick box only when Cloudflare isn't sure.</li>
+            <li>"Pre-clearance": leave it <b>No</b>. Click <b>Create</b>.</li>
+            <li>Cloudflare now shows two keys: a <b>Site key</b> (starts with <code>0x4AAA…</code>) and a <b>Secret key</b>. Keep this page open for the next two steps. You can always see them again under Turnstile → SUNDAY → Settings.</li>
+          </ol>
+        </Step>
+
+        <Step n={2} title="Put the Site key here" done={Boolean(saved?.site_key)}>
+          <ol>
+            <li>Copy the <b>Site key</b> from Cloudflare.</li>
+            <li>Paste it in <b>SITE KEY</b> at the top of this box → <b>Save key</b>.</li>
+            <li>The box's corner now says <b>Showing only</b>: the check runs on login, checkout and the portal, but nothing is refused yet.</li>
+          </ol>
+          <p className="bot-note">The Site key isn't secret — anyone can see it in the page. It's fine to paste here.</p>
+        </Step>
+
+        <Step n={3} title="Put the Secret key in Supabase" done={secret === 'ok'}>
+          <ol>
+            <li>Copy the <b>Secret key</b> from Cloudflare.</li>
+            <li>Go to <b>supabase.com/dashboard</b> → the SUNDAY project → <b>Edge Functions</b> (left menu) → <b>Secrets</b>.</li>
+            <li><b>Add new secret</b> → Name: <code>TURNSTILE_SECRET</code> → Value: the Secret key → <b>Save</b>.</li>
+            <li>Come back here and reload: <b>Secret key in Supabase</b> above should say <b>set ✓</b>.</li>
+          </ol>
+          <p className="bot-warn">The Secret key is secret. Never paste it in a chat, an email or on this page — only in Supabase.</p>
+        </Step>
+
+        <Step n={4} title="Turn it on for login (Supabase)">
+          <ol>
+            <li>Only after step 2 — otherwise nobody can log in.</li>
+            <li>Supabase → the SUNDAY project → <b>Authentication</b> → <b>Attack Protection</b>.</li>
+            <li>Turn on <b>Enable CAPTCHA protection</b> → provider <b>Cloudflare Turnstile</b>.</li>
+            <li><b>Captcha secret:</b> the same <b>Secret key</b> from Cloudflare → <b>Save</b>.</li>
+          </ol>
+          <p className="bot-note">From now on, a login code is only sent when the check passes.</p>
+        </Step>
+
+        <Step n={5} title="Test it">
+          <ol>
+            <li>Open the shop in a <b>private / incognito</b> window (so you're not logged in as the admin).</li>
+            <li><b>Login:</b> /login → your email → Log in. The code should arrive as usual.</li>
+            <li><b>Checkout:</b> add something to the bag → checkout → place a test order with your own number. It should go through. Then cancel it in Orders.</li>
+            <li><b>Portal:</b> Support → Returns &amp; exchanges → find that order with its number and your phone.</li>
+            <li>If a tick box appears, tick it — that's Cloudflare not being sure, normal now and then.</li>
+          </ol>
+        </Step>
+
+        <Step n={6} title="Require the check" done={Boolean(saved?.enforce)}>
+          <ol>
+            <li>Steps 1–5 fine → click <b>Not required</b> above so it says <b>Required</b>.</li>
+            <li>Now a script that skips the check can't place an order, get a login code or look up an order. Those tries show in <b>Turned away</b> below as <b>BOT CHECK</b>.</li>
+          </ol>
+        </Step>
+
+        <details className="bot-more">
+          <summary className="mono">SOMETHING WRONG? / HOW TO TURN IT OFF</summary>
+          <ul>
+            <li><b>Customers say they can't order or log in:</b> click <b>Required</b> to switch back to Not required — orders go through at once. If login is the problem, turn off CAPTCHA in Supabase (step 4) too.</li>
+            <li><b>Turn it off completely:</b> empty the SITE KEY box → Save key, and turn off CAPTCHA in Supabase. Everything works as before the check.</li>
+            <li><b>"Secret key in Supabase: not set"</b> after step 3: check the name is exactly <code>TURNSTILE_SECRET</code> (capitals, underscore), then reload this page.</li>
+            <li><b>"function not deployed yet":</b> the turnstile-check function goes out with this update; wait a few minutes after it's merged and reload.</li>
+            <li><b>New domain:</b> add it under Hostnames in Cloudflare (step 1), or the check fails on the new address.</li>
+          </ul>
+        </details>
+      </div>
     </AdminBox>
   )
 }
