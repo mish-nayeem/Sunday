@@ -433,3 +433,7 @@ verify_jwt = false
 # everything else checks the admin itself.
 [functions.send-status-update]
 verify_jwt = false
+
+# The bot check: shoppers (no login) send their Turnstile token here.
+[functions.turnstile-check]
+verify_jwt = false

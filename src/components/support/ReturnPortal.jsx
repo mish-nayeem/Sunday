@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import { useBotCheck } from '@/lib/botCheck';
 import { createPortal } from 'react-dom';
 import { Link, useSearchParams } from 'react-router-dom';
 import { ArrowLeftRight, RotateCcw, Check, X, ChevronLeft, Search, Plus, Minus } from 'lucide-react';
@@ -320,6 +321,8 @@ const field = 'w-full border border-rule px-3 py-2.5 text-[14px] bg-white outlin
 export default function ReturnPortal() {
   const [params] = useSearchParams();
   const [portal, setPortal] = useState(DEFAULT_PORTAL);
+  // The not-a-robot check (Admin → Orders → Security → Bot check).
+  const bot = useBotCheck('support');
   const [orderId, setOrderId] = useState(() => (params.get('order') || '').toUpperCase());
   const [contact, setContact] = useState(() => params.get('contact') || '');
   const [order, setOrder] = useState(null);
@@ -364,7 +367,8 @@ export default function ReturnPortal() {
     setSent(null);
     const id = orderId.trim();
     const who = contact.trim();
-    const { order: o, error: err } = await findOrder(id, who);
+    const pass = bot.on ? await bot.getPass() : undefined;
+    const { order: o, error: err } = await findOrder(id, who, pass);
     setBusy(false);
     if (err) {
       if (!err.startsWith('Something')) setRecent(writeRecent(readRecent().filter((r) => !sameOrder(r.orderId, id))));
@@ -429,6 +433,7 @@ export default function ReturnPortal() {
     const { id, error: err } = await sendRequest({
       orderId: order.id, contact: contact.trim(), kind, reason, items, details: details.trim(),
       refundTo: needsBkash ? bkash : '',
+      pass: bot.on ? await bot.getPass() : undefined,
     });
     setBusy(false);
     if (err) return setError(err);
@@ -472,6 +477,7 @@ export default function ReturnPortal() {
         {portal.intro && !sent && <p className="mt-3 text-[15px] text-graphite">{portal.intro}</p>}
 
         {!sent && (
+          <>
           <form onSubmit={handleCheck} className="mt-8 grid sm:grid-cols-[1fr_1fr_auto] gap-3 items-end">
             <label className="block">
               <span className="text-[12px] uppercase tracking-[0.12em] text-graphite block mb-1.5">Order number</span>
@@ -485,6 +491,8 @@ export default function ReturnPortal() {
               {busy && !order ? 'Finding…' : 'Find order'}
             </button>
           </form>
+          <div ref={bot.box} className="mt-3" />
+          </>
         )}
 
         {/* Orders looked up before, one tap to fill both boxes. */}

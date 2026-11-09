@@ -8,6 +8,8 @@
 //   Supabase      — data, login, edge functions and photos (https + wss)
 //   Google Fonts  — the stylesheet and the font files
 //   Sentry        — error reports (when VITE_SENTRY_DSN is set)
+//   Turnstile     — Cloudflare's not-a-robot check (its script and the
+//                   frame its tick box sits in); loads only once set up
 // Photos and the hero video may come from any https host, so an old link
 // (a Cloudinary photo, a pasted video) never shows as broken. A new outside
 // script, pixel or API has to be added here, or the browser will block it.
@@ -16,14 +18,14 @@ const SUPABASE = 'qgvadxivqtlgobfzbdxt.supabase.co'
 
 export const CSP = [
   "default-src 'self'",
-  "script-src 'self'",
+  "script-src 'self' https://challenges.cloudflare.com",
   "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
   "font-src 'self' data: https://fonts.gstatic.com",
   "img-src 'self' data: blob: https:",
   "media-src 'self' blob: https:",
   `connect-src 'self' https://${SUPABASE} wss://${SUPABASE} https://*.ingest.sentry.io https://*.ingest.us.sentry.io https://*.ingest.de.sentry.io`,
   // The admin's email preview is an <iframe srcdoc>, on this site.
-  "frame-src 'self'",
+  "frame-src 'self' https://challenges.cloudflare.com",
   "object-src 'none'",
   "base-uri 'self'",
   "form-action 'self'",

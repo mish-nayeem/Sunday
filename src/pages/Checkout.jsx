@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
+import { useBotCheck, BOT_CHECK_MESSAGE } from '@/lib/botCheck';
 import { Link, useNavigate } from 'react-router-dom';
 import { supabase } from '@/lib/supabaseClient';
 import { motion } from 'framer-motion';
@@ -26,6 +27,7 @@ function orderErrorMessage(error) {
   if (raw.includes('INVALID_PHONE')) return 'Enter a Bangladeshi mobile number, like 01712345678.';
   if (raw.includes('BLOCKED')) return 'We couldn’t take this order online. Please call or message us to order.';
   if (raw.includes('ADVANCE_REQUIRED')) return 'This number needs Tk 200 paid by bKash up front. Choose that option and add the Transaction ID.';
+  if (raw.includes('BOT_CHECK')) return BOT_CHECK_MESSAGE;
   if (raw.includes('COUPON_')) return 'That code can’t be used on this order any more. Remove it and try again.';
   return 'The order didn’t go through. Check your details and try again.';
 }
@@ -178,6 +180,8 @@ export default function Checkout() {
     } catch (e) { /* clipboard not available */ }
   };
 
+  const bot = useBotCheck('checkout');
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!phone) { setPhoneTouched(true); setSubmitError('Enter a Bangladeshi mobile number, like 01712345678.'); return; }
@@ -209,13 +213,31 @@ export default function Checkout() {
       p_payment_method: paymentMethod,
       p_bkash_transaction_id: isAdvancePay ? bkashTrxId.trim() : null,
     };
-    let { data: result, error: orderError } = await supabase.rpc('create_order', {
+    const full = {
       ...base,
       p_coupon_code: coupon?.code || null,
       p_utm_source: utm.utm_source || null,
       p_utm_medium: utm.utm_medium || null,
       p_utm_campaign: utm.utm_campaign || null,
-    });
+    };
+    // The bot check, once it's set up: a pass for this order, then the
+    // checked version of create_order (the database refuses without one
+    // while the check is switched on).
+    let result;
+    let orderError;
+    if (bot.on) {
+      const pass = await bot.getPass();
+      if (!pass && bot.enforce) {
+        setSubmitError(BOT_CHECK_MESSAGE);
+        setSubmitting(false);
+        return;
+      }
+      ({ data: result, error: orderError } = await supabase.rpc('create_order_checked', { p_turnstile: pass || '', ...full }));
+      // The database not updated yet: the plain way.
+      if (orderError?.code === 'PGRST202') ({ data: result, error: orderError } = await supabase.rpc('create_order', full));
+    } else {
+      ({ data: result, error: orderError } = await supabase.rpc('create_order', full));
+    }
     // The database not updated yet (no coupon/link parameters): place the
     // order the old way rather than losing it. A coupon can't apply then.
     if (orderError?.code === 'PGRST202' && !coupon) {
@@ -481,6 +503,9 @@ export default function Checkout() {
                     <Link to="/support/privacy" target="_blank" className="underline underline-offset-4">Privacy policy</Link>.
                   </span>
                 </label>
+
+                {/* The bot check: invisible unless Cloudflare wants a tick. */}
+                <div ref={bot.box} />
 
                 {submitError && <p className="text-[13px] text-coral" role="alert">{submitError}</p>}
 
