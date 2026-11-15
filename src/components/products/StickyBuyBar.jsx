@@ -20,8 +20,9 @@ import { joinWishlist, hasJoined, savedEmail } from '@/admin/lib/wishlist.js';
 // Sold out in every size: ADD TO WISHLIST instead, which opens an email line
 // with SUBMIT on its right — the email lands in Admin → Customers → Wishlist
 // and is mailed when the piece is back.
-// `hidden` slides it away (the page hides it once You may also like is up).
-export default function StickyBuyBar({ product, buy, hidden }) {
+// It stays at the bottom the whole time the product's page is open (the page
+// gets room under its footer for it), and goes with the page.
+export default function StickyBuyBar({ product, buy }) {
   const [open, setOpen] = useState(''); // '' | 'colour' | 'size'
   const [wish, setWish] = useState(hasJoined(product.id) ? 'done' : ''); // '' | 'form' | 'sending' | 'done' | 'error'
   const [email, setEmail] = useState(savedEmail());
@@ -35,7 +36,18 @@ export default function StickyBuyBar({ product, buy, hidden }) {
   const hasColours = groupColours.length > 0 || nameColours.length > 0;
 
   // A new product, or the bar sliding away: close what's open.
-  useEffect(() => { setOpen(''); }, [product.id, hidden]);
+  useEffect(() => { setOpen(''); }, [product.id]);
+  // Room under the page's last lines (the footer), so the bar never covers
+  // them: the bar's height, kept up to date, while it's on screen (phones).
+  useEffect(() => {
+    const el = box.current;
+    if (!el || !window.matchMedia('(max-width: 767px)').matches) return undefined;
+    const fit = () => { document.body.style.paddingBottom = `${el.offsetHeight}px`; };
+    fit();
+    const ro = new ResizeObserver(fit);
+    ro.observe(el);
+    return () => { ro.disconnect(); document.body.style.paddingBottom = ''; };
+  }, []);
   useEffect(() => { setWish(hasJoined(product.id) ? 'done' : ''); }, [product.id]);
 
   const submitWish = async (e) => {
@@ -94,8 +106,7 @@ export default function StickyBuyBar({ product, buy, hidden }) {
   return (
     <div
       ref={box}
-      aria-hidden={hidden || undefined}
-      className={`md:hidden fixed inset-x-0 bottom-0 z-40 bg-white border-t border-rule px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] transition-transform duration-300 ease-out ${hidden ? 'translate-y-full pointer-events-none' : 'translate-y-0'}`}
+      className="md:hidden fixed inset-x-0 bottom-0 z-40 bg-white border-t border-rule px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]"
     >
       {/* A sold-out size tapped: the email for when it's back. */}
       {buy.waitSize && (
