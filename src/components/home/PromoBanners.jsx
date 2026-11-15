@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { imgUrl } from '@/lib/storage';
-import { fetchPromos, promoCards, colorOf } from '@/admin/lib/promos.js';
+import { fetchPromos, promoCards, colorOf, clearPromoCache } from '@/admin/lib/promos.js';
+import { clearSalesCache } from '@/admin/lib/sales.js';
 import { useCountdown } from '@/admin/components/DropCountdown.jsx';
 
 // Offer cards (Admin → Website → Banners): a running sale with a countdown
@@ -77,8 +78,23 @@ export default function PromoBanners({ place, data: given, className = '' }) {
   useEffect(() => {
     if (given) { setData(given); return undefined; }
     let off = false;
-    fetchPromos().then((d) => { if (!off) setData(d); }).catch(() => {});
-    return () => { off = true; };
+    const read = () => fetchPromos().then((d) => { if (!off) setData(d); }).catch(() => {});
+    read();
+    // Back on a page left open (a phone tab): read again, so a sale switched
+    // off or ended in the meantime disappears without a reload.
+    const onVisible = () => {
+      if (document.visibilityState !== 'visible') return;
+      clearPromoCache();
+      clearSalesCache();
+      read();
+    };
+    document.addEventListener('visibilitychange', onVisible);
+    window.addEventListener('pageshow', onVisible);
+    return () => {
+      off = true;
+      document.removeEventListener('visibilitychange', onVisible);
+      window.removeEventListener('pageshow', onVisible);
+    };
   }, [given]);
 
   const cards = promoCards(data, place);
