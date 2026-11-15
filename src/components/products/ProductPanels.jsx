@@ -143,7 +143,7 @@ export function ShareButton({ product }) {
 
 // Breadcrumb, name, colour name, price and sale line. `as` sets the
 // heading level (the look view has its own page heading).
-export function ProductHeader({ product, as: Heading = 'h1', kicker }) {
+export function ProductHeader({ product, as: Heading = 'h1', kicker, priceClass = '' }) {
   const onSale = !!product.compare_at;
   const section = sectionFor(product.category);
   return (
@@ -164,7 +164,7 @@ export function ProductHeader({ product, as: Heading = 'h1', kicker }) {
         <div className="pt-1.5"><ShareButton product={product} /></div>
       </div>
       {product.variant && <p className="text-[14px] text-graphite mt-0.5">{product.variant}</p>}
-      <p className="mt-1 text-[15px]">
+      <p className={`mt-1 text-[15px] ${priceClass}`}>
         {onSale && <span className="text-graphite line-through mr-2">{formatPrice(product.compare_at)}</span>}
         <span className={onSale ? 'text-coral' : ''}>{formatPrice(product.price)}</span>
       </p>
@@ -212,7 +212,7 @@ function visiblePhoto(selector) {
 // own choices; a new product starts fresh. `photoSelector` finds the photo
 // the add-to-bag animation flies from. Returns { panel, add, size } so the
 // product page's phone bar can share the same Add to bag.
-export function useBuyPanel(product, { photoSelector = '[data-pdp-photo]' } = {}) {
+export function useBuyPanel(product, { photoSelector = '[data-pdp-photo]', onAdded } = {}) {
   const navigate = useNavigate();
   const [size, setSize] = useState('');
   const [waitSize, setWaitSize] = useState('');
@@ -244,7 +244,7 @@ export function useBuyPanel(product, { photoSelector = '[data-pdp-photo]' } = {}
     return () => { cancelled = true; };
   }, [id]);
 
-  if (!product) return { panel: null, add: () => {}, size: '' };
+  if (!product) return { panel: null, add: () => {}, size: '', pickSize: () => {}, waitSize: '', sizeError: false, swatches: [], color: '', setColor: () => {}, soldOut: false, clearWait: () => {} };
 
   const soldOut = isSoldOut(product);
 
@@ -258,7 +258,10 @@ export function useBuyPanel(product, { photoSelector = '[data-pdp-photo]' } = {}
     if (!requireSize()) return;
     addToCart(product, size, 1);
     const first = (product.images || []).find(Boolean);
-    flyToBag(visiblePhoto(photoSelector), first && imgUrl(first, 300)).then(openCartDrawer);
+    // A page can show its own "added" sheet (the product page on a phone);
+    // otherwise the bag opens.
+    if (onAdded) onAdded({ product, size });
+    else flyToBag(visiblePhoto(photoSelector), first && imgUrl(first, 300)).then(openCartDrawer);
   };
 
   const buyNow = () => {
@@ -424,5 +427,10 @@ export function useBuyPanel(product, { photoSelector = '[data-pdp-photo]' } = {}
     </>
   );
 
-  return { panel, add, size };
+  return {
+    panel, add, size,
+    // For the product page's phone bar (StickyBuyBar): the same choices.
+    pickSize, waitSize, sizeError, swatches, color, setColor, soldOut,
+    clearWait: () => setWaitSize(''),
+  };
 }
