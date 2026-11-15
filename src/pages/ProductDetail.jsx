@@ -46,18 +46,6 @@ export default function ProductDetail() {
   const [added, setAdded] = useState(null);
   const buy = useBuyPanel(product, { onAdded: wide ? undefined : setAdded });
   useEffect(() => { setAdded(null); }, [id]);
-  // Phone: the buying bar floats at the bottom through the photos and
-  // details, and slides away once You may also like (or Recently viewed)
-  // comes up; scrolled back above it, the bar returns.
-  const moreRef = useRef(null);
-  const [pastProduct, setPastProduct] = useState(false);
-  useEffect(() => {
-    const el = moreRef.current;
-    if (wide || !el) return undefined;
-    const io = new IntersectionObserver(([e]) => setPastProduct(e.isIntersecting || e.boundingClientRect.top < 0));
-    io.observe(el);
-    return () => { io.disconnect(); setPastProduct(false); };
-  }, [wide, loading, product?.id, related.length, recent.length]);
 
   useEffect(() => {
     let cancelled = false;
@@ -269,7 +257,6 @@ export default function ProductDetail() {
         <Lightbox images={images} start={viewer} alt={product.name} onClose={() => setViewer(null)} />
       )}
 
-      <div ref={moreRef} aria-hidden="true" />
       {related.length > 0 && (
         <section className={`px-4 md:px-6 pt-8 md:pt-10 ${recent.length ? 'pb-8 md:pb-10' : 'pb-28 md:pb-12'}`}>
           <h2 className="font-heading text-[22px] md:text-[26px] mb-4">You may also like</h2>
@@ -294,7 +281,9 @@ export default function ProductDetail() {
       )}
 
       {/* Phone: the buying bar — name, price, colour, size, Add to bag. */}
-      <StickyBuyBar product={product} buy={buy} hidden={pastProduct} />
+      {/* Phone: stays at the bottom the whole time on this product's page;
+          a new product brings its own. */}
+      <StickyBuyBar product={product} buy={buy} />
       <AddedSheet added={added} onClose={() => setAdded(null)} />
 
     </div>
