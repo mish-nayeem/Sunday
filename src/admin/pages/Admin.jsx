@@ -717,6 +717,19 @@ export default function Admin() {
     })
   }, [])
 
+  // A login stays until Sign out — Supabase renews it by itself. If a
+  // renewal is ever refused (the login ended on the server), this page must
+  // know: it goes to the sign-in page then, instead of staying open looking
+  // signed in while every save and upload is turned away. Unsaved forms keep
+  // their drafts in this browser. (Renewals themselves don't touch `session`
+  // here, so the lists aren't reloaded every hour.)
+  useEffect(() => {
+    const { data } = supabase.auth.onAuthStateChange((event) => {
+      if (event === 'SIGNED_OUT') setSession(null)
+    })
+    return () => data.subscription.unsubscribe()
+  }, [])
+
   // Pulled out of the effect so the product form can refresh the list after a
   // save or delete without duplicating the fetch logic.
   const reload = useCallback(async () => {

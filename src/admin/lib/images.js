@@ -213,19 +213,46 @@ export async function makeMissingShareCopies(urls, supabase, onProgress = () => 
   return result
 }
 
+// Only a signed-in admin may upload (the storage policies). An admin page
+// left open — a laptop asleep, a tab in the background — can still look
+// signed in after its login has quietly lapsed; the upload then went out as
+// a visitor and came back as "new row violates row-level security policy".
+// So the login is renewed first if it's (nearly) out, and a refusal is tried
+// once more with a fresh one; if that's no good either, it says so plainly.
+export const SIGNED_OUT_UPLOAD = 'Your login has run out — sign out and sign in again, then upload.'
+
+async function freshLogin(supabase, force = false) {
+  const { data } = await supabase.auth.getSession()
+  const s = data?.session
+  if (!force && s && (!s.expires_at || s.expires_at * 1000 > Date.now() + 60_000)) return true
+  const { data: renewed } = await supabase.auth.refreshSession()
+  return Boolean(renewed?.session)
+}
+
+const refused = (error) => /row-level security|unauthori[sz]ed|jwt|not allowed|403/i.test(error?.message || '')
+
+// Uploads `body` to `bucket` at `path` as the admin (see above). Throws a
+// readable Error on failure.
+export async function adminUpload(supabase, bucket, path, body, options) {
+  if (!(await freshLogin(supabase))) throw new Error(SIGNED_OUT_UPLOAD)
+  let { error } = await supabase.storage.from(bucket).upload(path, body, options)
+  if (error && refused(error) && (await freshLogin(supabase, true))) {
+    ;({ error } = await supabase.storage.from(bucket).upload(path, body, options))
+  }
+  if (error) throw new Error(refused(error) ? SIGNED_OUT_UPLOAD : error.message)
+}
+
 export async function uploadImage(original, supabase, folder = 'uploads') {
   const file = await shrink(original)
   const ext = (file.name.split('.').pop() || 'jpg').toLowerCase().replace(/[^a-z0-9]/g, '') || 'jpg'
   const path = `${folder}/${crypto.randomUUID()}.${ext}`
 
-  const { error } = await supabase.storage.from(IMAGE_BUCKET).upload(path, file, {
+  await adminUpload(supabase, IMAGE_BUCKET, path, file, {
     contentType: file.type || undefined,
     // A path is never reused, so browsers and the CDN can keep it for a year.
     cacheControl: '31536000',
     upsert: false,
   })
-
-  if (error) throw new Error(error.message)
 
   // The small copy for link previews; a failure here never fails the upload.
   try { await putShareCopy(supabase, path, file) } catch { /* preview falls back to the photo */ }
