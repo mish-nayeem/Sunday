@@ -1,0 +1,9 @@
+/* CodeGate.jsx — the emailed code before a delete. */
+.cg { display: flex; flex-direction: column; gap: 6px; font-size: 12px; }
+.cg-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.cg-input { width: 120px; letter-spacing: 0.3em; text-align: center; font: inherit; font-size: 14px; padding: 6px 8px; border: 1px solid var(--steel-line); border-radius: 8px; background: transparent; color: var(--ink); }
+.cg-btn { border: 1px solid var(--steel-line); background: none; border-radius: 999px; padding: 5px 12px; font: inherit; font-size: 11.5px; color: var(--ink); cursor: pointer; }
+.cg-btn:disabled { opacity: 0.5; cursor: default; }
+.cg-btn.danger { color: var(--signal); border-color: color-mix(in srgb, var(--signal) 50%, transparent); }
+.cg-btn.ghost { color: var(--steel); }
+.cg-note { color: var(--signal); }
