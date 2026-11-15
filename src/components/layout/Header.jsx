@@ -1,28 +1,25 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Menu, X, Search, User, ShoppingBag } from 'lucide-react';
+import { Menu, X, Search, User } from 'lucide-react';
 import { getCartCount, subscribeCart, openCartDrawer } from '@/lib/cartStore';
 import { useAuth } from '@/lib/AuthContext';
 import { useMenus, dropLink } from '@/lib/menus';
 import SearchOverlay from './SearchOverlay';
 import logo from '@/assets/logo.png';
 
-// The person icon: Log in when signed out; signed in, a small menu with
-// the account's email, its shortcuts and Sign out.
+// The person icon: Log in when signed out; signed in, a small box that slides
+// in from the right edge with the account's email, its shortcuts and Sign out.
 function AccountMenu({ className }) {
   const { isAuthenticated, isAdmin, user, logout } = useAuth();
   const [open, setOpen] = useState(false);
-  const box = useRef(null);
   const location = useLocation();
 
   useEffect(() => { setOpen(false); }, [location.pathname]);
   useEffect(() => {
     if (!open) return undefined;
-    const away = (e) => { if (box.current && !box.current.contains(e.target)) setOpen(false); };
     const esc = (e) => { if (e.key === 'Escape') setOpen(false); };
-    document.addEventListener('pointerdown', away);
     document.addEventListener('keydown', esc);
-    return () => { document.removeEventListener('pointerdown', away); document.removeEventListener('keydown', esc); };
+    return () => document.removeEventListener('keydown', esc);
   }, [open]);
 
   if (!isAuthenticated) {
@@ -35,13 +32,19 @@ function AccountMenu({ className }) {
 
   const item = 'block w-full text-left px-4 py-2.5 hover:bg-stone transition-colors';
   return (
-    <div ref={box} className="relative">
+    <>
       <button type="button" className={className} onClick={() => setOpen((v) => !v)} aria-haspopup="menu" aria-expanded={open} aria-label="Account">
         <User size={21} strokeWidth={1.5} />
         <span aria-hidden="true" className="absolute top-1.5 right-1.5 w-1.5 h-1.5 rounded-full bg-coral" />
       </button>
-      {open && (
-        <div role="menu" className="absolute right-0 top-full mt-2 w-60 bg-white text-ink border border-rule shadow-lg text-[13px] z-50">
+      {/* The same small box as before, just under the header on the right —
+          it slides in from the right edge. Tap outside to close. */}
+      <div className={`fixed inset-0 z-50 ${open ? '' : 'pointer-events-none'}`} aria-hidden={!open}>
+        <div className="absolute inset-0" onClick={() => setOpen(false)} />
+        <div
+          role="menu"
+          className={`absolute right-3 top-14 md:top-16 w-60 bg-white text-ink border border-rule shadow-lg text-[13px] transition-all duration-300 ease-out ${open ? 'translate-x-0 opacity-100' : 'translate-x-[calc(100%+1rem)] opacity-0'}`}
+        >
           <p className="px-4 pt-3 pb-2.5 border-b border-rule">
             <span className="block text-[11px] uppercase tracking-[0.14em] text-graphite">Signed in as</span>
             <span className="block truncate">{user?.email}</span>
@@ -58,8 +61,18 @@ function AccountMenu({ className }) {
             </button>
           </div>
         </div>
-      )}
-    </div>
+      </div>
+    </>
+  );
+}
+
+// The bag: a tall shopping bag with a narrow, rounded handle.
+function BagIcon({ size = 21 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round" strokeLinecap="round" aria-hidden="true">
+      <path d="M5.4 8h13.2l1.1 13.5H4.3L5.4 8z" />
+      <path d="M9.4 8V5.6a2.6 2.6 0 0 1 5.2 0V8" />
+    </svg>
   );
 }
 
@@ -152,7 +165,7 @@ export default function Header() {
             </button>
             <AccountMenu className={`relative ${icon}`} />
             <button type="button" data-bag-icon className={`relative ${icon} ${bump ? 'bag-bump' : ''}`} onClick={openCartDrawer} aria-label={`Bag, ${cartCount} items`}>
-              <ShoppingBag size={21} strokeWidth={1.5} />
+              <BagIcon size={22} />
               {cartCount > 0 && (
                 <span className="absolute top-0 -right-0.5 min-w-4 h-4 px-1 rounded-full bg-coral text-white text-[10px] leading-4 text-center">
                   {cartCount}

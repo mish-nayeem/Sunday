@@ -13,8 +13,10 @@ import {
 } from '@/lib/cartStore';
 import AddOneMore, { useBagCatalog } from '@/components/cart/AddOneMore';
 
-// The bag slides in from the right whenever something is added or the
-// header's bag link is used, so shoppers never leave the page they're on.
+// The bag: a box just under the header on the right, like the account box,
+// that slides in from the right edge whenever
+// something is added or the header's bag is tapped — the pieces, the
+// subtotal and Checkout — so shoppers never leave the page they're on.
 export default function CartDrawer() {
   const [open, setOpen] = useState(false);
   const [cart, setCart] = useState(getCart());
@@ -53,15 +55,15 @@ export default function CartDrawer() {
       {...(!open && { inert: '' })}
     >
       <div
-        className={`absolute inset-0 bg-black/30 transition-opacity duration-300 ${open ? 'opacity-100' : 'opacity-0'}`}
+        className={`absolute inset-0 bg-black/10 transition-opacity duration-300 ${open ? 'opacity-100' : 'opacity-0'}`}
         onClick={closeCartDrawer}
       />
       <aside
-        className={`absolute right-0 top-0 h-full w-full max-w-[420px] bg-white flex flex-col transition-transform duration-300 ease-out ${
-          open ? 'translate-x-0' : 'translate-x-full'
+        className={`absolute right-3 top-14 md:top-16 w-[calc(100%-1.5rem)] max-w-[380px] max-h-[calc(100dvh-5rem)] bg-white border border-rule shadow-lg flex flex-col transition-all duration-300 ease-out ${
+          open ? 'translate-x-0 opacity-100' : 'translate-x-[calc(100%+1rem)] opacity-0'
         }`}
       >
-        <div className="h-14 md:h-16 px-5 flex items-center justify-between border-b border-rule shrink-0">
+        <div className="h-12 px-4 flex items-center justify-between border-b border-rule shrink-0">
           <p className="text-[14px]">Bag ({count})</p>
           <button type="button" onClick={closeCartDrawer} aria-label="Close bag" className="p-1">
             <X size={20} strokeWidth={1.5} />
@@ -69,7 +71,7 @@ export default function CartDrawer() {
         </div>
 
         {cart.length === 0 ? (
-          <div className="flex-1 flex flex-col items-center justify-center px-5 text-center">
+          <div className="flex flex-col items-center justify-center px-4 py-8 text-center">
             <p className="text-[15px] mb-4">Your bag is empty.</p>
             <Link to="/shop" onClick={closeCartDrawer} className="h-12 px-8 bg-ink text-white text-[13px] inline-flex items-center">
               Shop all
@@ -77,13 +79,13 @@ export default function CartDrawer() {
           </div>
         ) : (
           <>
-            <ul className="flex-1 overflow-y-auto px-5 divide-y divide-rule">
+            <ul className="flex-1 min-h-0 overflow-y-auto px-4 divide-y divide-rule">
               {cart.map((item) => {
                 const key = `${item.productId}-${item.size}`;
                 const product = catalog.get(item.productId);
                 return (
-                <li key={key} className="flex gap-4 py-5">
-                  <Link to={`/product/${item.productId}`} onClick={closeCartDrawer} className="w-20 shrink-0 aspect-[4/5] bg-stone">
+                <li key={key} className="flex gap-3 py-4">
+                  <Link to={`/product/${item.productId}`} onClick={closeCartDrawer} className="w-16 shrink-0 aspect-[4/5] bg-stone">
                     {item.image && <img src={imgUrl(item.image, 200)} alt="" className="w-full h-full object-cover" />}
                   </Link>
                   <div className="flex-1 min-w-0 text-[13px] flex flex-col">
@@ -130,12 +132,12 @@ export default function CartDrawer() {
               })}
             </ul>
 
-            <div className="px-5 pt-4 pb-5 border-t border-rule shrink-0">
+            <div className="px-4 pt-3 pb-4 border-t border-rule shrink-0">
               <div className="flex justify-between text-[14px] mb-1">
                 <span>Subtotal</span>
                 <span>{formatPrice(subtotal)}</span>
               </div>
-              <p className="text-[12px] text-graphite mb-4">Delivery is added at checkout.</p>
+              <p className="text-[12px] text-graphite mb-3">Delivery is added at checkout.</p>
               <Link
                 to="/checkout"
                 onClick={closeCartDrawer}
