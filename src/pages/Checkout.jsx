@@ -14,7 +14,7 @@ import { getAttribution } from '@/lib/attribution';
 import { saveAbandonedCart, markCartConverted } from '@/lib/abandonedCart';
 import { fetchLiveSales } from '@/admin/lib/sales.js';
 import { withSale } from '@/lib/pricing';
-import { BKASH_NUMBER } from '@/admin/lib/delivery.js';
+import { useBkashNumber } from '@/admin/lib/shopNumbers.js';
 import { bdPhone } from '@/lib/phone';
 import { Sentry } from '@/lib/sentry';
 
@@ -65,6 +65,8 @@ const SHIPPING_METHODS = [
 const OUTSIDE_ADVANCE = 200;
 
 export default function Checkout() {
+  // The bKash (Payment) number from Admin → Website → Settings.
+  const BKASH_NUMBER = useBkashNumber();
   const navigate = useNavigate();
   const { isAuthenticated, user } = useAuth();
   const [bag, setBag] = useState(getCart());
