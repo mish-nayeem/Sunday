@@ -1,4 +1,5 @@
 import { withSecurityHeaders } from './security-headers.js';
+import { cleanShortLinks, cleanSlug } from '../src/lib/shortLinkRules.js';
 
 // Link previews for shared product and lookbook pages.
 //
@@ -21,16 +22,23 @@ const SHARE_SUFFIX = '.share.jpg';
 
 
 export default {
-  async fetch(request, env) {
-    return withSecurityHeaders(await handle(request, env));
+  async fetch(request, env, ctx) {
+    return withSecurityHeaders(await handle(request, env, ctx));
   },
 };
 
-async function handle(request, env) {
+async function handle(request, env, ctx) {
   const url = new URL(request.url);
   if (request.method === 'GET' && url.pathname === '/robots.txt') return robots(url);
   if (request.method === 'GET' && url.pathname === '/sitemap.xml') return sitemap(url, env);
-  const page = await env.ASSETS.fetch(request);
+  // Short links (sunday.com.bd/ig): on to where they point.
+  if (request.method === 'GET') {
+    const short = await shortLinkFor(url, env, ctx);
+    if (short) return short;
+  }
+  let page = await env.ASSETS.fetch(request);
+  // The admin, checkout, cart, sign-in and order pages never in search results.
+  if (isPrivatePage(url.pathname)) page = withNoIndex(page);
   if (request.method !== 'GET' || !(page.headers.get('content-type') || '').includes('text/html')) return page;
   if (url.pathname === '/admin' || url.pathname.startsWith('/admin/')) return adminApp(page);
 
@@ -47,15 +55,15 @@ async function handle(request, env) {
 // is reached on, so they're right before and after a custom domain. The
 // sitemap lists the shop's pages and every product a shopper can see (the
 // public read, so hidden or not-yet-launched ones stay out).
+//
+// The admin, checkout, cart, sign-in and order pages aren't blocked here on
+// purpose: each is sent with X-Robots-Tag: noindex (below), and a crawler
+// has to be able to fetch a page to see that — a page blocked in robots.txt
+// can still be listed by its address alone.
 function robots(url) {
   const body = [
     'User-agent: *',
     'Allow: /',
-    'Disallow: /admin',
-    'Disallow: /checkout',
-    'Disallow: /cart',
-    'Disallow: /login',
-    'Disallow: /order-confirmation/',
     '',
     `Sitemap: ${url.origin}/sitemap.xml`,
     '',
@@ -95,12 +103,86 @@ function escapeXml(s) {
   return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
 
+// Pages no use in a search result. Each is sent with X-Robots-Tag: noindex,
+// which Google, Bing and the rest obey; the admin's page says it in its
+// <head> too. Login guards the admin either way — this keeps its address out
+// of search, not people out of it.
+const PRIVATE_PAGES = ['/admin', '/checkout', '/cart', '/login', '/register', '/forgot-password', '/reset-password', '/order-confirmation', '/wishlist'];
+export const isPrivatePage = (path) =>
+  PRIVATE_PAGES.some((p) => path === p || path.startsWith(`${p}/`)) ||
+  /^\/admin[-.]/.test(path); // admin-sw.js, admin.webmanifest, admin icons
+
+function withNoIndex(res) {
+  const out = new Response(res.body, res);
+  out.headers.set('X-Robots-Tag', 'noindex, nofollow, noarchive');
+  return out;
+}
+
+// ---------- Short links ----------
+// /<slug> → its target (src/lib/shortLinkRules.js; Admin → Marketing →
+// Tracked links). Only a single lowercase segment that isn't one of the
+// site's own pages is looked up. The list is kept at the edge for a minute:
+// a link made or changed in the admin works within that. A slug that isn't
+// on the list carries on to the site (its 404).
+const SHORT_LINKS_TTL_S = 60;
+
+export async function shortLinkFor(url, env, ctx) {
+  const m = url.pathname.match(/^\/([a-z0-9][a-z0-9-]{0,29})\/?$/i);
+  const slug = m ? cleanSlug(m[1]) : '';
+  if (!slug) return null;
+  const links = await shortLinks(url, env, ctx);
+  const target = links[slug];
+  if (!target) return null;
+  // A space in the target's query goes out as %20, never "+": some in-app
+  // browsers (Instagram's, on some phones) keep a "+" as a "+".
+  const [path, query] = target.split('?');
+  const clean = query ? `${path}?${query.replace(/\+/g, '%20')}` : path;
+  const res = Response.redirect(new URL(clean, url.origin).toString(), 302);
+  const out = new Response(null, res);
+  out.headers.set('cache-control', 'no-store');
+  out.headers.set('X-Robots-Tag', 'noindex');
+  return out;
+}
+
+async function shortLinks(url, env, ctx) {
+  const cache = typeof caches !== 'undefined' ? caches.default : null;
+  const key = new Request(`${url.origin}/__short_links`);
+  if (cache) {
+    const hit = await cache.match(key).catch(() => null);
+    if (hit) return hit.json().catch(() => ({}));
+  }
+  let value = null;
+  try {
+    const cfgRes = await env.ASSETS.fetch(new Request(new URL('/og-config.json', url)));
+    const cfg = cfgRes.ok ? await cfgRes.json() : {};
+    if (!cfg.url || !cfg.key) return cleanShortLinks(null);
+    const res = await fetch(`${cfg.url}/rest/v1/site_settings?key=eq.short_links&select=value`, {
+      headers: { apikey: cfg.key, Authorization: `Bearer ${cfg.key}` },
+    });
+    if (!res.ok) return cleanShortLinks(null);
+    const rows = await res.json();
+    value = Array.isArray(rows) && rows[0] ? rows[0].value : null;
+  } catch {
+    return cleanShortLinks(null);
+  }
+  const links = cleanShortLinks(value);
+  if (cache) {
+    const stored = new Response(JSON.stringify(links), {
+      headers: { 'content-type': 'application/json', 'cache-control': `public, max-age=${SHORT_LINKS_TTL_S}` },
+    });
+    const put = cache.put(key, stored).catch(() => {});
+    if (ctx?.waitUntil) ctx.waitUntil(put);
+  }
+  return links;
+}
+
 const ADMIN_APP_HEAD = `
     <link rel="manifest" href="/admin.webmanifest" />
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-title" content="SUNDAY Admin" />
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="robots" content="noindex, nofollow, noarchive" />
   </head>`;
 
 async function adminApp(page) {
