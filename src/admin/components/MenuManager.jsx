@@ -21,12 +21,12 @@ const NEW_CATEGORY = '__new_category'
 const TABS = {
   shop: {
     title: 'SHOP TAB',
-    intro: 'The SHOP tab of the side menu (☰ at the top left of the site): links to all products, new arrivals, categories — whatever you put here, in this order. Under them the site adds SHOP BY COLLECTION by itself: hovering it lists your drops (the EXPLORE rows), each opening that drop’s products.',
+    intro: 'The SHOP tab of the side menu (☰ at the top left of the site): links to all products, new arrivals, categories — whatever you put here, in this order. Under them the site adds SHOP BY COLLECTION by itself: hovering it lists your drops (the MEDIA rows), each opening that drop’s products.',
     empty: `Nothing here yet, so the site shows the default list: ${DEFAULT_SHOP.map((d) => d.label).join(', ')}.`,
   },
   drops: {
-    title: 'EXPLORE TAB',
-    intro: 'The EXPLORE tab of the side menu: your drops’ lookbooks — and any other page you add here (About, Size guide, a link…). Each row opens that drop’s lookbook, where tapping a photo shows the products worn in it to shop one by one. A drop you create in Products → Collections appears here by itself. The same drops are listed under SHOP → Shop by collection for drop-wise shopping.',
+    title: 'MEDIA TAB',
+    intro: 'The MEDIA tab of the side menu: your drops’ lookbooks — and any other page you add here (About, Size guide, a link…). Each row opens that drop’s lookbook, where tapping a photo shows the products worn in it to shop one by one. A drop you create in Products → Collections appears here by itself. The same drops are listed under SHOP → Shop by collection for drop-wise shopping.',
     empty: 'Nothing here yet, so the site lists every drop a product carries, A to Z.',
   },
 }
@@ -157,7 +157,7 @@ export default function MenuManager({ menu, drops = [], products = [] }) {
       <div className="mm-preview">
         <div className="mm-preview-tabs mono">
           <span className={menu === 'shop' ? 'on' : ''}>SHOP</span>
-          <span className={menu === 'drops' ? 'on' : ''}>EXPLORE</span>
+          <span className={menu === 'drops' ? 'on' : ''}>MEDIA</span>
         </div>
         <div className={`mm-preview-list mono ${menu === 'drops' ? 'right' : ''}`}>
           {rows.length
@@ -189,7 +189,7 @@ export default function MenuManager({ menu, drops = [], products = [] }) {
       {missingDrops.length > 0 && (
         <div className="cm-suggest mono">
           <span className="ab-label">
-            DROPS NOT IN EXPLORE YET
+            DROPS NOT IN MEDIA YET
             <InfoTip>Drops your products carry that this tab doesn’t list. One tap adds it, linked to that drop’s lookbook.</InfoTip>
           </span>
           <div className="cm-chips">

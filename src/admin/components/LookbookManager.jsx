@@ -240,9 +240,9 @@ export default function LookbookManager({ products }) {
 
       {/* ---- Drops ---- */}
       <Box
-        title="DROPS"
+        title="MEDIA"
         wide
-        tip="Every drop has its own lookbook page — the DROPS menu opens it. Pick a drop to work on its photos. A drop shows up here once a product has it as its Drop, or it's in the DROPS menu."
+        tip="Every drop has its own lookbook page — the MEDIA menu opens it. Pick a drop to work on its photos. A drop shows up here once a product has it as its Drop, or it's in the MEDIA menu."
       >
         {drops.length === 0 && !loading && (
           <div className="empty mono">No drops yet — give a product a drop name first (Products → edit → Drop).</div>
@@ -492,7 +492,7 @@ export default function LookbookManager({ products }) {
             tip={
               <>
                 <p>Removes every photo of this drop's lookbook in one go. The products themselves are not touched.</p>
-                <p><b>Also remove from the side menu</b> takes the drop's row out of the side menu — both Shop by collection and Explore.</p>
+                <p><b>Also remove from the side menu</b> takes the drop's row out of the side menu — both Shop by collection and Media.</p>
                 <p>To only take the lookbook off the shop for a while, use the 👁 on the drop above instead.</p>
               </>
             }
