@@ -212,7 +212,7 @@ function visiblePhoto(selector) {
 // own choices; a new product starts fresh. `photoSelector` finds the photo
 // the add-to-bag animation flies from. Returns { panel, add, size } so the
 // product page's phone bar can share the same Add to bag.
-export function useBuyPanel(product, { photoSelector = '[data-pdp-photo]' } = {}) {
+export function useBuyPanel(product, { photoSelector = '[data-pdp-photo]', onAdded } = {}) {
   const navigate = useNavigate();
   const [size, setSize] = useState('');
   const [waitSize, setWaitSize] = useState('');
@@ -258,7 +258,10 @@ export function useBuyPanel(product, { photoSelector = '[data-pdp-photo]' } = {}
     if (!requireSize()) return;
     addToCart(product, size, 1);
     const first = (product.images || []).find(Boolean);
-    flyToBag(visiblePhoto(photoSelector), first && imgUrl(first, 300)).then(openCartDrawer);
+    // A page can show its own "added" sheet (the product page on a phone);
+    // otherwise the bag opens.
+    if (onAdded) onAdded({ product, size });
+    else flyToBag(visiblePhoto(photoSelector), first && imgUrl(first, 300)).then(openCartDrawer);
   };
 
   const buyNow = () => {

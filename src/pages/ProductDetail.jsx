@@ -10,6 +10,7 @@ import ProductCard from '@/components/products/ProductCard';
 import { ProductHeader, ProductDisclosures, useBuyPanel } from '@/components/products/ProductPanels';
 import Lightbox from '@/components/products/Lightbox';
 import StickyBuyBar from '@/components/products/StickyBuyBar';
+import AddedSheet from '@/components/products/AddedSheet';
 import { useLiveSales, withSale } from '@/lib/pricing';
 import { jsonLd } from '@/lib/jsonLd';
 
@@ -40,7 +41,11 @@ export default function ProductDetail() {
   const railRef = useRef(null);
   const [viewer, setViewer] = useState(null); // photo index open full screen, or null
   const wide = useWide();
-  const buy = useBuyPanel(product);
+  // On a phone (and tablet) Add to bag shows "Item added to cart" rising from
+  // the bottom; on a wide screen the bag opens as before.
+  const [added, setAdded] = useState(null);
+  const buy = useBuyPanel(product, { onAdded: wide ? undefined : setAdded });
+  useEffect(() => { setAdded(null); }, [id]);
   // Phone: the buying bar floats at the bottom through the photos and
   // details, and slides away once You may also like (or Recently viewed)
   // comes up; scrolled back above it, the bar returns.
@@ -290,6 +295,7 @@ export default function ProductDetail() {
 
       {/* Phone: the buying bar — name, price, colour, size, Add to bag. */}
       {!soldOut && <StickyBuyBar product={product} buy={buy} hidden={pastProduct} />}
+      <AddedSheet added={added} onClose={() => setAdded(null)} />
 
     </div>
   );
