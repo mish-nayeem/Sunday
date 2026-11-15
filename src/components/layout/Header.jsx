@@ -1,14 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Menu, X, Search, User, ShoppingBag } from 'lucide-react';
+import { Menu, X, Search, User } from 'lucide-react';
 import { getCartCount, subscribeCart, openCartDrawer } from '@/lib/cartStore';
 import { useAuth } from '@/lib/AuthContext';
 import { useMenus, dropLink } from '@/lib/menus';
 import SearchOverlay from './SearchOverlay';
 import logo from '@/assets/logo.png';
 
-// The person icon: Log in when signed out; signed in, a panel that slides in
-// from the right edge with the account's email, its shortcuts and Sign out.
+// The person icon: Log in when signed out; signed in, a small box that slides
+// in from the right edge with the account's email, its shortcuts and Sign out.
 function AccountMenu({ className }) {
   const { isAuthenticated, isAdmin, user, logout } = useAuth();
   const [open, setOpen] = useState(false);
@@ -30,47 +30,49 @@ function AccountMenu({ className }) {
     );
   }
 
-  const item = 'block w-full text-left px-6 py-3.5 hover:bg-stone transition-colors';
+  const item = 'block w-full text-left px-4 py-2.5 hover:bg-stone transition-colors';
   return (
     <>
-      <button type="button" className={className} onClick={() => setOpen(true)} aria-haspopup="dialog" aria-expanded={open} aria-label="Account">
+      <button type="button" className={className} onClick={() => setOpen((v) => !v)} aria-haspopup="menu" aria-expanded={open} aria-label="Account">
         <User size={21} strokeWidth={1.5} />
         <span aria-hidden="true" className="absolute top-1.5 right-1.5 w-1.5 h-1.5 rounded-full bg-coral" />
       </button>
-      {/* Always there, so it can slide: off to the right until opened. */}
+      {/* The same small box as before, just under the header on the right —
+          it slides in from the right edge. Tap outside to close. */}
       <div className={`fixed inset-0 z-50 ${open ? '' : 'pointer-events-none'}`} aria-hidden={!open}>
+        <div className="absolute inset-0" onClick={() => setOpen(false)} />
         <div
-          className={`absolute inset-0 bg-black/30 transition-opacity duration-300 ${open ? 'opacity-100' : 'opacity-0'}`}
-          onClick={() => setOpen(false)}
-        />
-        <aside
-          role="dialog"
-          aria-label="Account"
-          className={`absolute right-0 top-0 h-full w-[85%] max-w-[360px] bg-white text-ink text-[14px] shadow-xl flex flex-col transition-transform duration-300 ease-out ${open ? 'translate-x-0' : 'translate-x-full'}`}
+          role="menu"
+          className={`absolute right-3 top-14 md:top-16 w-60 bg-white text-ink border border-rule shadow-lg text-[13px] transition-all duration-300 ease-out ${open ? 'translate-x-0 opacity-100' : 'translate-x-[calc(100%+1rem)] opacity-0'}`}
         >
-          <div className="flex items-start justify-between gap-3 px-6 pt-6 pb-5 border-b border-rule">
-            <p className="min-w-0">
-              <span className="block text-[11px] uppercase tracking-[0.14em] text-graphite">Signed in as</span>
-              <span className="block truncate mt-1">{user?.email}</span>
-            </p>
-            <button type="button" onClick={() => setOpen(false)} aria-label="Close" className="-mr-2 -mt-1 p-2 text-ink">
-              <X size={20} strokeWidth={1.5} />
-            </button>
+          <p className="px-4 pt-3 pb-2.5 border-b border-rule">
+            <span className="block text-[11px] uppercase tracking-[0.14em] text-graphite">Signed in as</span>
+            <span className="block truncate">{user?.email}</span>
+          </p>
+          <div className="py-1">
+            <Link role="menuitem" to="/wishlist" className={item}>Wishlist</Link>
+            <Link role="menuitem" to="/order-tracking" className={item}>Track an order</Link>
+            <Link role="menuitem" to="/support/portal" className={item}>Returns and exchanges</Link>
+            {isAdmin && <Link role="menuitem" to="/admin" className={item}>Admin</Link>}
           </div>
-          <nav className="py-2">
-            <Link to="/wishlist" className={item}>Wishlist</Link>
-            <Link to="/order-tracking" className={item}>Track an order</Link>
-            <Link to="/support/portal" className={item}>Returns and exchanges</Link>
-            {isAdmin && <Link to="/admin" className={item}>Admin</Link>}
-          </nav>
-          <div className="border-t border-rule py-2">
-            <button type="button" className={`${item} text-coral`} onClick={() => { setOpen(false); logout(); }}>
+          <div className="border-t border-rule py-1">
+            <button role="menuitem" type="button" className={`${item} text-coral`} onClick={() => { setOpen(false); logout(); }}>
               Sign out
             </button>
           </div>
-        </aside>
+        </div>
       </div>
     </>
+  );
+}
+
+// The bag: a tall shopping bag with a narrow, rounded handle.
+function BagIcon({ size = 21 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round" strokeLinecap="round" aria-hidden="true">
+      <path d="M5.4 8h13.2l1.1 13.5H4.3L5.4 8z" />
+      <path d="M9.4 8V5.6a2.6 2.6 0 0 1 5.2 0V8" />
+    </svg>
   );
 }
 
@@ -163,7 +165,7 @@ export default function Header() {
             </button>
             <AccountMenu className={`relative ${icon}`} />
             <button type="button" data-bag-icon className={`relative ${icon} ${bump ? 'bag-bump' : ''}`} onClick={openCartDrawer} aria-label={`Bag, ${cartCount} items`}>
-              <ShoppingBag size={21} strokeWidth={1.5} />
+              <BagIcon size={22} />
               {cartCount > 0 && (
                 <span className="absolute top-0 -right-0.5 min-w-4 h-4 px-1 rounded-full bg-coral text-white text-[10px] leading-4 text-center">
                   {cartCount}
