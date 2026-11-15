@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import AdminBox from './AdminBox.jsx'
-import { fetchCustomerAccounts } from '../lib/accounts.js'
+import { deleteCustomerAccount, fetchCustomerAccounts } from '../lib/accounts.js'
 import './accounts-manager.css'
 
 function taka(n) {
@@ -35,6 +35,9 @@ export default function AccountsManager({ orders, onOpenOrder }) {
   const [q, setQ] = useState('')
   const [open, setOpen] = useState(null)
   const [copied, setCopied] = useState(false)
+  const [confirmDel, setConfirmDel] = useState(null)
+  const [deleting, setDeleting] = useState(false)
+  const [delNote, setDelNote] = useState('')
 
   useEffect(() => {
     fetchCustomerAccounts().then(({ accounts, error }) => {
@@ -94,6 +97,17 @@ export default function AccountsManager({ orders, onOpenOrder }) {
       setCopied(true)
       setTimeout(() => setCopied(false), 1800)
     } catch { /* clipboard blocked — the CSV still works */ }
+  }
+
+  async function removeAccount(r) {
+    setDeleting(true)
+    setDelNote('')
+    const { error } = await deleteCustomerAccount(r.user_id)
+    setDeleting(false)
+    if (error) return setDelNote(error)
+    setAccounts((prev) => prev.filter((a) => a.user_id !== r.user_id))
+    setConfirmDel(null)
+    setOpen(null)
   }
 
   function downloadCsv() {
@@ -199,6 +213,18 @@ export default function AccountsManager({ orders, onOpenOrder }) {
                           ))}
                         </div>
                       )}
+                      <div className="acm-delete">
+                        {confirmDel === r.user_id ? (
+                          <>
+                            <span className="mono">Delete {r.email}'s login? Their orders stay.</span>
+                            <button type="button" className="ab-btn acm-danger" disabled={deleting} onClick={() => removeAccount(r)}>{deleting ? 'Deleting…' : 'Yes, delete'}</button>
+                            <button type="button" className="ab-btn" disabled={deleting} onClick={() => { setConfirmDel(null); setDelNote('') }}>Cancel</button>
+                          </>
+                        ) : (
+                          <button type="button" className="ab-btn acm-danger" onClick={() => { setConfirmDel(r.user_id); setDelNote('') }}>Delete account</button>
+                        )}
+                        {delNote && confirmDel === r.user_id && <span className="acm-del-note mono">{delNote}</span>}
+                      </div>
                     </div>
                   )}
                 </div>

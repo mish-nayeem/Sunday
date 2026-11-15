@@ -350,6 +350,18 @@ export async function fetchAbandonedCarts() {
   return { carts: data, error: null }
 }
 
+// Abandoned cart → Clear all, with the code emailed to the admin
+// (CodeGate). Returns { cleared } or { error } (a CODE_* answer included).
+export async function clearAbandonedCarts(code) {
+  const { data, error } = await supabase.rpc('admin_clear_abandoned_carts', { p_code: code })
+  if (error) {
+    console.error('[Supabase] clearAbandonedCarts failed:', error.message)
+    return { error }
+  }
+  if (data?.error) return { error: data.error }
+  return { cleared: data?.cleared ?? 0, error: null }
+}
+
 // A sale agreed over DM never touches the checkout page, so nothing takes the
 // pieces off the shelf or counts the revenue unless it goes through here too.
 // Routed through the same place_order the website uses — the stock lock,

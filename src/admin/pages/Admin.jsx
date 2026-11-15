@@ -21,6 +21,7 @@ import {
   lookupCustomer,
   fetchReturns,
   fetchAbandonedCarts,
+  clearAbandonedCarts,
   fetchBlockedAttempts,
   repeatVsNew,
   costAndMargin,
@@ -109,6 +110,7 @@ import NoticeCenter from '../components/NoticeCenter.jsx'
 import InfoTip from '../components/InfoTip.jsx'
 import EyeToggle from '../components/EyeToggle.jsx'
 import OrderBulkBar from '../components/OrderBulkBar.jsx'
+import CodeGate from '../components/CodeGate.jsx'
 import { hasDraft } from '../lib/useDraft.js'
 import { pageHelp, PANEL_HELP } from '../lib/help.js'
 import '../styles/base.css'
@@ -637,6 +639,7 @@ export default function Admin() {
   const [ordersSub, setOrdersSub] = useState(() => savedPlace('ordersSub', 'list', ORDERS_SUBS))
   const [returns, setReturns] = useState([])
   const [abandonedCarts, setAbandonedCarts] = useState([])
+  const [clearingCarts, setClearingCarts] = useState(false)
   // Orders → Security → Block list (phones and IPs that can't order).
   const [blockList, setBlockList] = useState([])
   const [blockListError, setBlockListError] = useState('')
@@ -2093,6 +2096,26 @@ export default function Admin() {
                 Checkouts the storefront saw items reach but never turned into an
                 order. Clears itself the moment that same browser's order goes through.
               </div>
+              {abandonedCarts.length > 0 && (
+                <div style={{ marginBottom: '14px' }}>
+                  {clearingCarts ? (
+                    <CodeGate
+                      action="clear_abandoned"
+                      confirmLabel={`Clear ${abandonedCarts.length}`}
+                      onCancel={() => setClearingCarts(false)}
+                      onConfirm={async (code) => {
+                        const out = await clearAbandonedCarts(code)
+                        if (out.error) return out
+                        setAbandonedCarts([])
+                        setClearingCarts(false)
+                        return {}
+                      }}
+                    />
+                  ) : (
+                    <button type="button" className="cg-btn" onClick={() => setClearingCarts(true)}>Clear all</button>
+                  )}
+                </div>
+              )}
               {abandonedCarts.length === 0 && <div className="empty mono">Nothing abandoned right now.</div>}
               {abandonedCarts.map((c) => (
                 <div className="mini-row" key={c.session_id}>
