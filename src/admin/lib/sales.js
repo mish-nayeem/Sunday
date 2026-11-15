@@ -32,6 +32,11 @@ export async function fetchLiveSales() {
   return cached
 }
 
+// Forget the kept list, so the next read asks the database again.
+export function clearSalesCache() {
+  cached = null
+}
+
 function covers(sale, product) {
   const ids = sale.product_ids || []
   if (!sale.drop_name && ids.length === 0) return true

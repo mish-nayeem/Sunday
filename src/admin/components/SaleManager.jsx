@@ -109,14 +109,20 @@ export default function SaleManager({ products }) {
     load()
   }
 
+  // A refused change (e.g. the login ran out) used to look like nothing
+  // happened; now it says so.
   async function toggle(s) {
-    await setSaleActive(s.id, !s.active)
+    setError('')
+    const { error: e } = await setSaleActive(s.id, !s.active)
+    if (e) setError(`Couldn't ${s.active ? 'turn it off' : 'turn it on'} — reload the admin and try again.`)
     load()
   }
 
   async function remove(s) {
     if (!window.confirm(`Delete the ${s.percent}% sale${s.name ? ` "${s.name}"` : ''}?`)) return
-    await deleteSale(s.id)
+    setError('')
+    const { error: e } = await deleteSale(s.id)
+    if (e) setError("Couldn't delete it — reload the admin and try again.")
     load()
   }
 
