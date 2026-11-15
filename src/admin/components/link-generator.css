@@ -94,3 +94,40 @@
   .linkgen-output { flex-direction: column; align-items: stretch; }
   .linkgen-template-head { flex-direction: column; align-items: flex-start; }
 }
+
+/* Short links: make one from the link above, and the list of them. */
+.linkgen-short { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 12px; }
+.linkgen-short-label { font-size: 10.5px; letter-spacing: 0.1em; color: var(--steel); margin-right: 4px; }
+.linkgen-short-host { font-size: 12.5px; color: var(--ink); }
+.linkgen-short input {
+  width: 160px;
+  border: 1px solid var(--steel-line);
+  background: transparent;
+  color: var(--ink);
+  border-radius: 8px;
+  padding: 8px 10px;
+  font-size: 12.5px;
+}
+.linkgen-short input:focus { outline: none; border-color: var(--cobalt); }
+.linkgen-short-note { font-size: 11.5px; color: var(--cobalt); margin-top: 8px; }
+.linkgen-shortlist { display: flex; flex-direction: column; gap: 6px; margin-top: 16px; }
+.linkgen-shortrow {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 10px;
+  border: 1px solid var(--steel-line);
+  border-radius: 10px;
+  padding: 8px 10px;
+  font-size: 12.5px;
+}
+.linkgen-shortrow .dim { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--steel); font-size: 11.5px; }
+.linkgen-del {
+  border: 1px solid var(--steel-line);
+  background: none;
+  color: var(--pill-cancelled, #c1304a);
+  border-radius: 8px;
+  padding: 5px 9px;
+  cursor: pointer;
+}
+.linkgen-del:disabled { opacity: 0.5; cursor: default; }

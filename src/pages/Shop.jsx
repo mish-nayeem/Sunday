@@ -63,11 +63,15 @@ const SORTS = [
 // back button all land on the same view.
 export default function Shop() {
   const [params, setParams] = useSearchParams();
-  const category = params.get('category') || 'all';
+  // A space in a name can arrive as a literal "+" — some in-app browsers
+  // (Instagram's, on some phones) keep the "+" a link wrote for it. No drop
+  // or category name has a "+" in it, so it's a space either way.
+  const plusAsSpace = (v) => v.replace(/\+/g, ' ');
+  const category = plusAsSpace(params.get('category') || 'all');
   const filter = params.get('filter') || '';
   const search = params.get('search') || '';
-  const type = params.get('type') || '';
-  const drop = params.get('drop') || '';
+  const type = plusAsSpace(params.get('type') || '');
+  const drop = plusAsSpace(params.get('drop') || '');
   // From a banner (Website → Banners → Your banners): the products it's
   // about — picked by hand (?offer=<banner>) or on a sale (?sale=<id>).
   const offer = params.get('offer') || '';

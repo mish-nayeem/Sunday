@@ -12,6 +12,25 @@
     "directory": "./dist",
     "binding": "ASSETS",
     "not_found_handling": "single-page-application",
-    "run_worker_first": ["/product/*", "/lookbook/*", "/admin", "/admin/*", "/robots.txt", "/sitemap.xml"]
+    // Every page goes through worker/index.js: share previews, the admin
+    // app, short links (/ig…) and the noindex on private pages. Files with
+    // nothing to change are served straight from the CDN without running the
+    // Worker — the hashed JS and CSS under /assets/, the fonts, the demo and
+    // icon pictures — so they don't count against the daily Worker requests.
+    "run_worker_first": [
+      "/*",
+      "!/assets/*",
+      "!/fonts/*",
+      "!/demo/*",
+      "!/*.png",
+      "!/*.jpg",
+      "!/*.webp",
+      "!/*.svg",
+      "!/*.ico",
+      "!/*.webmanifest",
+      "!/admin-sw.js",
+      "!/admin-offline.html",
+      "!/og-config.json"
+    ]
   }
 }

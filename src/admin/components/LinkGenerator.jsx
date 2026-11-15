@@ -1,5 +1,8 @@
 import { useEffect, useMemo, useState } from 'react'
 import { IconLink } from './Icons.jsx'
+import { rowLink } from '../../lib/menus.js'
+import { fetchShortLinks, saveShortLink } from '../lib/shortLinks.js'
+import { cleanSlug } from '../../lib/shortLinkRules.js'
 import { fetchAllNavCategories, SHOP_MENU, DROPS_MENU } from '../lib/navCategories.js'
 import './link-generator.css'
 
@@ -62,6 +65,14 @@ export default function LinkGenerator({ products }) {
   const [copied, setCopied] = useState(false)
   const [templateCopied, setTemplateCopied] = useState(false)
 
+  // Short links (sunday.com.bd/ig): the saved list, and the one being made.
+  const [shortLinks, setShortLinks] = useState({})
+  const [shortSlug, setShortSlug] = useState('')
+  const [shortNote, setShortNote] = useState('')
+  const [shortBusy, setShortBusy] = useState(false)
+  const [shortCopied, setShortCopied] = useState('')
+  useEffect(() => { fetchShortLinks().then(({ links }) => setShortLinks(links)) }, [])
+
   // A drop or a category is its own view of the shop (see Shop.jsx's ?d= and
   // ?c= filters), so each gets its own destination instead of forcing a link
   // to one product out of the group. Read straight from the Side menu tab's
@@ -71,6 +82,7 @@ export default function LinkGenerator({ products }) {
   // apart.
   const [drops, setDrops] = useState([])
   const [categories, setCategories] = useState([])
+  const [categoryLinks, setCategoryLinks] = useState({})
 
   useEffect(() => {
     let cancelled = false
@@ -80,6 +92,13 @@ export default function LinkGenerator({ products }) {
       const list = rows.length > 0
         ? rows.filter((r) => r.active).map((r) => r.label)
         : [...new Set(products.map((p) => p[productField]).filter(Boolean))].sort()
+      // Where each SHOP row really opens (its own link, or the category's
+      // shop page) — the same address the side menu uses.
+      if (menu === SHOP_MENU && !cancelled) {
+        const map = {}
+        for (const r of rows) map[r.label] = rowLink({ ...r, menu: SHOP_MENU })
+        setCategoryLinks(map)
+      }
       if (!cancelled) setList(list)
     }
 
@@ -92,20 +111,69 @@ export default function LinkGenerator({ products }) {
   const path = useMemo(() => {
     if (destination === 'home') return '/'
     if (destination === 'shop') return '/shop'
-    if (destination.startsWith('drop:')) return `/shop?d=${encodeURIComponent(destination.slice(5))}`
-    if (destination.startsWith('cat:')) return `/shop?c=${encodeURIComponent(destination.slice(4))}`
+    // The shop reads ?drop= and ?category= / ?type= (src/pages/Shop.jsx);
+    // these used to be written ?d= and ?c=, which it never read, so a drop
+    // or category link opened the whole shop.
+    if (destination.startsWith('drop:')) return `/shop?drop=${encodeURIComponent(destination.slice(5))}`
+    if (destination.startsWith('cat:')) {
+      const label = destination.slice(4)
+      return categoryLinks[label] || rowLink({ label, menu: SHOP_MENU })
+    }
     return `/product/${destination}`
-  }, [destination])
+  }, [destination, categoryLinks])
 
   const link = useMemo(() => {
     const chosen = SOURCES.find((s) => s.value === source) || SOURCES[0]
-    const url = new URL(path, window.location.origin)
-    url.searchParams.set('utm_source', chosen.value)
-    url.searchParams.set('utm_medium', chosen.medium)
+    // Written by hand rather than with URLSearchParams, which turns a
+    // name's %20 into "+" — and some in-app browsers never read a "+" back
+    // as a space. A full address (a menu row's own link) is kept as it is.
     const c = campaignSlug(campaign === '__custom' ? customCampaign : campaign)
-    if (c) url.searchParams.set('utm_campaign', c)
-    return url.toString()
+    const tags = [['utm_source', chosen.value], ['utm_medium', chosen.medium], ...(c ? [['utm_campaign', c]] : [])]
+      .map(([k, v]) => `${k}=${encodeURIComponent(v)}`)
+      .join('&')
+    const base = /^https?:\/\//.test(path) ? path : `${window.location.origin}${path}`
+    return `${base}${base.includes('?') ? '&' : '?'}${tags}`
   }, [path, source, campaign, customCampaign])
+
+  const SHORT_SAID = {
+    BAD_SLUG: 'Use letters, numbers and dashes only (e.g. ig, cityboy) — and not a page the site already has (shop, about…).',
+    BAD_TARGET: "That link can't be shortened — only links to this site.",
+    READ_FAILED: "Couldn't reach the saved links just now — nothing was changed. Try again.",
+    SAVE_FAILED: "Couldn't save — try again.",
+  }
+  const shortUrl = (slug) => `${window.location.host.replace(/^www\./, '')}/${slug}`
+
+  async function makeShort(e) {
+    e.preventDefault()
+    const slug = cleanSlug(shortSlug)
+    if (!slug) return setShortNote(SHORT_SAID.BAD_SLUG)
+    if (shortLinks[slug] && !window.confirm(`/${slug} already goes to ${shortLinks[slug]}. Point it at this link instead?`)) return
+    setShortBusy(true)
+    const out = await saveShortLink(slug, link)
+    setShortBusy(false)
+    if (out.error) return setShortNote(SHORT_SAID[out.error] || SHORT_SAID.SAVE_FAILED)
+    setShortLinks(out.links)
+    setShortSlug('')
+    setShortNote(`Saved — ${shortUrl(slug)} works within a minute.`)
+  }
+
+  async function removeShort(slug) {
+    if (!window.confirm(`Delete the short link /${slug}? Anyone using it will land on a "page not found".`)) return
+    setShortBusy(true)
+    const out = await saveShortLink(slug, null)
+    setShortBusy(false)
+    if (out.error) return setShortNote(SHORT_SAID[out.error] || SHORT_SAID.SAVE_FAILED)
+    setShortLinks(out.links)
+    setShortNote(`Deleted /${slug}.`)
+  }
+
+  async function copyShort(slug) {
+    try {
+      await navigator.clipboard.writeText(`https://${shortUrl(slug)}`)
+      setShortCopied(slug)
+      setTimeout(() => setShortCopied(''), 2000)
+    } catch { /* the address is on screen to select by hand */ }
+  }
 
   async function copyLink() {
     try {
@@ -230,6 +298,43 @@ export default function LinkGenerator({ products }) {
           {copied ? 'COPIED' : 'COPY'}
         </button>
       </div>
+
+      {/* The same link, short — for an Instagram bio or anywhere a long
+          address looks messy. Still counted under its source. */}
+      <form className="linkgen-short" onSubmit={makeShort}>
+        <span className="mono linkgen-short-label">SHORT LINK</span>
+        <span className="mono linkgen-short-host">{window.location.host.replace(/^www\./, '')}/</span>
+        <input
+          className="mono"
+          value={shortSlug}
+          onChange={(e) => { setShortSlug(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '')); setShortNote('') }}
+          placeholder="e.g. cityboy"
+          maxLength={30}
+          aria-label="Short link name"
+        />
+        <button type="submit" className="linkgen-copy mono" disabled={shortBusy || !shortSlug}>
+          {shortBusy ? 'SAVING…' : 'MAKE SHORT LINK'}
+        </button>
+      </form>
+      {shortNote && <div className="linkgen-short-note mono">{shortNote}</div>}
+
+      {Object.keys(shortLinks).length > 0 && (
+        <div className="linkgen-shortlist">
+          <div className="mono linkgen-short-label">YOUR SHORT LINKS</div>
+          {Object.entries(shortLinks).map(([slug, target]) => (
+            <div className="linkgen-shortrow" key={slug}>
+              <b className="mono">{shortUrl(slug)}</b>
+              <span className="mono dim" title={target}>→ {target}</span>
+              <button type="button" className="linkgen-copy mono" onClick={() => copyShort(slug)}>
+                {shortCopied === slug ? 'COPIED' : 'COPY'}
+              </button>
+              <button type="button" className="linkgen-del mono" disabled={shortBusy} onClick={() => removeShort(slug)} aria-label={`Delete /${slug}`}>
+                ✕
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
 
       {selectedProduct && (
         <div className="linkgen-template">
