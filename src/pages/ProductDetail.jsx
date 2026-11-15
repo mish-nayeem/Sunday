@@ -141,7 +141,7 @@ export default function ProductDetail() {
   const images = (product.images || []).filter(Boolean);
   const soldOut = isSoldOut(product);
   // On a phone the price is in the buying bar, not under the photos.
-  const header = <ProductHeader product={product} priceClass={soldOut ? '' : 'max-md:hidden'} />;
+  const header = <ProductHeader product={product} priceClass="max-md:hidden" />;
   const disclosures = <ProductDisclosures product={product} />;
 
   // Pieces worn with this one in a lookbook photo (Admin → Lookbook).
@@ -255,9 +255,9 @@ export default function ProductDetail() {
           <div className="px-4 md:px-8 pt-4 md:pt-6 pb-8">
             <div className="md:sticky md:top-24">
               {header}
-              {/* On a phone the bar at the bottom does the buying (a sold-out
-                  piece keeps its wishlist form here). */}
-              <div className={soldOut ? '' : 'hidden md:block'}>{buy.panel}</div>
+              {/* On a phone the bar at the bottom does the buying (and, sold
+                  out, the wishlist). */}
+              <div className="hidden md:block">{buy.panel}</div>
               {disclosures}
               {shopTheLook}
             </div>
@@ -294,7 +294,7 @@ export default function ProductDetail() {
       )}
 
       {/* Phone: the buying bar — name, price, colour, size, Add to bag. */}
-      {!soldOut && <StickyBuyBar product={product} buy={buy} hidden={pastProduct} />}
+      <StickyBuyBar product={product} buy={buy} hidden={pastProduct} />
       <AddedSheet added={added} onClose={() => setAdded(null)} />
 
     </div>

@@ -4,6 +4,7 @@ import { ChevronDown, ChevronUp } from 'lucide-react';
 import { imgUrl } from '@/lib/storage';
 import { isSizeAvailable, formatPrice } from '@/lib/catalog';
 import { RestockForm } from '@/components/products/ProductPanels';
+import { joinWishlist, hasJoined, savedEmail } from '@/admin/lib/wishlist.js';
 
 // The product page's buying bar on a phone, floating at the bottom: the name
 // and price, then the colour (left) and size (right) boxes, then ADD TO BAG.
@@ -16,9 +17,14 @@ import { RestockForm } from '@/components/products/ProductPanels';
 // - No other colours: one "Select size" box in the middle, which opens a
 //   small row of sizes above it.
 // Without a size picked, ADD TO BAG asks for one instead of adding.
+// Sold out in every size: ADD TO WISHLIST instead, which opens an email line
+// with SUBMIT on its right — the email lands in Admin → Customers → Wishlist
+// and is mailed when the piece is back.
 // `hidden` slides it away (the page hides it once You may also like is up).
 export default function StickyBuyBar({ product, buy, hidden }) {
   const [open, setOpen] = useState(''); // '' | 'colour' | 'size'
+  const [wish, setWish] = useState(hasJoined(product.id) ? 'done' : ''); // '' | 'form' | 'sending' | 'done' | 'error'
+  const [email, setEmail] = useState(savedEmail());
   const box = useRef(null);
   const onSale = !!product.compare_at;
   const sizes = product.sizes || [];
@@ -30,6 +36,14 @@ export default function StickyBuyBar({ product, buy, hidden }) {
 
   // A new product, or the bar sliding away: close what's open.
   useEffect(() => { setOpen(''); }, [product.id, hidden]);
+  useEffect(() => { setWish(hasJoined(product.id) ? 'done' : ''); }, [product.id]);
+
+  const submitWish = async (e) => {
+    e.preventDefault();
+    setWish('sending');
+    const { error } = await joinWishlist({ product, size: '', email });
+    setWish(error ? 'error' : 'done');
+  };
   useEffect(() => {
     if (!open) return undefined;
     const away = (e) => { if (box.current && !box.current.contains(e.target)) setOpen(''); };
@@ -100,6 +114,42 @@ export default function StickyBuyBar({ product, buy, hidden }) {
         </p>
       </div>
 
+      {buy.soldOut ? (
+        // Sold out: the wishlist instead of the bag.
+        wish === 'done' ? (
+          <p className="h-12 flex items-center justify-center border border-rule text-[13px]">Added — we'll email you when it's back.</p>
+        ) : wish ? (
+          <form onSubmit={submitWish}>
+            <div className="h-12 flex items-stretch border-b-2 border-ink">
+              <label htmlFor="sticky-wish-email" className="sr-only">Email address</label>
+              <input
+                id="sticky-wish-email"
+                type="email"
+                required
+                autoFocus
+                value={email}
+                onChange={(e) => { setEmail(e.target.value); if (wish === 'error') setWish('form'); }}
+                placeholder="Your email"
+                className="flex-1 min-w-0 bg-transparent border-0 px-0 text-[14px] outline-none focus:outline-none focus-visible:outline-none focus:ring-0 shadow-none placeholder:text-graphite/60"
+              />
+              <button type="submit" disabled={wish === 'sending'} className="pl-4 text-[13px] uppercase tracking-[0.14em] disabled:opacity-50">
+                {wish === 'sending' ? 'Sending…' : 'Submit'}
+              </button>
+            </div>
+            <p className={`mt-2 text-[12px] ${wish === 'error' ? 'text-coral' : 'text-graphite'}`}>
+              {wish === 'error' ? 'That didn’t go through. Check the address and try again.' : 'Sold out — we’ll email you when it’s back.'}
+            </p>
+          </form>
+        ) : (
+          <button
+            type="button"
+            onClick={() => setWish('form')}
+            className="w-full h-12 bg-ink text-white text-[13px] uppercase tracking-[0.14em] hover:bg-ink/85"
+          >
+            Add to wishlist
+          </button>
+        )
+      ) : (<>
       {sizes.length > 0 && (
         <div className={`relative mb-2.5 ${hasColours ? 'grid grid-cols-2 gap-3' : 'flex justify-center'}`}>
           {/* Colour: left half, opening upward over the left half. */}
@@ -187,6 +237,7 @@ export default function StickyBuyBar({ product, buy, hidden }) {
       >
         Add to bag
       </button>
+      </>)}
     </div>
   );
 }
