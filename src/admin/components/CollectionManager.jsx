@@ -20,7 +20,7 @@ function taka(n) {
 }
 
 // Products → Collections. A collection is a drop (EID 2026, SUMMER 26…):
-// made here, it shows up in the DROPS menu, the lookbook and Shop by
+// made here, it shows up in the MEDIA menu, the lookbook and Shop by
 // collection. Open one to see its products and add new ones straight into it.
 // The list is the same rows as Side menu → DROPS, so the two stay in step.
 export default function CollectionManager({ products, open, onOpen, onAddProduct, onEditProduct, onChanged }) {
@@ -333,7 +333,7 @@ export default function CollectionManager({ products, open, onOpen, onAddProduct
     <section className="panel">
       <div className="panel-note mono" style={{ marginBottom: '16px' }}>
         Each collection is a drop. Make one here, then open it to add its products —
-        nothing else to set up. It joins the DROPS menu, its lookbook and Shop by
+        nothing else to set up. It joins the MEDIA menu, its lookbook and Shop by
         collection on its own the moment its first product is live (at its launch
         time, if it has one). Admin → Lookbook can get its photos ready before that.
       </div>
@@ -403,7 +403,7 @@ export default function CollectionManager({ products, open, onOpen, onAddProduct
                   onToggle={() => toggleCollection(c.name)}
                 />
                 <button type="button" onClick={() => setRenaming(c.name)} disabled={busy}>Rename</button>
-                {!c.row && <button type="button" onClick={() => adopt(c.name)} disabled={busy} title="Add it to the DROPS menu">Add to menu</button>}
+                {!c.row && <button type="button" onClick={() => adopt(c.name)} disabled={busy} title="Add it to the MEDIA menu">Add to menu</button>}
                 <button type="button" className="cl-del" onClick={() => remove(c)} disabled={busy}>Delete</button>
               </div>
             </div>

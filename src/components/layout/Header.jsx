@@ -165,7 +165,7 @@ export default function Header() {
       </header>
 
       {/* Menu: slides in from the left on every screen. Two tabs — SHOP and
-          EXPLORE (drops) — both set in Admin → Side menu. */}
+          MEDIA (drops) — both set in Admin → Side menu. */}
       <div
         className={`fixed inset-0 z-[90] ${menuOpen ? '' : 'pointer-events-none'}`}
         role="dialog"
@@ -181,7 +181,7 @@ export default function Header() {
           className={`absolute left-0 top-0 h-full w-full max-w-[450px] bg-[#F6F1E7] text-ink flex flex-col overflow-hidden transition-transform duration-300 ease-out ${menuOpen ? 'translate-x-0' : '-translate-x-full'}`}
         >
           <div className="relative grid grid-cols-[1fr_1fr_auto] h-16 shrink-0" role="tablist">
-            {[['shop', 'Shop'], ['explore', 'Explore']].map(([key, label]) => (
+            {[['shop', 'Shop'], ['explore', 'Media']].map(([key, label]) => (
               <button
                 key={key}
                 type="button"
@@ -200,7 +200,7 @@ export default function Header() {
             </button>
           </div>
 
-          <nav className="relative flex-1 overflow-y-auto px-5 py-7" aria-label={menuTab === 'shop' ? 'Shop' : 'Explore'}>
+          <nav className="relative flex-1 overflow-y-auto px-5 py-7" aria-label={menuTab === 'shop' ? 'Shop' : 'Media'}>
             <ul
               className="space-y-[18px] text-[11px] uppercase tracking-[0.12em]"
               // EXPLORE's links sit under the EXPLORE tab, the way SHOP's sit under SHOP.
