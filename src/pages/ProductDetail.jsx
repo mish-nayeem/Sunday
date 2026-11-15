@@ -9,6 +9,7 @@ import { sectionFor, isSoldOut, formatPrice } from '@/lib/catalog';
 import ProductCard from '@/components/products/ProductCard';
 import { ProductHeader, ProductDisclosures, useBuyPanel } from '@/components/products/ProductPanels';
 import Lightbox from '@/components/products/Lightbox';
+import StickyBuyBar from '@/components/products/StickyBuyBar';
 import { useLiveSales, withSale } from '@/lib/pricing';
 import { jsonLd } from '@/lib/jsonLd';
 
@@ -40,18 +41,18 @@ export default function ProductDetail() {
   const [viewer, setViewer] = useState(null); // photo index open full screen, or null
   const wide = useWide();
   const buy = useBuyPanel(product);
-  // Phone: the bar at the bottom shows only until the Add to bag under the
-  // price comes up; on screen or scrolled past, it stays away. Back above
-  // that button, it returns.
-  const panelRef = useRef(null);
-  const [inlineAddVisible, setInlineAddVisible] = useState(false);
+  // Phone: the buying bar floats at the bottom through the photos and
+  // details, and slides away once You may also like (or Recently viewed)
+  // comes up; scrolled back above it, the bar returns.
+  const moreRef = useRef(null);
+  const [pastProduct, setPastProduct] = useState(false);
   useEffect(() => {
-    const el = panelRef.current?.querySelector('[data-buy-add]');
-    if (wide || !el) return;
-    const io = new IntersectionObserver(([e]) => setInlineAddVisible(e.isIntersecting || e.boundingClientRect.top < 0));
+    const el = moreRef.current;
+    if (wide || !el) return undefined;
+    const io = new IntersectionObserver(([e]) => setPastProduct(e.isIntersecting || e.boundingClientRect.top < 0));
     io.observe(el);
-    return () => { io.disconnect(); setInlineAddVisible(false); };
-  }, [wide, loading, product?.id]);
+    return () => { io.disconnect(); setPastProduct(false); };
+  }, [wide, loading, product?.id, related.length, recent.length]);
 
   useEffect(() => {
     let cancelled = false;
@@ -134,7 +135,8 @@ export default function ProductDetail() {
 
   const images = (product.images || []).filter(Boolean);
   const soldOut = isSoldOut(product);
-  const header = <ProductHeader product={product} />;
+  // On a phone the price is in the buying bar, not under the photos.
+  const header = <ProductHeader product={product} priceClass={soldOut ? '' : 'max-md:hidden'} />;
   const disclosures = <ProductDisclosures product={product} />;
 
   // Pieces worn with this one in a lookbook photo (Admin → Lookbook).
@@ -248,7 +250,9 @@ export default function ProductDetail() {
           <div className="px-4 md:px-8 pt-4 md:pt-6 pb-8">
             <div className="md:sticky md:top-24">
               {header}
-              <div ref={panelRef}>{buy.panel}</div>
+              {/* On a phone the bar at the bottom does the buying (a sold-out
+                  piece keeps its wishlist form here). */}
+              <div className={soldOut ? '' : 'hidden md:block'}>{buy.panel}</div>
               {disclosures}
               {shopTheLook}
             </div>
@@ -260,6 +264,7 @@ export default function ProductDetail() {
         <Lightbox images={images} start={viewer} alt={product.name} onClose={() => setViewer(null)} />
       )}
 
+      <div ref={moreRef} aria-hidden="true" />
       {related.length > 0 && (
         <section className={`px-4 md:px-6 pt-8 md:pt-10 ${recent.length ? 'pb-8 md:pb-10' : 'pb-28 md:pb-12'}`}>
           <h2 className="font-heading text-[22px] md:text-[26px] mb-4">You may also like</h2>
@@ -272,23 +277,19 @@ export default function ProductDetail() {
       {recent.length > 0 && (
         <section className={`px-4 md:px-6 ${related.length ? '' : 'pt-8 md:pt-10'} pb-28 md:pb-12`}>
           <h2 className="font-heading text-[22px] md:text-[26px] mb-4">Recently viewed</h2>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-x-2 md:gap-x-3 gap-y-8">
-            {recent.map((p) => <ProductCard key={p.id} product={p} />)}
+          {/* One row, swiped sideways. */}
+          <div className="-mx-4 md:-mx-6 px-4 md:px-6 flex gap-2 md:gap-3 overflow-x-auto snap-x snap-mandatory hide-scrollbar">
+            {recent.map((p) => (
+              <div key={p.id} className="shrink-0 w-[44%] md:w-[23%] snap-start">
+                <ProductCard product={p} />
+              </div>
+            ))}
           </div>
         </section>
       )}
 
-      {/* Phone: keep the main action in reach while reading or scrolling photos */}
-      {!soldOut && (
-        <div
-          aria-hidden={inlineAddVisible || undefined}
-          className={`md:hidden fixed inset-x-0 bottom-0 z-40 bg-white border-t border-rule p-3 transition-transform duration-300 ease-out ${inlineAddVisible ? 'translate-y-full pointer-events-none' : 'translate-y-0'}`}
-        >
-          <button type="button" onClick={buy.add} className="w-full h-12 bg-ink text-white text-[13px]">
-            {buy.size ? `Add size ${buy.size} to bag` : 'Add to bag'}, {formatPrice(product.price)}
-          </button>
-        </div>
-      )}
+      {/* Phone: the buying bar — name, price, colour, size, Add to bag. */}
+      {!soldOut && <StickyBuyBar product={product} buy={buy} hidden={pastProduct} />}
 
     </div>
   );
