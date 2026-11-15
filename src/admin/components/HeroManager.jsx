@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { supabase } from '../lib/supabaseClient.js'
 import { imgUrl, uploadImage } from '../lib/images.js'
 import {
@@ -14,6 +14,10 @@ import { fetchHeroExtras, saveSetting, fetchSetting, DEFAULT_HERO_BUTTON, DEFAUL
 import useDraft from '../lib/useDraft.js'
 import DraftNote from './DraftNote.jsx'
 import { useCountdown } from './DropCountdown.jsx'
+import { cleanPos, cleanSize, keepInside, MIN_SIZE, MAX_SIZE } from '../lib/heroCountdown.js'
+import { fetchDropBanners } from '../lib/promos.js'
+import { dropKey } from '../lib/lookbook.js'
+import { launchLabel } from '../lib/schedule.js'
 import InfoTip from './InfoTip.jsx'
 import FocusPicker from './FocusPicker.jsx'
 import FocusDrag from './FocusDrag.jsx'
@@ -40,7 +44,12 @@ export default function HeroManager({ drops = [], products = [] }) {
   const [confirmId, setConfirmId] = useState(null)
 
   const [button, setButton] = useState(DEFAULT_HERO_BUTTON)
-  const [countdown, setCountdown] = useState({ label: 'NEXT DROP', at: '' })
+  // The drop countdown: its words, and either a drop (its launch time from
+  // Products → Collections) or a time typed here; pos / size = where it sits
+  // on the hero and how big, PC and phone apart (../lib/heroCountdown.js).
+  const [countdown, setCountdown] = useState({ label: 'NEXT DROP', at: '', drop: '', pos: {}, size: {} })
+  // Each collection's launch time, by dropKey (site_settings drop_banners).
+  const [dropTimes, setDropTimes] = useState({})
   const [saved, setSaved] = useState({ button: '', countdown: '', footer: '' })
   const [footer, setFooter] = useState({ heading: '', text: '' })
   const [note, setNote] = useState({})
@@ -55,11 +64,24 @@ export default function HeroManager({ drops = [], products = [] }) {
 
   useEffect(() => {
     load()
-    fetchHeroExtras().then(({ button, countdown }) => {
+    fetchHeroExtras().then(({ button }) => {
       setButton(button)
-      const cd = countdown ? { label: countdown.label || 'NEXT DROP', at: toLocal(countdown.at) } : { label: 'NEXT DROP', at: '' }
+      setSaved((s) => ({ ...s, button: JSON.stringify(button) }))
+    })
+    Promise.all([fetchSetting('hero_countdown'), fetchDropBanners()]).then(([{ value }, { banners }]) => {
+      const times = {}
+      for (const [k, b] of Object.entries(banners || {})) if (b?.launch_at) times[k] = b.launch_at
+      setDropTimes(times)
+      const raw = value && typeof value === 'object' && (value.at || value.drop) ? value : null
+      const cd = {
+        label: raw?.label || 'NEXT DROP',
+        at: raw && !raw.drop ? toLocal(raw.at) : '',
+        drop: raw?.drop || '',
+        pos: cleanPos(raw?.pos),
+        size: cleanSize(raw?.size),
+      }
       setCountdown(cd)
-      setSaved((s) => ({ ...s, button: JSON.stringify(button), countdown: JSON.stringify(cd) }))
+      setSaved((s) => ({ ...s, countdown: JSON.stringify(cd) }))
     })
     fetchSetting('footer_about').then(({ value }) => {
       const f = { heading: String(value?.heading ?? ''), text: String(value?.text ?? '') }
@@ -144,12 +166,48 @@ export default function HeroManager({ drops = [], products = [] }) {
     if (!error) setSaved((s) => ({ ...s, button: JSON.stringify(clean) }))
   }
 
+  // A drop's launch time, if it's still ahead.
+  function launchFor(drop) {
+    const at = drop ? dropTimes[dropKey(drop)] : null
+    return at && new Date(at).getTime() > Date.now() ? at : null
+  }
+  // What the clock runs to: the chosen drop's launch, or the time typed in.
+  const countdownAt = countdown.drop ? launchFor(countdown.drop) || '' : countdown.at
+
+  // Picking a drop names it in the words too, unless they were written by hand.
+  function pickDrop(drop) {
+    const auto = !countdown.label || /^NEXT DROP( · .*)?$/i.test(countdown.label.trim())
+    setCountdown({ ...countdown, drop, label: auto ? (drop ? `NEXT DROP · ${drop}` : 'NEXT DROP') : countdown.label })
+    setNote({})
+  }
+
+  function moveCountdown(device, p) {
+    setCountdown((c) => ({ ...c, pos: cleanPos({ ...c.pos, [device]: p }) }))
+    setNote({})
+  }
+
+  function sizeCountdown(device, n) {
+    setCountdown((c) => ({ ...c, size: cleanSize({ ...c.size, [device]: n }) }))
+    setNote({})
+  }
+
   async function saveCountdown(clear = false) {
-    const cd = clear ? { label: countdown.label, at: '' } : countdown
-    const value = cd.at ? { label: (cd.label || 'NEXT DROP').trim().toUpperCase(), at: new Date(cd.at).toISOString() } : {}
+    const cd = clear ? { ...countdown, at: '', drop: '' } : countdown
+    const at = clear ? '' : countdownAt
+    const pos = cleanPos(cd.pos)
+    const size = cleanSize(cd.size)
+    const value = at
+      ? {
+          label: (cd.label || 'NEXT DROP').trim().toUpperCase(),
+          at: new Date(at).toISOString(),
+          ...(cd.drop ? { drop: cd.drop } : {}),
+          ...(Object.keys(pos).length ? { pos } : {}),
+          ...(Object.keys(size).length ? { size } : {}),
+        }
+      : {}
     const { error } = await saveSetting('hero_countdown', value)
     if (clear) setCountdown(cd)
-    setNote((n) => ({ ...n, countdown: error ? "Couldn't save — try again." : cd.at ? 'Saved — counting down on the homepage.' : 'Countdown off.' }))
+    setNote((n) => ({ ...n, countdown: error ? "Couldn't save — try again." : at ? 'Saved — counting down on the homepage.' : 'Countdown off.' }))
     if (!error) setSaved((s) => ({ ...s, countdown: JSON.stringify(cd) }))
   }
 
@@ -177,7 +235,7 @@ export default function HeroManager({ drops = [], products = [] }) {
         tip="How the top of the homepage looks right now, with the photos rotating as they do on the site. It follows your changes as you make them — the button and countdown show here before you save, so check, then save."
         wide
       >
-        <Preview slides={slides} button={button} countdown={countdown} />
+        <Preview slides={slides} button={button} countdown={{ ...countdown, at: countdownAt }} onMoveCountdown={moveCountdown} onSizeCountdown={sizeCountdown} />
       </Box>
 
       {/* ---- Hero photos, one box per kind of screen ---- */}
@@ -270,18 +328,68 @@ export default function HeroManager({ drops = [], products = [] }) {
       </Box>
 
       {/* ---- Countdown ---- */}
-      <Box title="DROP COUNTDOWN" tip="A countdown over the hero button — NEXT DROP IN 2D 04:12:09 — to build up a launch. It disappears by itself the moment the time passes. Pair it with a product's Goes live time so the drop appears as the clock hits zero.">
+      <Box title="DROP COUNTDOWN" tip="A countdown on the hero — NEXT DROP · CITYBOY IN 2D 04:12:09 — to build up a launch. Pick a drop and the clock runs to the launch time set in Products → Collections; change the drop's time there and the clock follows. Drag the clock in the previews above to place it, and its corner to make it bigger or smaller. It disappears by itself the moment the time passes.">
         <label className="pf-field">
           <span className="hm-flabel mono">TEXT ABOVE THE CLOCK</span>
           <input value={countdown.label} maxLength={32} onChange={(e) => { setCountdown({ ...countdown, label: e.target.value }); setNote({}) }} placeholder="NEXT DROP · CITYBOY" />
         </label>
         <label className="pf-field">
           <span className="hm-flabel mono">COUNTS DOWN TO</span>
-          <input type="datetime-local" value={countdown.at} onChange={(e) => { setCountdown({ ...countdown, at: e.target.value }); setNote({}) }} />
+          <select value={countdown.drop} onChange={(e) => pickDrop(e.target.value)}>
+            <option value="">A time I set here</option>
+            {countdown.drop && !drops.some((d) => dropKey(d) === dropKey(countdown.drop)) && (
+              <option value={countdown.drop}>{countdown.drop}</option>
+            )}
+            {drops.map((d) => {
+              const at = launchFor(d)
+              return (
+                <option key={d} value={d} disabled={!at}>
+                  {d} — {at ? `live ${launchLabel(at)}` : 'no launch time yet'}
+                </option>
+              )
+            })}
+          </select>
         </label>
+        {countdown.drop ? (
+          <div className="hm-cd-hint mono">
+            {countdownAt
+              ? `Runs to ${countdown.drop}'s launch, ${launchLabel(countdownAt)}. Change that time in Products → Collections → ${countdown.drop}.`
+              : `${countdown.drop} has no launch time ahead — set one in Products → Collections → ${countdown.drop}.`}
+          </div>
+        ) : (
+          <label className="pf-field">
+            <span className="hm-flabel mono">TIME</span>
+            <input type="datetime-local" value={countdown.at} onChange={(e) => { setCountdown({ ...countdown, at: e.target.value }); setNote({}) }} />
+          </label>
+        )}
+        <div className="hm-cd-hint mono">
+          {Object.keys(countdown.pos || {}).length
+            ? 'Placed where you dragged it in the previews above.'
+            : 'Above the hero button. Drag the clock in the previews above to place it anywhere, and its corner to make it bigger or smaller — PC and phone apart.'}
+          {Object.keys(countdown.pos || {}).length > 0 && (
+            <button type="button" className="hm-link mono" onClick={() => { setCountdown({ ...countdown, pos: {} }); setNote({}) }}>Put it back above the button</button>
+          )}
+        </div>
+        {/* How big the clock is: PC and phone apart. Also by the corner
+            handle on the clock in the previews. */}
+        <div className="hm-cd-sizes">
+          {[['pc', 'SIZE · PC'], ['phone', 'SIZE · PHONE']].map(([d, name]) => {
+            const v = countdown.size?.[d] || 1
+            return (
+              <label key={d} className="hm-cd-size">
+                <span className="hm-flabel mono">{name}</span>
+                <input type="range" min={MIN_SIZE} max={MAX_SIZE} step="0.05" value={v} onChange={(e) => sizeCountdown(d, Number(e.target.value))} />
+                <span className="mono hm-cd-size-val">{Math.round(v * 100)}%</span>
+              </label>
+            )
+          })}
+          {Object.keys(countdown.size || {}).length > 0 && (
+            <button type="button" className="hm-link mono" onClick={() => { setCountdown({ ...countdown, size: {} }); setNote({}) }}>Normal size</button>
+          )}
+        </div>
         <div className="hm-actions">
-          <button type="button" className="courier-btn mono" onClick={() => saveCountdown(false)} disabled={!countdown.at || JSON.stringify(countdown) === saved.countdown}>Save countdown</button>
-          {countdown.at && <button type="button" className="courier-btn ghost mono" onClick={() => saveCountdown(true)}>Turn off</button>}
+          <button type="button" className="courier-btn mono" onClick={() => saveCountdown(false)} disabled={!countdownAt || JSON.stringify(countdown) === saved.countdown}>Save countdown</button>
+          {(countdown.drop || countdown.at) && <button type="button" className="courier-btn ghost mono" onClick={() => saveCountdown(true)}>Turn off</button>}
           {note.countdown && <span className="hm-note mono">{note.countdown}</span>}
         </div>
       </Box>
@@ -454,7 +562,7 @@ function SlideCard({ s, device, first, last, busy, confirm, onMove, onPatch, onA
 }
 
 // The top of the homepage on a phone and on a laptop, rotating like the site.
-function Preview({ slides, button, countdown }) {
+function Preview({ slides, button, countdown, onMoveCountdown, onSizeCountdown }) {
   const live = slides.filter((s) => s.active)
   const [tick, setTick] = useState(0)
   useEffect(() => {
@@ -463,9 +571,69 @@ function Preview({ slides, button, countdown }) {
   }, [])
   const left = useCountdown(countdown.at || '')
 
+  // A placed clock is kept inside its screen, as on the homepage.
+  const previewRef = useRef(null)
+  useLayoutEffect(() => {
+    previewRef.current?.querySelectorAll('.hm-frame-placed .hm-frame-count').forEach((el) => keepInside(el, 6))
+  })
+
+  // Follows the pointer until it's let go.
+  function follow(move) {
+    const stop = () => {
+      window.removeEventListener('pointermove', move)
+      window.removeEventListener('pointerup', stop)
+      window.removeEventListener('pointercancel', stop)
+    }
+    window.addEventListener('pointermove', move)
+    window.addEventListener('pointerup', stop)
+    window.addEventListener('pointercancel', stop)
+  }
+
+  // Dragging the clock: its centre follows the pointer, in % of the screen.
+  function drag(e, device) {
+    if (!onMoveCountdown) return
+    e.preventDefault()
+    const box = e.currentTarget.closest('.hm-frame-screen').getBoundingClientRect()
+    follow((ev) => onMoveCountdown(device, {
+      x: ((ev.clientX - box.left) / box.width) * 100,
+      y: ((ev.clientY - box.top) / box.height) * 100,
+    }))
+  }
+
+  // The corner handle: pulling it out makes the clock bigger, in it smaller.
+  function resize(e, device) {
+    if (!onSizeCountdown) return
+    e.preventDefault()
+    e.stopPropagation()
+    const clock = e.currentTarget.parentElement.getBoundingClientRect()
+    const from = countdown.size?.[device] || 1
+    const x0 = e.clientX
+    const y0 = e.clientY
+    follow((ev) => {
+      // Mostly sideways; down counts too, as a corner pull does.
+      const grow = Math.max(ev.clientX - x0, (ev.clientY - y0) * (clock.width / Math.max(clock.height, 1)))
+      onSizeCountdown(device, from * (1 + grow / Math.max(clock.width, 1)))
+    })
+  }
+
   function frame(isPhone) {
     const list = slidesFor(live, isPhone)
     const cur = list.length ? list[tick % list.length] : null
+    const device = isPhone ? 'phone' : 'pc'
+    const at = countdown.pos?.[device]
+    const scale = countdown.size?.[device] || 1
+    const clock = left && (
+      <span
+        className="hm-frame-count hm-drag"
+        style={{ ...(at ? { left: `${at.x}%`, top: `${at.y}%` } : {}), '--cd-scale': scale }}
+        onPointerDown={(e) => drag(e, device)}
+        title="Drag to place the countdown"
+      >
+        <small>{(countdown.label || 'NEXT DROP').toUpperCase()}</small>
+        {left}
+        {onSizeCountdown && <i className="hm-resize" onPointerDown={(e) => resize(e, device)} title="Drag to make it bigger or smaller" />}
+      </span>
+    )
     return (
       <div className={`hm-frame ${isPhone ? 'phone' : 'pc'}`}>
         <div className="hm-frame-screen">
@@ -473,13 +641,9 @@ function Preview({ slides, button, countdown }) {
             ? <video key={cur.id} src={cur.image_url} muted loop autoPlay playsInline style={{ objectPosition: cur.focus || 'center' }} />
             : <img src={imgUrl(cur.image_url, { w: isPhone ? 360 : 720 })} alt="" style={focusStyle(cur.focus)} />)}
           <div className="hm-frame-shade" />
+          {at && <div className="hm-frame-placed mono">{clock}</div>}
           <div className="hm-frame-center mono">
-            {left && (
-              <span className="hm-frame-count">
-                <small>{(countdown.label || 'NEXT DROP').toUpperCase()}</small>
-                {left}
-              </span>
-            )}
+            {!at && clock}
             <span className="hm-frame-btn">{(button.label || 'SHOP NOW').toUpperCase()}</span>
           </div>
           {list.length > 1 && (
@@ -492,7 +656,7 @@ function Preview({ slides, button, countdown }) {
   }
 
   return (
-    <div className="hm-preview">
+    <div className="hm-preview" ref={previewRef}>
       {frame(false)}
       {frame(true)}
     </div>

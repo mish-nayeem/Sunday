@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useLayoutEffect, useRef } from 'react';
 import { Volume2, VolumeX, ShoppingBag } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { imgUrl } from '@/lib/storage';
@@ -7,6 +7,7 @@ import heroImage from '@/assets/hero.jpeg';
 import { fetchHeroSlides, slidesFor, isVideo, PHONE_QUERY } from '@/admin/lib/hero.js';
 import { fetchHeroExtras, DEFAULT_HERO_BUTTON } from '@/admin/lib/siteSettings.js';
 import { useCountdown } from '@/admin/components/DropCountdown.jsx';
+import { fetchHeroCountdown, keepInside } from '@/admin/lib/heroCountdown.js';
 import { fetchFeatures, dropShopLink } from '@/admin/lib/features.js';
 import { jsonLd } from '@/lib/jsonLd';
 import PromoBanners from '@/components/home/PromoBanners';
@@ -135,6 +136,23 @@ function Hero({ slides, button, countdown }) {
   const [at, setAt] = useState(0);
   const [muted, setMuted] = useState(true);
   const left = useCountdown(countdown?.at);
+  // Where the admin dragged it and how big (Admin → Homepage → Drop
+  // countdown), PC and phone apart; none = just above the button, as before.
+  const device = isPhone ? 'phone' : 'pc';
+  const placed = countdown?.pos?.[device] || null;
+  const scale = countdown?.size?.[device] || 1;
+  // Never past the hero's edge, whatever the screen (see keepInside).
+  const countRef = useRef(null);
+  useLayoutEffect(() => {
+    const el = countRef.current;
+    if (!el) return;
+    const fit = () => keepInside(el);
+    fit();
+    const ro = new ResizeObserver(fit);
+    ro.observe(el);
+    ro.observe(el.offsetParent || document.body);
+    return () => ro.disconnect();
+  }, [placed?.x, placed?.y, scale, !!left]);
   // slides is null while they load: the hero stays dark rather than flash the
   // built-in photo before the admin's own photo or video arrives. The
   // built-in photo is only for a shop with no hero set at all.
@@ -215,9 +233,20 @@ function Hero({ slides, button, countdown }) {
         </button>
       )}
 
+      {/* The drop countdown where the admin placed it (its centre, in %). */}
+      {left && placed && (
+        <p
+          ref={countRef}
+          className="absolute z-[5] -translate-x-1/2 -translate-y-1/2 w-max max-w-[calc(100%-32px)] pointer-events-none tabular-nums text-white [text-shadow:0_1px_8px_rgba(0,0,0,0.35)]"
+          style={{ left: `${placed.x}%`, top: `${placed.y}%`, fontSize: `${13 * scale}px` }}
+        >
+          {sentence(countdown.label || 'Next drop')} in {left.toLowerCase()}
+        </p>
+      )}
+
       {/* SHOP NOW in the middle of the hero; the drop countdown just above it. */}
       <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex flex-col items-center gap-2 whitespace-nowrap text-white">
-        {left && <p className="tabular-nums text-[13px] [text-shadow:0_1px_8px_rgba(0,0,0,0.35)]">{sentence(countdown.label || 'Next drop')} in {left.toLowerCase()}</p>}
+        {left && !placed && <p className="tabular-nums text-[13px] [text-shadow:0_1px_8px_rgba(0,0,0,0.35)]" style={scale !== 1 ? { fontSize: `${13 * scale}px` } : undefined}>{sentence(countdown.label || 'Next drop')} in {left.toLowerCase()}</p>}
         <HeroButton to={button.link}>{button.label}</HeroButton>
       </div>
 
@@ -241,7 +270,9 @@ export default function Home() {
 
   useEffect(() => {
     fetchHeroSlides().then(({ slides: s }) => setSlides(s || []));
-    fetchHeroExtras().then((x) => setExtras(x)).catch(() => {});
+    fetchHeroExtras().then((x) => setExtras((e) => ({ ...e, button: x.button }))).catch(() => {});
+    // The countdown, run to the chosen drop's launch time (read fresh).
+    fetchHeroCountdown().then((countdown) => setExtras((e) => ({ ...e, countdown }))).catch(() => {});
   }, []);
 
   return (
