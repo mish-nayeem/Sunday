@@ -1518,6 +1518,7 @@ export default function Admin() {
   // open. (Set to openOrder further down, once it exists.)
   const openOrderRef = useRef(null)
   const openRequestsRef = useRef(null)
+  const openBkashRef = useRef(null)
   const refreshLiveRef = useRef(refreshLive)
   refreshLiveRef.current = refreshLive
   useEffect(() => {
@@ -1526,6 +1527,7 @@ export default function Admin() {
     const id = q.get('order')
     if (id) openOrderRef.current?.(id)
     else if (q.get('show') === 'requests') openRequestsRef.current?.()
+    else if (q.get('show') === 'bkash') openBkashRef.current?.()
     if (id || q.get('show')) window.history.replaceState(window.history.state, '', '/admin')
   }, [loading, session])
   useEffect(() => {
@@ -1537,6 +1539,7 @@ export default function Admin() {
       const id = q.get('order')
       if (id) openOrderRef.current?.(id)
       else if (q.get('show') === 'requests') openRequestsRef.current?.()
+      else if (q.get('show') === 'bkash') openBkashRef.current?.()
     }
     navigator.serviceWorker.addEventListener('message', onMsg)
     return () => navigator.serviceWorker.removeEventListener('message', onMsg)
@@ -1585,6 +1588,12 @@ export default function Admin() {
   }
 
   openRequestsRef.current = openRequests
+
+  // A tapped "bKash to check" notification: Orders → bKash check.
+  openBkashRef.current = () => {
+    setOrdersSub('bkash')
+    goTab('orders')
+  }
 
   const navItems = [
     { key: 'overview', label: 'Overview', badge: null },

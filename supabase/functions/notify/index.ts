@@ -17,8 +17,11 @@
 //   { action: 'courier', order_id }         → the parcel was delivered, is coming
 //                                              back, was cancelled, held or failed
 //                                              (the courier's status just changed)
+//   { action: 'summary' }                   → the evening round-up (pg_cron, 22:00
+//                                              Dhaka): today's orders and money,
+//                                              and what's waiting on the admin
 //
-// The three the database sends need no login, so each is checked against
+// The four the database sends need no login, so each is checked against
 // the database itself: only something that really just happened, and each
 // one once (push_sent) — calling again, or with a made-up id, sends nothing.
 //
@@ -118,6 +121,7 @@ export async function sendPush(
   const body = await encryptPayload(enc.encode(JSON.stringify(message)), sub.p256dh, sub.auth)
   const res = await fetch(sub.endpoint, {
     method: 'POST',
+    signal: AbortSignal.timeout(10_000),
     headers: {
       Authorization: await vapidHeader(sub.endpoint, vapid.publicKey, vapid.privateJwk, vapid.subject),
       'Content-Encoding': 'aes128gcm',
@@ -169,11 +173,64 @@ async function pushAll(db: Db, message: Record<string, unknown>) {
 
 const taka = (n: unknown) => '৳' + Math.round(Number(n || 0)).toLocaleString('en-US')
 
+// A product photo sized for the notification: a small square beside the
+// text (Android; iPhone always shows the app's own icon), and a wider one
+// for Android's pulled-down view.
+function sized(url: string, w: number, h: number): string | undefined {
+  if (!/^https:\/\//.test(url)) return undefined
+  const object = '/storage/v1/object/public/'
+  if (url.includes(object) && !url.includes('?')) {
+    return url.replace(object, '/storage/v1/render/image/public/') + `?width=${w}&height=${h}&resize=cover&quality=70&format=origin`
+  }
+  return url
+}
+
+type Line = Record<string, unknown>
+const productIdOf = (l: Line) => String(l.product_id ?? l.productId ?? '')
+
+async function firstPhoto(db: Db, line: Line | undefined): Promise<string> {
+  if (!line) return ''
+  const id = productIdOf(line)
+  if (id) {
+    const { data } = await db.from('products').select('images').eq('id', id).maybeSingle()
+    const url = Array.isArray(data?.images) ? String(data.images[0] || '') : ''
+    if (url) return url
+  }
+  return String(line.image ?? '')
+}
+
+// After an order: a size it emptied, or left with its last piece — said in
+// the same notification rather than a second one.
+async function stockNews(db: Db, lines: Line[]) {
+  const ids = [...new Set(lines.map(productIdOf).filter(Boolean))]
+  if (!ids.length) return []
+  const { data } = await db.from('products').select('id, size_stock').in('id', ids)
+  const stockOf = new Map<string, Record<string, number> | null>()
+  for (const p of data || []) stockOf.set(String(p.id), (p.size_stock as Record<string, number> | null) || null)
+  const out: string[] = []
+  for (const l of lines) {
+    const st = stockOf.get(productIdOf(l))
+    const size = String(l.size ?? '')
+    if (!st || !size || !(size in st)) continue // not counted
+    const left = Number(st[size]) || 0
+    const name = String(l.name ?? l.product_name ?? '')
+    if (left <= 0) out.push(`⚠️ ${name} ${size} is now sold out`)
+    else if (left === 1) out.push(`⚠️ ${name} ${size} — last piece left`)
+  }
+  return [...new Set(out)]
+}
+
+// Lines of a notification body: one fact a line (Android and iPhone both
+// show them stacked), kept short enough to show whole.
+function lines3(parts: string[]) {
+  return parts.filter(Boolean).map((p) => p.slice(0, 90)).join('\n').slice(0, 300)
+}
+
 async function newOrder(db: Db, orderId: string) {
   if (!orderId) return { skipped: 'no order' }
   const { data: o } = await db
     .from('orders')
-    .select('order_id, full_name, district, subtotal, total, created_at, items, utm_medium')
+    .select('order_id, full_name, district, subtotal, total, created_at, items, utm_medium, advance_amount, advance_verified_at, bkash_transaction_id')
     .eq('order_id', orderId)
     .maybeSingle()
   // Only a real order, and only while it's new — calling this again later
@@ -183,19 +240,81 @@ async function newOrder(db: Db, orderId: string) {
   const { error } = await db.from('push_sent').insert({ order_id: o.order_id })
   if (error) return { skipped: 'already sent' }
 
-  const lines = Array.isArray(o.items) ? o.items : []
+  // In the order they were put in the bag — the first is the photo.
+  const lines = (Array.isArray(o.items) ? o.items : []) as Line[]
   const items = lines
-    .map((it: Record<string, unknown>) => `${it.name ?? it.product_name ?? ''} ${it.size ?? ''} ×${it.quantity ?? it.qty ?? 1}`.trim())
+    .map((it) => {
+      const qty = Number(it.quantity ?? it.qty ?? 1) || 1
+      return `${it.name ?? it.product_name ?? ''} ${it.size ?? ''}`.trim() + (qty > 1 ? ` ×${qty}` : '')
+    })
     .join(', ')
-  // The piece picked first (the order keeps the bag's order) — its photo
-  // shows small beside the notification.
-  const photo = String(lines[0]?.image ?? '')
+  const photo = await firstPhoto(db, lines[0])
+  const total = Number(o.total ?? o.subtotal) || 0
+  // A bKash advance still to be checked: said first — amount and TrxID —
+  // and the tap opens Orders → bKash check.
+  const advance = Number(o.advance_amount) || 0
+  const toCheck = advance > 0 && !o.advance_verified_at
+  const due = Math.max(0, total - advance)
+  const pay = toCheck
+    ? `💳 bKash ${taka(advance)} · TrxID ${o.bkash_transaction_id || '—'} — check it`
+    : advance >= total && advance > 0
+      ? '💳 Paid in full by bKash'
+      : `💵 ${taka(due)} cash on delivery`
+  const stock = await stockNews(db, lines)
+  const id = encodeURIComponent(String(o.order_id))
   return pushAll(db, {
-    title: `🛍 New order · ${taka(o.total ?? o.subtotal)}`,
-    icon: /^https:\/\//.test(photo) ? photo : undefined,
-    body: [o.full_name, items, o.district].filter(Boolean).join(' · ').slice(0, 180),
-    url: `/admin?order=${encodeURIComponent(o.order_id)}`,
+    icon: photo ? sized(photo, 192, 192) : undefined,
+    image: photo ? sized(photo, 720, 360) : undefined,
+    title: toCheck ? `🛍 New order · ${taka(total)} · bKash to check` : `🛍 New order · ${taka(total)}`,
+    body: lines3([
+      `👤 ${o.full_name || '—'}${o.district ? ` · ${o.district}` : ''}`,
+      items ? `👕 ${items}` : '',
+      pay,
+      ...stock,
+    ]),
+    url: toCheck ? '/admin?show=bkash' : `/admin?order=${id}`,
     tag: `order-${o.order_id}`,
+    actions: toCheck
+      ? [{ action: 'bkash', title: '💳 bKash check', url: '/admin?show=bkash' }, { action: 'open', title: 'Open order', url: `/admin?order=${id}` }]
+      : [{ action: 'open', title: 'Open order', url: `/admin?order=${id}` }],
+    requireInteraction: toCheck,
+  })
+}
+
+// The evening round-up (pg_cron at 22:00 Dhaka, migration
+// 20261115150000_daily_summary.sql): today's orders and money, and what's
+// still waiting on the admin. Once a day (push_sent), and only in the
+// evening, so a stray call can't send it at other times.
+async function dailySummary(db: Db) {
+  const dhaka = new Date(Date.now() + 6 * 3600 * 1000) // UTC+6, no DST
+  if (dhaka.getUTCHours() < 21) return { skipped: 'not evening yet' }
+  const day = dhaka.toISOString().slice(0, 10)
+  const from = new Date(`${day}T00:00:00+06:00`).toISOString()
+  const { error } = await db.from('push_sent').insert({ order_id: `summary:${day}` })
+  if (error) return { skipped: 'already sent' }
+
+  const { data: today } = await db
+    .from('orders')
+    .select('order_id, status, total, subtotal')
+    .gte('created_at', from)
+  const orders = (today || []).filter((o) => o.status !== 'cancelled')
+  let money = 0
+  for (const o of orders) money += Number(o.total ?? o.subtotal) || 0
+  const [{ count: toShip }, { count: bkash }, { count: asks }] = await Promise.all([
+    db.from('orders').select('order_id', { count: 'exact', head: true }).eq('status', 'pending'),
+    db.from('orders').select('order_id', { count: 'exact', head: true }).gt('advance_amount', 0).is('advance_verified_at', null).neq('status', 'cancelled'),
+    db.from('order_returns').select('id', { count: 'exact', head: true }).gte('created_at', from).eq('source', 'customer'),
+  ])
+  const waiting = [
+    bkash ? `💳 ${bkash} bKash to check` : '',
+    toShip ? `📦 ${toShip} to send` : '',
+    asks ? `🔁 ${asks} return / exchange ${asks === 1 ? 'request' : 'requests'} today` : '',
+  ].filter(Boolean)
+  return pushAll(db, {
+    title: orders.length ? `📊 Today · ${orders.length} ${orders.length === 1 ? 'order' : 'orders'} · ${taka(money)}` : '📊 Today · no orders yet',
+    body: lines3(waiting.length ? waiting : ['✅ Nothing waiting — all caught up']),
+    url: bkash ? '/admin?show=bkash' : '/admin',
+    tag: `summary-${day}`,
   })
 }
 
@@ -221,9 +340,14 @@ async function newRequest(db: Db, id: number) {
   const kind = r.kind === 'exchange' ? '🔁 Exchange' : r.kind === 'refund' ? '💸 Refund' : '↩️ Return'
   return pushAll(db, {
     title: `${kind} request · ${r.order_id}`,
-    body: [o?.full_name, what, r.reason].filter(Boolean).join(' · ').slice(0, 180),
+    body: lines3([
+      o?.full_name ? `👤 ${o.full_name}` : '',
+      what ? `👕 ${what}` : '',
+      r.reason ? `💬 ${r.reason}` : '',
+    ]),
     url: '/admin?show=requests',
     tag: `request-${r.id}`,
+    actions: [{ action: 'open', title: 'Open requests', url: '/admin?show=requests' }],
   })
 }
 
@@ -261,9 +385,13 @@ async function courierChange(db: Db, orderId: string) {
   const courier = o.courier ? o.courier[0].toUpperCase() + o.courier.slice(1) : ''
   return pushAll(db, {
     title: `${news.label} · ${o.order_id}`,
-    body: [o.full_name, o.district, courier, taka(o.total ?? o.subtotal)].filter(Boolean).join(' · ').slice(0, 180),
+    body: lines3([
+      `👤 ${o.full_name || '—'}${o.district ? ` · ${o.district}` : ''}`,
+      `🚚 ${courier || 'Courier'} · ${taka(o.total ?? o.subtotal)}`,
+    ]),
     url: `/admin?order=${encodeURIComponent(o.order_id)}`,
     tag: `courier-${o.order_id}`,
+    actions: [{ action: 'open', title: 'Open order', url: `/admin?order=${encodeURIComponent(o.order_id)}` }],
   })
 }
 
@@ -277,6 +405,7 @@ Deno.serve(async (req) => {
     if (action === 'order') return json(await newOrder(db, String(body.order_id || '')))
     if (action === 'request') return json(await newRequest(db, Number(body.id)))
     if (action === 'courier') return json(await courierChange(db, String(body.order_id || '')))
+    if (action === 'summary') return json(await dailySummary(db))
 
     // Everything else is the admin's.
     if (!(await isAdminRequest(req, db))) return json({ error: 'Not allowed' }, 403)
