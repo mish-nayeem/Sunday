@@ -365,49 +365,49 @@ export default function Checkout() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-10 lg:gap-16">
           {/* Form */}
           <div className="lg:col-span-2">
-            <form onSubmit={handleSubmit} className="space-y-10">
+            <form onSubmit={handleSubmit} className="space-y-7">
               {/* 1. Contact */}
-              <fieldset className="space-y-4">
-                <legend className="w-full flex items-baseline justify-between mb-4">
-                  <span className="font-heading text-[24px]">Contact</span>
+              <fieldset className="space-y-3">
+                <legend className="w-full flex items-baseline justify-between mb-3">
+                  <span className="font-heading text-[20px]">Contact</span>
                   {!isAuthenticated && (
                     <Link to="/login?next=/checkout" className="text-[13px] underline underline-offset-4">Have an account? Sign in</Link>
                   )}
                 </legend>
                 <div>
-                  <label htmlFor="co-email" className="text-[13px] block mb-2">Email *</label>
+                  <label htmlFor="co-email" className="text-[12px] block mb-1">Email *</label>
                   <input id="co-email" type="email" required autoComplete="email" value={form.email}
                     onChange={(e) => setForm({ ...form, email: e.target.value })}
-                    placeholder="you@example.com" className="w-full h-12 border border-rule px-4 text-[14px] bg-white outline-none focus:border-ink transition-colors placeholder:text-graphite/60" />
+                    placeholder="you@example.com" className="w-full h-10 border border-rule px-3 text-[13px] bg-white outline-none focus:border-ink transition-colors placeholder:text-graphite/60" />
                 </div>
-                <label className="flex items-center gap-3 text-[14px] cursor-pointer">
+                <label className="flex items-center gap-2.5 text-[13px] cursor-pointer">
                   <input type="checkbox" className="w-4 h-4 accent-black" checked={newsOptIn} onChange={(e) => setNewsOptIn(e.target.checked)} />
                   Email me with news and offers
                 </label>
                 <div>
-                  <label htmlFor="co-mobile" className="text-[13px] block mb-2">Mobile number *</label>
+                  <label htmlFor="co-mobile" className="text-[12px] block mb-1">Mobile number *</label>
                   <input id="co-mobile" type="tel" required autoComplete="tel" inputMode="tel" value={form.mobile}
                     onChange={(e) => setForm({ ...form, mobile: e.target.value })}
                     onBlur={() => setPhoneTouched(true)}
                     aria-invalid={phoneError || undefined}
                     aria-describedby={phoneError ? 'co-mobile-err' : undefined}
-                    placeholder="01XXXXXXXXX" className={`w-full h-12 border px-4 text-[14px] bg-white outline-none transition-colors placeholder:text-graphite/60 ${phoneError ? 'border-coral' : 'border-rule focus:border-ink'}`} />
+                    placeholder="01XXXXXXXXX" className={`w-full h-10 border px-3 text-[13px] bg-white outline-none transition-colors placeholder:text-graphite/60 ${phoneError ? 'border-coral' : 'border-rule focus:border-ink'}`} />
                   {phoneError && <p id="co-mobile-err" className="mt-2 text-[12px] text-coral">Enter a Bangladeshi mobile number, 11 digits starting with 01.</p>}
                 </div>
               </fieldset>
 
               {/* 2. Delivery */}
-              <fieldset className="space-y-4">
-                <legend className="font-heading text-[24px] mb-4">Delivery</legend>
+              <fieldset className="space-y-3">
+                <legend className="font-heading text-[20px] mb-3">Delivery</legend>
                 <div>
-                  <label htmlFor="co-name" className="text-[13px] block mb-2">Full name *</label>
+                  <label htmlFor="co-name" className="text-[12px] block mb-1">Full name *</label>
                   <input id="co-name" type="text" required autoComplete="name" value={form.full_name}
-                    onChange={(e) => setForm({ ...form, full_name: e.target.value })} className="w-full h-12 border border-rule px-4 text-[14px] bg-white outline-none focus:border-ink transition-colors placeholder:text-graphite/60" />
+                    onChange={(e) => setForm({ ...form, full_name: e.target.value })} className="w-full h-10 border border-rule px-3 text-[13px] bg-white outline-none focus:border-ink transition-colors placeholder:text-graphite/60" />
                 </div>
                 <div>
-                  <label htmlFor="co-district" className="text-[13px] block mb-2">District *</label>
+                  <label htmlFor="co-district" className="text-[12px] block mb-1">District *</label>
                   <select id="co-district" required value={form.district}
-                    onChange={(e) => setForm({ ...form, district: e.target.value })} className="w-full h-12 border border-rule px-4 text-[14px] bg-white outline-none focus:border-ink transition-colors placeholder:text-graphite/60">
+                    onChange={(e) => setForm({ ...form, district: e.target.value })} className="w-full h-10 border border-rule px-3 text-[13px] bg-white outline-none focus:border-ink transition-colors placeholder:text-graphite/60">
                     <option value="">Select your district</option>
                     <optgroup label="Inside Dhaka · cash on delivery">
                       <option value="Dhaka">Dhaka</option>
@@ -419,31 +419,31 @@ export default function Checkout() {
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-[minmax(0,1fr)_160px] gap-4">
                   <div>
-                    <label htmlFor="co-area" className="text-[13px] block mb-2">Area / thana *</label>
+                    <label htmlFor="co-area" className="text-[12px] block mb-1">Area / thana *</label>
                     <input id="co-area" type="text" required value={form.area}
-                      onChange={(e) => setForm({ ...form, area: e.target.value })} placeholder="e.g. Dhanmondi" className="w-full h-12 border border-rule px-4 text-[14px] bg-white outline-none focus:border-ink transition-colors placeholder:text-graphite/60" />
+                      onChange={(e) => setForm({ ...form, area: e.target.value })} placeholder="e.g. Dhanmondi" className="w-full h-10 border border-rule px-3 text-[13px] bg-white outline-none focus:border-ink transition-colors placeholder:text-graphite/60" />
                   </div>
                   <div>
-                    <label htmlFor="co-postal" className="text-[13px] block mb-2">Postal code</label>
+                    <label htmlFor="co-postal" className="text-[12px] block mb-1">Postal code</label>
                     <input id="co-postal" type="text" inputMode="numeric" autoComplete="postal-code" maxLength={6} value={form.postal}
-                      onChange={(e) => setForm({ ...form, postal: e.target.value.replace(/[^0-9]/g, '') })} placeholder="e.g. 1209" className="w-full h-12 border border-rule px-4 text-[14px] bg-white outline-none focus:border-ink transition-colors placeholder:text-graphite/60" />
+                      onChange={(e) => setForm({ ...form, postal: e.target.value.replace(/[^0-9]/g, '') })} placeholder="e.g. 1209" className="w-full h-10 border border-rule px-3 text-[13px] bg-white outline-none focus:border-ink transition-colors placeholder:text-graphite/60" />
                   </div>
                 </div>
                 <div>
-                  <label htmlFor="co-address" className="text-[13px] block mb-2">Full address *</label>
+                  <label htmlFor="co-address" className="text-[12px] block mb-1">Full address *</label>
                   <textarea id="co-address" required rows={3} autoComplete="street-address" value={form.address}
                     onChange={(e) => setForm({ ...form, address: e.target.value })}
                     placeholder="House, road, block or village"
-                    className="w-full border border-rule px-4 py-3 text-[14px] bg-white outline-none focus:border-ink transition-colors resize-none placeholder:text-graphite/60" />
+                    className="w-full border border-rule px-3 py-2 text-[13px] bg-white outline-none focus:border-ink transition-colors resize-none placeholder:text-graphite/60" />
                 </div>
                 <div>
-                  <label htmlFor="co-notes" className="text-[13px] block mb-2">Notes (optional)</label>
+                  <label htmlFor="co-notes" className="text-[12px] block mb-1">Notes (optional)</label>
                   <textarea id="co-notes" rows={2} value={form.notes}
                     onChange={(e) => setForm({ ...form, notes: e.target.value })}
                     placeholder="Anything the rider should know"
-                    className="w-full border border-rule px-4 py-3 text-[14px] bg-white outline-none focus:border-ink transition-colors resize-none placeholder:text-graphite/60" />
+                    className="w-full border border-rule px-3 py-2 text-[13px] bg-white outline-none focus:border-ink transition-colors resize-none placeholder:text-graphite/60" />
                 </div>
-                <label className="flex items-center gap-3 text-[14px] cursor-pointer">
+                <label className="flex items-center gap-2.5 text-[13px] cursor-pointer">
                   <input type="checkbox" className="w-4 h-4 accent-black" checked={saveInfo} onChange={(e) => setSaveInfo(e.target.checked)} />
                   Save this information for next time
                 </label>
@@ -451,11 +451,11 @@ export default function Checkout() {
 
               {/* 3. Payment: follows the district. */}
               <fieldset>
-                <legend className="font-heading text-[24px] mb-4">Payment</legend>
+                <legend className="font-heading text-[20px] mb-3">Payment</legend>
                 {!form.district ? (
-                  <p className="border border-rule px-4 py-4 text-[13px] text-graphite bg-white">Choose your district above to see how you’ll pay.</p>
+                  <p className="border border-rule px-3 py-3 text-[12px] text-graphite bg-white">Choose your district above to see how you’ll pay.</p>
                 ) : (
-                  <div className="space-y-3">
+                  <div className="space-y-2">
                     {/* The two ways to pay for this district. */}
                     {(advanceOnly
                       ? [
@@ -467,11 +467,11 @@ export default function Checkout() {
                           ['full', `Pay the full Tk ${total.toLocaleString()} now by bKash`, 'Products and delivery paid now — nothing to pay when it arrives.'],
                         ]
                     ).map(([key, title, note]) => (
-                      <label key={key} className={`flex items-start gap-3 border px-4 py-4 bg-white cursor-pointer transition-colors ${pay === key ? 'border-ink' : 'border-rule hover:border-graphite'}`}>
+                      <label key={key} className={`flex items-start gap-2.5 border px-3 py-3 bg-white cursor-pointer transition-colors ${pay === key ? 'border-ink' : 'border-rule hover:border-graphite'}`}>
                         <input type="radio" name="pay" className="mt-1 accent-black" checked={pay === key} onChange={() => setPayOption(key)} />
                         <span>
-                          <span className="block text-[14px]">{title}</span>
-                          <span className="block text-[13px] text-graphite mt-1">{note}</span>
+                          <span className="block text-[13px]">{title}</span>
+                          <span className="block text-[12px] text-graphite mt-0.5">{note}</span>
                         </span>
                       </label>
                     ))}
@@ -508,11 +508,11 @@ export default function Checkout() {
                             ))}
                           </ol>
                           <div>
-                            <label htmlFor="co-trx" className="text-[13px] block mb-2">Transaction ID *</label>
+                            <label htmlFor="co-trx" className="text-[12px] block mb-1">Transaction ID *</label>
                             <input id="co-trx" type="text" required={isAdvancePay} value={bkashTrxId}
                               onChange={(e) => setBkashTrxId(e.target.value.toUpperCase().trim())}
                               placeholder="e.g. K8H7G6F5D4" autoComplete="off"
-                              className="w-full h-12 border border-rule px-4 text-[14px] bg-white outline-none focus:border-ink transition-colors placeholder:text-graphite/60 uppercase tracking-[0.12em]" />
+                              className="w-full h-10 border border-rule px-3 text-[13px] bg-white outline-none focus:border-ink transition-colors placeholder:text-graphite/60 uppercase tracking-[0.12em]" />
                             <p className="mt-2 text-[12px] text-graphite">The order can’t be placed without it. We check it before your order ships.</p>
                           </div>
                         </div>
@@ -523,8 +523,8 @@ export default function Checkout() {
               </fieldset>
 
               {/* Terms, then the order. */}
-              <div className="space-y-4">
-                <label className="flex items-start gap-3 text-[14px] cursor-pointer">
+              <div className="space-y-3">
+                <label className="flex items-start gap-2.5 text-[13px] cursor-pointer">
                   <input type="checkbox" required className="mt-0.5 w-4 h-4 accent-black" checked={agreed}
                     onChange={(e) => { setAgreed(e.target.checked); setSubmitError(''); }} />
                   <span>
@@ -543,7 +543,7 @@ export default function Checkout() {
                 <button
                   type="submit"
                   disabled={submitting || !agreed}
-                  className="w-full h-14 bg-ink text-white text-[13px] uppercase tracking-[0.14em] hover:bg-ink/85 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                  className="w-full h-12 bg-ink text-white text-[12px] uppercase tracking-[0.1em] hover:bg-ink/85 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                 >
                   {submitting ? 'Placing order…' : `Place order · Tk ${total.toLocaleString()}`}
                 </button>
@@ -553,8 +553,8 @@ export default function Checkout() {
 
           {/* Summary */}
           <div className="lg:sticky lg:top-28 lg:self-start">
-            <div className="bg-white border border-rule p-6 md:p-8">
-              <h3 className="text-[14px] mb-6 flex items-center gap-2">
+            <div className="bg-white border border-rule p-4 md:p-6">
+              <h3 className="text-[13px] mb-4 flex items-center gap-2">
                 <span className="w-1.5 h-1.5 rounded-full bg-[#000]" />
                 Order Summary
               </h3>
@@ -638,9 +638,9 @@ export default function Checkout() {
                 </div>
               )}
 
-              <div className="flex justify-between items-center bg-stone px-4 py-4 mb-3">
+              <div className="flex justify-between items-center bg-stone px-3 py-3 mb-3">
                 <span className="font-semibold text-black">Total</span>
-                <span className="text-xl font-mono font-bold text-black">Tk {total.toLocaleString()}</span>
+                <span className="text-[17px] font-mono font-bold text-black">Tk {total.toLocaleString()}</span>
               </div>
               {form.district && (
                 <div className="mb-6 px-1 space-y-1.5 text-[13px]">
