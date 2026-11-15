@@ -1,0 +1,38 @@
+/* ImagePeek.jsx — a product photo shown big over the admin. */
+.ipeek {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  background: rgba(10, 10, 8, 0.86);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 56px 16px 24px;
+  cursor: zoom-out;
+}
+.ipeek img {
+  max-width: min(92vw, 640px);
+  max-height: 78vh;
+  object-fit: contain;
+  border-radius: 10px;
+  background: #fff;
+}
+.ipeek-title { color: #f4f4f2; font-size: 12px; letter-spacing: 0.06em; text-align: center; }
+.ipeek-x {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  background: rgba(0, 0, 0, 0.3);
+  color: #fff;
+  font-size: 16px;
+  cursor: pointer;
+}
+
+/* The thumbnails that open it. */
+.peek-btn { padding: 0; border: 0; background: none; cursor: zoom-in; display: block; }

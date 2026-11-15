@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Link, Navigate } from 'react-router-dom'
 import {
-  getSession,
+  loadAdminLogin,
   signOut,
   fetchOrders,
   fetchAdminProducts,
@@ -111,6 +111,9 @@ import InfoTip from '../components/InfoTip.jsx'
 import EyeToggle from '../components/EyeToggle.jsx'
 import OrderBulkBar from '../components/OrderBulkBar.jsx'
 import CodeGate from '../components/CodeGate.jsx'
+import { isAdminEmail } from '@/lib/adminEmail'
+import ImagePeek from '../components/ImagePeek.jsx'
+import SettingsManager from '../components/SettingsManager.jsx'
 import { hasDraft } from '../lib/useDraft.js'
 import { pageHelp, PANEL_HELP } from '../lib/help.js'
 import '../styles/base.css'
@@ -156,6 +159,7 @@ const SITE_TABS = [
   { key: 'menu', label: 'Side menu' },
   { key: 'about', label: 'About us' },
   { key: 'banners', label: 'Banners' },
+  { key: 'settings', label: 'Settings' },
 ]
 const SITE_KEYS = SITE_TABS.map((t) => t.key)
 
@@ -171,6 +175,7 @@ const TAB_LABELS = {
   menu: 'Side menu',
   about: 'About us page',
   banners: 'Banners',
+  settings: 'Settings',
   support: 'Support',
 }
 
@@ -554,6 +559,9 @@ export default function Admin() {
   useEffect(() => startAdminApp(), [])
   useAdminFonts()
   const [session, setSession] = useState(null)
+  // A product photo opened big from an order's thumbnail (ImagePeek).
+  const [peek, setPeek] = useState(null)
+  const closePeek = useCallback(() => setPeek(null), [])
   const [theme, setTheme] = useState(savedTheme)
   const [mini, setMini] = useState(savedMini)
   function toggleMini() {
@@ -713,11 +721,44 @@ export default function Admin() {
     } catch { /* storage blocked — it just opens on Overview */ }
   }, [tab, lastSiteTab, overviewSub, ordersSub, analyticsSub, supportSub, productsSub, marginView, customersSub, marketingSub, openCollection])
 
+  // Opening: signed in, signed out — or a saved login waiting for the network
+  // (see loadAdminLogin), which stays on "Reconnecting…" and keeps trying
+  // instead of showing the sign-in page.
+  const [reconnecting, setReconnecting] = useState(false)
   useEffect(() => {
-    getSession().then((s) => {
-      setSession(s)
-      setCheckingAuth(false)
+    let alive = true
+    let finished = false
+    let timer = null
+    const check = async () => {
+      if (finished) return true
+      clearTimeout(timer)
+      const { session: s, waiting } = await loadAdminLogin()
+      if (!alive || finished) return true
+      if (s || !waiting) {
+        finished = true
+        window.removeEventListener('online', check)
+        document.removeEventListener('visibilitychange', again)
+        setSession(s)
+        setReconnecting(false)
+        setCheckingAuth(false)
+        return true
+      }
+      setReconnecting(true)
+      timer = setTimeout(check, 10000)
+      return false
+    }
+    const again = () => { if (document.visibilityState === 'visible') check() }
+    check().then((done) => {
+      if (done || !alive) return
+      window.addEventListener('online', check)
+      document.addEventListener('visibilitychange', again)
     })
+    return () => {
+      alive = false
+      clearTimeout(timer)
+      window.removeEventListener('online', check)
+      document.removeEventListener('visibilitychange', again)
+    }
   }, [])
 
   // A login stays until Sign out — Supabase renews it by itself. If a
@@ -727,8 +768,12 @@ export default function Admin() {
   // their drafts in this browser. (Renewals themselves don't touch `session`
   // here, so the lists aren't reloaded every hour.)
   useEffect(() => {
-    const { data } = supabase.auth.onAuthStateChange((event) => {
+    const { data } = supabase.auth.onAuthStateChange((event, s) => {
       if (event === 'SIGNED_OUT') setSession(null)
+      // A login renewed late (the phone's network came back): straight in.
+      else if (s && (event === 'TOKEN_REFRESHED' || event === 'SIGNED_IN') && isAdminEmail(s.user?.email)) {
+        setSession((prev) => prev || s)
+      }
     })
     return () => data.subscription.unsubscribe()
   }, [])
@@ -1030,7 +1075,18 @@ export default function Admin() {
             const canCross = !['cancelled', 'returned'].includes(o.status)
             return (
               <div className={`oitem ${door ? 'crossed' : ''}`} key={it.id}>
-                <span className="oitem-thumb">{src && <img src={imgUrl(src, { w: 100 })} alt="" />}</span>
+                <span className="oitem-thumb">
+                  {src && (
+                    <button
+                      type="button"
+                      className="peek-btn"
+                      aria-label={`See ${it.product_name} bigger`}
+                      onClick={(e) => { e.stopPropagation(); setPeek({ src, title: `${it.product_name} · ${it.size}` }) }}
+                    >
+                      <img src={imgUrl(src, { w: 100 })} alt="" />
+                    </button>
+                  )}
+                </span>
                 <span className="oitem-name">
                   {it.product_name}
                   <span className="mono dim">
@@ -1546,7 +1602,7 @@ export default function Admin() {
   }, [])
 
   if (checkingAuth) {
-    return <div className="admin-boot mono">Checking access…</div>
+    return <div className="admin-boot mono">{reconnecting ? 'Reconnecting… (waiting for the network)' : 'Checking access…'}</div>
   }
 
   if (!session) {
@@ -1617,6 +1673,7 @@ export default function Admin() {
     // Black & orange is the dark theme with its own colours (data-accent), so
     // every rule written for the dark theme holds for it too.
     <div className={`admin ${mini ? 'mini' : ''}`} data-theme={theme === 'orange' ? 'dark' : theme} data-accent={theme === 'orange' ? 'orange' : undefined} data-tab={tab}>
+      <ImagePeek peek={peek} onClose={closePeek} />
       <div className="admin-topbar">
         {/* Phones: one step back inside the panel, like the phone's own Back. */}
         {panelHistory.depth > 0 && (
@@ -2049,7 +2106,16 @@ export default function Admin() {
                           const src = productsById.get(String(it.product_id))?.images?.[0]
                           return (
                             <span className="ocard-thumb" key={it.id}>
-                              {src && <img src={imgUrl(src, { w: 80 })} alt="" loading="lazy" />}
+                              {src && (
+                                <button
+                                  type="button"
+                                  className="peek-btn"
+                                  aria-label={`See ${it.product_name} bigger`}
+                                  onClick={(e) => { e.stopPropagation(); setPeek({ src, title: `${it.product_name} · ${it.size}` }) }}
+                                >
+                                  <img src={imgUrl(src, { w: 80 })} alt="" loading="lazy" />
+                                </button>
+                              )}
                             </span>
                           )
                         })}
@@ -2781,6 +2847,7 @@ export default function Admin() {
         )}
         {tab === 'about' && <AboutManager />}
         {!loading && tab === 'banners' && <PromoManager products={products} />}
+        {!loading && tab === 'settings' && <SettingsManager />}
         {!loading && tab === 'support' && (
           <>
             <div className="subtabs mono">

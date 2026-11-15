@@ -1416,6 +1416,7 @@ body:has(.trow.dragging) { user-select: none; cursor: grabbing; }
 
 .ocard-thumb + .ocard-thumb { margin-left: -8px; }
 .ocard-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.ocard-thumb .peek-btn, .oitem-thumb .peek-btn { width: 100%; height: 100%; }
 .ocard-what { font-size: 13px; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
 .ocard-bottom {

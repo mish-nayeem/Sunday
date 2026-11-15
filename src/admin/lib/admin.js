@@ -112,15 +112,39 @@ export async function signOut() {
   await supabase.auth.signOut()
 }
 
-export async function getSession() {
-  const { data } = await supabase.auth.getSession()
+// The admin's login: { session } when signed in, { session: null } when not —
+// or { session: null, waiting: true } when a saved login couldn't be renewed
+// because there's no network yet.
+//
+// A login lasts until Sign out, but its key is renewed every hour. When the
+// phone app is opened after a while, that renewal happens first — and right
+// after the phone wakes the network often isn't back, so it fails. Supabase
+// then answers "no session" for now but keeps the login saved (and waits a
+// minute before trying the same renewal again). That used to show the
+// sign-in page as if signed out; the panel now waits for the network.
+export async function loadAdminLogin() {
+  const { data, error } = await supabase.auth.getSession()
   const session = data.session
+  if (!session) return { session: null, waiting: Boolean(error) && hasSavedLogin() }
 
   // A signed-in customer isn't an admin — but they're still a customer, so
   // this reports "no admin session" without ending their login.
-  if (session && !isAdminEmail(session.user?.email)) return null
+  if (!isAdminEmail(session.user?.email)) return { session: null }
+  return { session }
+}
 
-  return session
+export async function getSession() {
+  return (await loadAdminLogin()).session
+}
+
+// Whether a saved login is still waiting to be renewed (one that failed for
+// want of a network).
+export function hasSavedLogin() {
+  try {
+    return Object.keys(window.localStorage).some((k) => /^sb-.*-auth-token$/.test(k) && window.localStorage.getItem(k))
+  } catch {
+    return false
+  }
 }
 
 // ---------- Orders ----------
