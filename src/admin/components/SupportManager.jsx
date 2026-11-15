@@ -108,9 +108,13 @@ export function SupportPages() {
     const next = tabs.filter((t) => t.slug !== s)
     saveTabs(next, 'Deleted.')
     if (saved[s]) {
-      const pages = { ...saved }
-      delete pages[s]
-      saveSupportPages(pages).then(({ error }) => { if (!error) setSaved(pages) })
+      // Read fresh first, as in persist: only this page goes.
+      fetchSupportPages().then(({ saved: latest, error }) => {
+        if (error) return
+        const pages = { ...latest }
+        delete pages[s]
+        saveSupportPages(pages).then(({ error }) => { if (!error) setSaved(pages) })
+      })
     }
     if (slug === s) {
       const first = next.find((t) => !NOT_COPY.includes(t.slug))?.slug || 'refunds'
@@ -158,8 +162,18 @@ export function SupportPages() {
     set({ blocks: [...draft.blocks, block] })
   }
 
-  async function persist(next, done, shown) {
+  // Every page is kept together in one setting, so a save first reads it
+  // fresh and changes only its own page: a copy loaded earlier (another tab,
+  // the phone) never writes its older pages back over newer ones. If the
+  // pages can't be read just now, nothing is saved.
+  async function persist(change, done, shown) {
     setBusy(true)
+    const latest = await fetchSupportPages()
+    if (latest.error) {
+      setBusy(false)
+      return setNote("Couldn't reach the saved pages just now — nothing was changed. Try Save again.")
+    }
+    const next = change({ ...latest.saved })
     const { error } = await saveSupportPages(next)
     setBusy(false)
     if (error) return setNote(`Couldn't save — ${MIGRATION}`)
@@ -175,16 +189,21 @@ export function SupportPages() {
       intro: (draft.intro || '').trim(),
     }
     setDraft(clean)
-    const next = { ...saved, [slug]: clean }
-    persist(next, 'Saved — live on the Support page now.', clean)
+    const page = slug
+    persist((all) => {
+      all[page] = clean
+      return all
+    }, 'Saved — live on the Support page now.', clean)
   }
 
   function reset() {
-    const next = { ...saved }
-    delete next[slug]
-    const fresh = clone(basePage(slug, labelOf(slug)))
+    const page = slug
+    const fresh = clone(basePage(page, labelOf(page)))
     setDraft(fresh)
-    persist(next, 'Back to the built-in copy.', fresh)
+    persist((all) => {
+      delete all[page]
+      return all
+    }, 'Back to the built-in copy.', fresh)
   }
 
   if (loading || !draft) return <div className="ab-empty mono">Loading…</div>
