@@ -7,7 +7,7 @@
 // It also shows the "New order" notifications the notify edge function
 // sends (supabase/functions/notify), and opens that order when one is tapped.
 
-const CACHE = 'sunday-admin-v5'
+const CACHE = 'sunday-admin-v6'
 const OFFLINE = '/admin-offline.html'
 
 self.addEventListener('install', (event) => {
@@ -46,9 +46,18 @@ self.addEventListener('push', (event) => {
       // Android draws the badge as a white silhouette of its opaque parts:
       // the sun mark's ring and dot on a transparent ground.
       badge: '/admin-badge-96.png',
+      // Android, pulled down: the product's photo large.
+      image: msg.image || undefined,
       tag: msg.tag,
       renotify: Boolean(msg.tag),
-      data: { url: msg.url || '/admin' },
+      // A bKash advance to check stays until it's dealt with (where the
+      // phone allows it).
+      requireInteraction: Boolean(msg.requireInteraction),
+      vibrate: [120, 60, 120],
+      timestamp: Date.now(),
+      // Buttons under it (Android): e.g. "bKash check" · "Open order".
+      actions: (msg.actions || []).slice(0, 2).map((a) => ({ action: a.action, title: a.title })),
+      data: { url: msg.url || '/admin', actions: msg.actions || [] },
     }),
   ]))
 })
@@ -57,7 +66,9 @@ self.addEventListener('push', (event) => {
 // app opens on it.
 self.addEventListener('notificationclick', (event) => {
   event.notification.close()
-  const url = event.notification.data?.url || '/admin'
+  // A button tapped goes where it says; the notification itself, to its url.
+  const button = (event.notification.data?.actions || []).find((a) => a.action === event.action)
+  const url = button?.url || event.notification.data?.url || '/admin'
   event.waitUntil((async () => {
     const wins = await self.clients.matchAll({ type: 'window', includeUncontrolled: true })
     const admin = wins.find((w) => new URL(w.url).pathname.startsWith('/admin'))
