@@ -15,10 +15,24 @@
 #            VITE_IMAGE_CDN_HOST — the domain whose photos Cloudflare resizes
 #            (src/lib/imageCdn.js; off when empty).
 # Without the token and the anon key this workflow says so and stops.
+#
+# Order of things (audit HIGH-2 / MEDIUM-1):
+#   1. The checks in ci.yml run first. If any fails, nothing is deployed and
+#      the live site stays as it was.
+#   2. A push that changes supabase/** isn't deployed from here at once: the
+#      Supabase workflow (supabase.yml) updates the database and the edge
+#      functions first, and when it has finished cleanly it starts this
+#      workflow (workflow_run), so the site never goes live ahead of the
+#      database it needs. If the Supabase run fails, nothing is deployed;
+#      fix it and re-run it, and this follows once it's green.
 name: Deploy
 
 on:
   push:
+    branches: [main]
+  workflow_run:
+    workflows: [Supabase]
+    types: [completed]
     branches: [main]
   workflow_dispatch:
 
@@ -27,15 +41,49 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  # The checks in ci.yml first (lint, unit and browser tests). If any fails,
+  # What to deploy, and whether now: a push that touches the database waits
+  # for the Supabase workflow, which starts this again when it's done.
+  plan:
+    runs-on: ubuntu-latest
+    outputs:
+      go: ${{ steps.decide.outputs.go }}
+      sha: ${{ steps.decide.outputs.sha }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - id: decide
+        run: |
+          event="${{ github.event_name }}"
+          if [ "$event" = "workflow_run" ]; then
+            sha="${{ github.event.workflow_run.head_sha }}"
+            if [ "${{ github.event.workflow_run.conclusion }}" = "success" ] && [ "${{ github.event.workflow_run.event }}" = "push" ]; then go=true; else go=false; fi
+            echo "After the Supabase workflow ($sha): go=$go"
+          elif [ "$event" = "push" ]; then
+            sha="${{ github.sha }}"
+            before="${{ github.event.before }}"
+            go=true
+            if [ "$before" != "0000000000000000000000000000000000000000" ] && git diff --name-only "$before" "$sha" | grep -q '^supabase/'; then
+              go=false
+              echo "This push changes the database or the functions: the Supabase workflow runs first and starts the deploy when it's done."
+            fi
+          else
+            sha="${{ github.sha }}"; go=true
+          fi
+          echo "go=$go" >> "$GITHUB_OUTPUT"
+          echo "sha=$sha" >> "$GITHUB_OUTPUT"
+
+  # The checks in ci.yml (lint, unit and browser tests). If any fails,
   # nothing is deployed and the live site stays as it was.
   checks:
+    needs: plan
+    if: needs.plan.outputs.go == 'true'
     uses: ./.github/workflows/ci.yml
     with:
-      ref: ${{ github.sha }}
+      ref: ${{ needs.plan.outputs.sha }}
 
   deploy:
-    needs: checks
+    needs: [plan, checks]
     runs-on: ubuntu-latest
     steps:
       - name: Check the secrets are set
@@ -54,6 +102,8 @@ jobs:
           fi
 
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.plan.outputs.sha }}
 
       - uses: actions/setup-node@v4
         with:
