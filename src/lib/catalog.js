@@ -49,7 +49,10 @@ export function isSizeAvailable(product, size) {
   if ((product.sizes_out || []).includes(size)) return false;
   const stock = product.size_stock;
   if (stock && Object.keys(stock).length > 0) return (stock[size] || 0) > 0;
-  return (product.quantity || 0) > 0;
+  // No counts kept per size (stock not tracked for this piece): its own
+  // status decides. quantity is 0 by default on such a piece, so going by
+  // it called every size sold out and showed the wishlist instead of the bag.
+  return product.stock_status !== 'out_of_stock';
 }
 
 export function isSoldOut(product) {
