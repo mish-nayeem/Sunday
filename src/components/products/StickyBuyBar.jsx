@@ -79,8 +79,8 @@ export default function StickyBuyBar({ product, buy }) {
 
   const colourLabel = groupColours.length ? (product.variant || 'Colour') : (buy.color || 'Colour');
   const sizeLabel = buy.size ? `Size ${buy.size}` : 'Select size';
-  const cell = 'h-12 flex items-stretch border border-rule bg-white text-[13px] tracking-[0.04em]';
-  const chevron = (which) => (open === which ? <ChevronUp size={16} strokeWidth={1.5} /> : <ChevronDown size={16} strokeWidth={1.5} />);
+  const cell = 'h-10 flex items-stretch border border-rule bg-white text-[12px] tracking-[0.02em]';
+  const chevron = (which) => (open === which ? <ChevronUp size={14} strokeWidth={1.5} /> : <ChevronDown size={14} strokeWidth={1.5} />);
 
   const sizeList = (
     <ul className="max-h-[50vh] overflow-y-auto">
@@ -92,7 +92,7 @@ export default function StickyBuyBar({ product, buy }) {
             <button
               type="button"
               onClick={() => pick(s)}
-              className={`w-full h-11 px-4 flex items-center justify-between text-left border-b border-rule last:border-b-0 ${on ? 'bg-stone' : 'hover:bg-stone/60'} ${ok ? '' : 'text-graphite'}`}
+              className={`w-full h-9 px-3 text-[12px] flex items-center justify-between text-left border-b border-rule last:border-b-0 ${on ? 'bg-stone' : 'hover:bg-stone/60'} ${ok ? '' : 'text-graphite'}`}
             >
               <span className={ok ? '' : 'line-through decoration-1'}>{s}</span>
               <span className={`text-[12px] ${ok ? 'text-graphite' : 'text-coral'}`}>{note(s)}</span>
@@ -188,7 +188,7 @@ export default function StickyBuyBar({ product, buy }) {
                         key={c}
                         type="button"
                         onClick={() => { buy.setColor(c); setOpen(''); }}
-                        className={`w-full h-11 px-4 text-left text-[13px] border-b border-rule last:border-b-0 ${buy.color === c ? 'bg-stone' : 'hover:bg-stone/60'}`}
+                        className={`w-full h-9 px-3 text-left text-[12px] border-b border-rule last:border-b-0 ${buy.color === c ? 'bg-stone' : 'hover:bg-stone/60'}`}
                       >
                         {c}
                       </button>
@@ -197,13 +197,13 @@ export default function StickyBuyBar({ product, buy }) {
               )}
               <button type="button" onClick={() => setOpen(open === 'colour' ? '' : 'colour')} aria-expanded={open === 'colour'} className={`${cell} w-full`}>
                 <span className="flex-1 px-3 flex items-center truncate">{colourLabel}</span>
-                <span className="w-11 border-l border-rule flex items-center justify-center">{chevron('colour')}</span>
+                <span className="w-8 border-l border-rule flex items-center justify-center">{chevron('colour')}</span>
               </button>
             </div>
           )}
 
           {/* Size: right half (or the middle), opening upward. */}
-          <div className={`relative ${hasColours ? '' : 'w-[60%]'}`}>
+          <div className={`relative ${hasColours ? '' : 'w-[40%] min-w-[140px]'}`}>
             {open === 'size' && (
               hasColours ? (
                 <div className="absolute bottom-full left-0 right-0 mb-1 bg-white border border-rule shadow-lg">{sizeList}</div>
@@ -219,7 +219,7 @@ export default function StickyBuyBar({ product, buy }) {
                         type="button"
                         onClick={() => pick(s)}
                         title={note(s) || undefined}
-                        className={`min-w-[48px] h-11 px-3 text-[13px] border-r border-rule last:border-r-0 ${on ? 'bg-ink text-white' : ok ? 'hover:bg-stone' : 'text-graphite line-through decoration-1'}`}
+                        className={`min-w-[34px] h-8 px-2 text-[12px] border-r border-rule last:border-r-0 ${on ? 'bg-ink text-white' : ok ? 'hover:bg-stone' : 'text-graphite line-through decoration-1'}`}
                       >
                         {s}
                       </button>
@@ -235,7 +235,7 @@ export default function StickyBuyBar({ product, buy }) {
               className={`${cell} w-full ${buy.sizeError && !buy.size ? 'border-coral' : ''}`}
             >
               <span className={`flex-1 px-3 flex items-center truncate ${hasColours ? '' : 'justify-center'} ${buy.sizeError && !buy.size ? 'text-coral' : ''}`}>{sizeLabel}</span>
-              <span className="w-11 border-l border-rule flex items-center justify-center">{chevron('size')}</span>
+              <span className="w-8 border-l border-rule flex items-center justify-center">{chevron('size')}</span>
             </button>
           </div>
         </div>
