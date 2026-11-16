@@ -1,0 +1,107 @@
+# The database and the edge functions from GitHub, in order, before the site
+# (audit MEDIUM-1). On every push to main that changes supabase/**:
+#   1. migrations — new files in supabase/migrations are run against the
+#      live database, oldest first, each exactly once (Supabase keeps the
+#      list of what has run). If the live list and this repo disagree (a
+#      migration missing here, or an older one never run there), nothing
+#      is run and this goes red instead of guessing.
+#   2. functions — each edge function whose folder changed is deployed
+#      (every one when _shared changed).
+#   3. When both are green, the Deploy workflow starts (workflow_run) and
+#      puts the site live — so the site never calls a database function
+#      that isn't there yet.
+# By hand — Actions → Supabase → Run workflow: run the migrations, deploy
+# every function, or just list the migrations (what has run, what hasn't).
+#
+# This replaces Supabase's own GitHub integration for migrations: switch its
+# automatic migrations off (Supabase → Project Settings → Integrations →
+# GitHub), so the two never run the same file at once.
+#
+# Needs repository secrets (Settings → Secrets and variables → Actions),
+# both already used by other workflows here:
+#   SUPABASE_ACCESS_TOKEN — Supabase → Account → Access Tokens (functions)
+#   SUPABASE_DB_URL       — Supabase → Connect → Session pooler → URI, with
+#                           the database password filled in (migrations)
+
+name: Supabase
+
+on:
+  push:
+    branches: [main]
+    paths: ['supabase/**']
+  workflow_dispatch:
+    inputs:
+      task:
+        description: What to do
+        type: choice
+        options: [list-migrations, push-migrations, deploy-all-functions]
+        default: list-migrations
+
+concurrency:
+  group: supabase-db
+  cancel-in-progress: false
+
+env:
+  SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+  SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+  PROJECT_REF: qgvadxivqtlgobfzbdxt
+
+jobs:
+  migrations:
+    if: github.event_name == 'push' || inputs.task == 'push-migrations' || inputs.task == 'list-migrations'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Database address set?
+        run: |
+          if [ -z "$SUPABASE_DB_URL" ]; then
+            echo "::error::Add a SUPABASE_DB_URL secret: Supabase → Connect → Session pooler → URI, with the database password in place of [YOUR-PASSWORD]."
+            exit 1
+          fi
+      - name: What has run, what hasn't
+        run: npx --yes supabase@2 migration list --db-url "$SUPABASE_DB_URL"
+      - name: Run new migrations
+        if: github.event_name == 'push' || inputs.task == 'push-migrations'
+        run: npx --yes supabase@2 db push --db-url "$SUPABASE_DB_URL" --yes
+
+  functions:
+    needs: migrations
+    if: github.event_name == 'push' || inputs.task == 'deploy-all-functions'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Access token set?
+        run: |
+          if [ -z "$SUPABASE_ACCESS_TOKEN" ]; then
+            echo "::error::Add a SUPABASE_ACCESS_TOKEN secret: Supabase → Account → Access Tokens."
+            exit 1
+          fi
+      - name: Deploy changed functions
+        run: |
+          if [ "${{ github.event_name }}" = "push" ] && [ "${{ github.event.before }}" != "0000000000000000000000000000000000000000" ]; then
+            names=$(git diff --name-only "${{ github.event.before }}" "${{ github.sha }}" -- supabase/functions | cut -d/ -f3 | sort -u)
+          else
+            names=$(ls supabase/functions)
+          fi
+          # _shared is code the functions import, not a function: when it
+          # changes, every function goes out again.
+          if echo "$names" | grep -qx '_shared'; then names=$(ls supabase/functions); fi
+          names=$(echo "$names" | grep -v '^_' || true)
+          if [ -z "$names" ]; then echo "No function changed."; exit 0; fi
+          for n in $names; do
+            if [ -f "supabase/functions/$n/index.ts" ]; then
+              echo "::group::Deploying $n"
+              npx --yes supabase@2 functions deploy "$n" --project-ref "$PROJECT_REF"
+              echo "::endgroup::"
+            fi
+          done
