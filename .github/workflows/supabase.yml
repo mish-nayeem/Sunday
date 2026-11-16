@@ -71,12 +71,16 @@ jobs:
         if: github.event_name == 'push' || inputs.task == 'push-migrations'
         run: |
           v=20261018000000
-          if [ -f "supabase/migrations/${v}_core_tables.sql" ] && \
-             npx --yes supabase@2 migration list --db-url "$SUPABASE_DB_URL" | grep -Eq "^\s*\`?${v}\`?\s*\|\s*\|"; then
+          [ -f "supabase/migrations/${v}_core_tables.sql" ] || { echo "No baseline here."; exit 0; }
+          # A row of migration list: `local` | `remote` | `time`, where a
+          # migration not run on the live database shows ` ` as its remote.
+          if npx --yes supabase@2 migration list --db-url "$SUPABASE_DB_URL" \
+             | awk -F'|' -v v="$v" '{ l=$1; r=$2; gsub(/[` \t]/, "", l); gsub(/[` \t]/, "", r); if (l == v && r == "") f=1 } END { exit !f }'; then
             npx --yes supabase@2 migration repair "$v" --status applied --db-url "$SUPABASE_DB_URL"
           else
-            echo "Nothing to record."
+            echo "Already recorded."
           fi
+
       - name: What has run, what hasn't
         run: npx --yes supabase@2 migration list --db-url "$SUPABASE_DB_URL"
       - name: Run new migrations
