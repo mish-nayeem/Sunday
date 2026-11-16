@@ -62,6 +62,20 @@ jobs:
             echo "::error::Add a SUPABASE_DB_URL secret: Supabase → Connect → Session pooler → URI, with the database password in place of [YOUR-PASSWORD]."
             exit 1
           fi
+      # 20261018000000_core_tables.sql (the core tables, for building a new
+      # database) is dated before every other migration and does nothing on
+      # the live database, where the tables already are. Recorded there as
+      # run, so db push doesn't stop at a file older than the newest one.
+      - name: Core tables baseline recorded as run
+        if: github.event_name == 'push' || inputs.task == 'push-migrations'
+        run: |
+          v=20261018000000
+          if [ -f "supabase/migrations/${v}_core_tables.sql" ] && \
+             npx --yes supabase@2 migration list --db-url "$SUPABASE_DB_URL" | grep -Eq "^\s*${v}\s*\|\s*\|"; then
+            npx --yes supabase@2 migration repair "$v" --status applied --db-url "$SUPABASE_DB_URL"
+          else
+            echo "Nothing to record."
+          fi
       - name: What has run, what hasn't
         run: npx --yes supabase@2 migration list --db-url "$SUPABASE_DB_URL"
       - name: Run new migrations
