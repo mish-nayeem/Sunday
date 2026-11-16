@@ -8,7 +8,8 @@ import { useLiveSales, withSale } from '@/lib/pricing';
 
 // Grid tile: photo on a quiet ground, name left and price right underneath
 // (sizes only on the product page). Hovering on a computer slowly runs
-// through its photos; the + in the photo's corner adds to the bag.
+// through its photos; on a phone a swipe does, with a dot for each photo.
+// The + in the photo's corner adds to the bag.
 // `colours` (optional): the other colours of the same piece (colour group),
 // shown as small swatches under the price.
 export default function ProductCard({ product: raw, colours = [] }) {
@@ -21,12 +22,13 @@ export default function ProductCard({ product: raw, colours = [] }) {
   const [hovered, setHovered] = useState(false);
   const timer = useRef(null);
   const showing = useRef(0);
-  const go = (next) => {
+  // `byHand`: a swipe on a phone — shown whether or not a slideshow runs.
+  const go = (next, byHand = false) => {
     const src = imgUrl(images[next], Math.min(2000, Math.round(600 * focusZoom(product.image_focus?.[images[next]]))));
     const pre = new Image();
     pre.src = src;
     (pre.decode ? pre.decode() : Promise.resolve()).catch(() => {}).then(() => {
-      if (!timer.current && next !== 0) return; // pointer left meanwhile
+      if (!byHand && !timer.current && next !== 0) return; // pointer left meanwhile
       setUnder(showing.current);
       setSlide(next);
       showing.current = next;
@@ -44,6 +46,36 @@ export default function ProductCard({ product: raw, colours = [] }) {
     if (showing.current !== 0) go(0);
   };
   useEffect(() => () => clearInterval(timer.current), []);
+
+  // Phones: swipe the photo left or right for the next or the last one (as
+  // on PAUSE); an up/down drag is left to the page (touch-action: pan-y). A
+  // swipe never opens the product — only a tap does.
+  const touch = useRef(null);
+  const swiped = useRef(false);
+  const onTouchStart = (e) => {
+    if (images.length < 2 || e.touches.length !== 1) return;
+    setHovered(true); // the other photos start loading
+    touch.current = { x: e.touches[0].clientX, y: e.touches[0].clientY, t: performance.now() };
+    swiped.current = false;
+  };
+  const onTouchEnd = (e) => {
+    const t0 = touch.current;
+    touch.current = null;
+    if (!t0) return;
+    const dx = e.changedTouches[0].clientX - t0.x;
+    const dy = e.changedTouches[0].clientY - t0.y;
+    if (Math.abs(dx) < 12 || Math.abs(dx) < Math.abs(dy)) return;
+    swiped.current = true;
+    const quick = Math.abs(dx) / Math.max(1, performance.now() - t0.t) > 0.35;
+    if (Math.abs(dx) < 30 && !quick) return;
+    const n = images.length;
+    go((showing.current + (dx < 0 ? 1 : n - 1)) % n, true);
+  };
+  const onClickPhoto = (e) => {
+    if (!swiped.current) return;
+    swiped.current = false;
+    e.preventDefault();
+  };
   const images = (product.images || []).filter(Boolean);
   const soldOut = isSoldOut(product);
   const onSale = !!product.compare_at;
@@ -55,11 +87,15 @@ export default function ProductCard({ product: raw, colours = [] }) {
       <div className="relative aspect-[4/5] bg-stone overflow-hidden">
         <Link
           to={`/product/${product.id}`}
-          className="absolute inset-0 overflow-hidden"
+          className="absolute inset-0 overflow-hidden touch-pan-y"
           tabIndex={-1}
           aria-hidden="true"
           onMouseEnter={startSlides}
           onMouseLeave={stopSlides}
+          onTouchStart={onTouchStart}
+          onTouchEnd={onTouchEnd}
+          onTouchCancel={() => { touch.current = null; }}
+          onClick={onClickPhoto}
         >
           {/* While the pointer rests on the photo, the product's photos cross-
               fade one after another, slowly: the new one on top, the last one
@@ -78,6 +114,16 @@ export default function ProductCard({ product: raw, colours = [] }) {
             />
           ))}
         </Link>
+
+        {/* Which photo is showing, on a phone (where there's no hover):
+            a small dot each, so a swipe has something to say. */}
+        {images.length > 1 && (
+          <span className="pointer-events-none absolute bottom-2 left-1/2 -translate-x-1/2 z-[3] flex gap-1 [@media(hover:hover)]:hidden" aria-hidden="true" data-card-dots>
+            {images.map((src, i) => (
+              <i key={src} className={`block w-[5px] h-[5px] rounded-full shadow-[0_0_2px_rgba(0,0,0,0.45)] transition-colors ${i === slide ? 'bg-white' : 'bg-white/45'}`} />
+            ))}
+          </span>
+        )}
 
         {product.sale ? (
           <span className="pointer-events-none absolute top-2 left-2 text-[11px] bg-coral text-white px-1.5 py-0.5">{product.sale.percent}% off</span>

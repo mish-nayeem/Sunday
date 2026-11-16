@@ -6,6 +6,7 @@ import { fetchSupportPages, fetchSupportTabs } from '@/admin/lib/support.js';
 import { cleanHtml } from '@/admin/lib/richText.js';
 import '@/admin/components/rich-text.css';
 import ReturnPortal from '@/components/support/ReturnPortal';
+import BusinessBlock from '@/components/support/BusinessBlock';
 
 // /support/<tab>: every policy page and the Return & Exchange Portal behind
 // one row of tabs. The row (names, order, which show, pages added) and the
@@ -62,6 +63,7 @@ export default function Support() {
         ))}
       </nav>
       {slug === 'portal' ? <ReturnPortal /> : page && <InfoBody page={page} />}
+      {slug === 'contact' && <div className="max-w-2xl"><BusinessBlock className="mt-10" /></div>}
     </div>
   );
 }
