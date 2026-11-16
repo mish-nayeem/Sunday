@@ -16,6 +16,14 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2?target=deno
 import { jsPDF } from "https://esm.sh/jspdf@4.2.1?target=deno&bundle";
 import { encodeBase64 } from "https://deno.land/std@0.224.0/encoding/base64.ts";
 import { isAdminRequest } from "../_shared/admin.ts";
+import { fetchWithTimeout } from '../_shared/http.ts'
+import * as Sentry from 'npm:@sentry/deno@^8'
+
+// Errors reach Sentry when the SENTRY_DSN secret is set (audit MEDIUM-5);
+// without it every call is a safe no-op. defaultIntegrations: false — the
+// Deno SDK doesn't instrument Deno.serve, so scope from one request can't
+// bleed into another if the isolate is reused.
+Sentry.init({ dsn: Deno.env.get('SENTRY_DSN'), defaultIntegrations: false })
 
 // How the order is paid, in words: bKash up front and the rest on delivery,
 // all by bKash, or all cash on delivery.
@@ -292,7 +300,7 @@ Deno.serve(async (req: Request) => {
       total: order.total,
     });
 
-    const brevoRes = await fetch("https://api.brevo.com/v3/smtp/email", {
+    const brevoRes = await fetchWithTimeout("https://api.brevo.com/v3/smtp/email", {
       method: "POST",
       headers: {
         "api-key": BREVO_API_KEY,
@@ -322,6 +330,8 @@ Deno.serve(async (req: Request) => {
     const brevoData = await brevoRes.json();
     return jsonResponse({ success: true, messageId: brevoData.messageId ?? null });
   } catch (err) {
+    Sentry.captureException(err)
+    await Sentry.flush(2000)
     console.error("send-order-confirmation error:", err);
     return jsonResponse({ error: err instanceof Error ? err.message : String(err) }, 500);
   }

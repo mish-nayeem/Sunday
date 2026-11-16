@@ -28,6 +28,14 @@
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { isAdminRequest } from '../_shared/admin.ts'
+import { fetchWithTimeout } from '../_shared/http.ts'
+import * as Sentry from 'npm:@sentry/deno@^8'
+
+// Errors reach Sentry when the SENTRY_DSN secret is set (audit MEDIUM-5);
+// without it every call is a safe no-op. defaultIntegrations: false — the
+// Deno SDK doesn't instrument Deno.serve, so scope from one request can't
+// bleed into another if the isolate is reused.
+Sentry.init({ dsn: Deno.env.get('SENTRY_DSN'), defaultIntegrations: false })
 
 const cors = {
   'Access-Control-Allow-Origin': '*',
@@ -79,7 +87,7 @@ async function graph(path: string, params: Record<string, string>) {
   const url = new URL(`${m.base}/${path}`)
   for (const [k, v] of Object.entries(params)) url.searchParams.set(k, v)
   url.searchParams.set('access_token', m.token!)
-  const res = await fetch(url)
+  const res = await fetchWithTimeout(url, {}, { retries: 1 })
   if (!res.ok) await said(res, 'Meta')
   return res.json()
 }
@@ -121,7 +129,7 @@ async function metaSync(db: ReturnType<typeof createClient>, days: number) {
       }
       next = page?.paging?.next ?? null
       if (!next) break
-      const res = await fetch(next)
+      const res = await fetchWithTimeout(next, {}, { retries: 1 })
       if (!res.ok) await said(res, 'Meta')
       page = await res.json()
     }
@@ -174,7 +182,7 @@ function brevo() {
 
 async function bv(path: string, init: RequestInit = {}) {
   const b = brevo()
-  const res = await fetch(`https://api.brevo.com/v3${path}`, {
+  const res = await fetchWithTimeout(`https://api.brevo.com/v3${path}`, {
     ...init,
     headers: { 'api-key': b.key, 'Content-Type': 'application/json', Accept: 'application/json', ...(init.headers || {}) },
   })
@@ -368,6 +376,8 @@ Deno.serve(async (req) => {
     if (action === 'email_stats') return json(await emailStats(db))
     return json({ error: 'Unknown action' }, 400)
   } catch (err) {
+    Sentry.captureException(err)
+    await Sentry.flush(2000)
     const message = String((err as Error).message ?? err)
     console.error('[marketing]', message)
     return json({ error: message }, 400)

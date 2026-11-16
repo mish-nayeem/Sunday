@@ -11,6 +11,14 @@
 // Only the admin's own login can send (see _shared/admin.ts).
 
 import { isAdminRequest, serviceClient } from '../_shared/admin.ts'
+import { fetchWithTimeout } from '../_shared/http.ts'
+import * as Sentry from 'npm:@sentry/deno@^8'
+
+// Errors reach Sentry when the SENTRY_DSN secret is set (audit MEDIUM-5);
+// without it every call is a safe no-op. defaultIntegrations: false — the
+// Deno SDK doesn't instrument Deno.serve, so scope from one request can't
+// bleed into another if the isolate is reused.
+Sentry.init({ dsn: Deno.env.get('SENTRY_DSN'), defaultIntegrations: false })
 
 const cors = {
   'Access-Control-Allow-Origin': '*',
@@ -71,7 +79,7 @@ Deno.serve(async (req) => {
     const fromName = Deno.env.get('BREVO_SENDER_NAME') || Deno.env.get('BREVO_FROM_NAME') || 'SUNDAY'
     if (!apiKey || !fromEmail) return json({ error: 'Email is not set up (BREVO_API_KEY / BREVO_SENDER_EMAIL).' }, 500)
 
-    const res = await fetch('https://api.brevo.com/v3/smtp/email', {
+    const res = await fetchWithTimeout('https://api.brevo.com/v3/smtp/email', {
       method: 'POST',
       headers: { 'api-key': apiKey, 'Content-Type': 'application/json', Accept: 'application/json' },
       body: JSON.stringify({
@@ -85,6 +93,8 @@ Deno.serve(async (req) => {
     if (!res.ok) throw new Error(`Brevo ${res.status}: ${(await res.text()).slice(0, 200)}`)
     return json({ ok: true, to: email })
   } catch (err) {
+    Sentry.captureException(err)
+    await Sentry.flush(2000)
     const message = String((err as Error).message ?? err)
     console.error('[send-customer-email]', message)
     return json({ error: message }, 400)

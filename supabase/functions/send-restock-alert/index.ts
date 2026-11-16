@@ -24,6 +24,7 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { isAdminRequest } from '../_shared/admin.ts'
 import * as Sentry from 'npm:@sentry/deno@^8'
+import { fetchWithTimeout } from '../_shared/http.ts'
 
 // defaultIntegrations: false — the Deno SDK doesn't instrument Deno.serve,
 // so without this, scope from one request could bleed into another if the
@@ -82,7 +83,7 @@ async function sendMail(params: {
     throw new Error('BREVO_API_KEY or BREVO_FROM_EMAIL is not set')
   }
 
-  const res = await fetch(BREVO_ENDPOINT, {
+  const res = await fetchWithTimeout(BREVO_ENDPOINT, {
     method: 'POST',
     headers: {
       'api-key': apiKey,

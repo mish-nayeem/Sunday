@@ -12,6 +12,14 @@
 // ones the marketing emails use.
 
 import { ADMIN_EMAIL, isAdminRequest, serviceClient } from '../_shared/admin.ts'
+import { fetchWithTimeout } from '../_shared/http.ts'
+import * as Sentry from 'npm:@sentry/deno@^8'
+
+// Errors reach Sentry when the SENTRY_DSN secret is set (audit MEDIUM-5);
+// without it every call is a safe no-op. defaultIntegrations: false — the
+// Deno SDK doesn't instrument Deno.serve, so scope from one request can't
+// bleed into another if the isolate is reused.
+Sentry.init({ dsn: Deno.env.get('SENTRY_DSN'), defaultIntegrations: false })
 
 const ACTIONS: Record<string, string> = {
   clear_abandoned: 'clear the abandoned carts list (Orders → Abandoned cart → Clear all)',
@@ -64,9 +72,8 @@ Deno.serve(async (req) => {
     if (error) throw new Error(error.message)
 
     const what = ACTIONS[action]
-    const res = await fetch('https://api.brevo.com/v3/smtp/email', {
+    const res = await fetchWithTimeout('https://api.brevo.com/v3/smtp/email', {
       method: 'POST',
-      signal: AbortSignal.timeout(15_000),
       headers: { 'api-key': apiKey, 'Content-Type': 'application/json', Accept: 'application/json' },
       body: JSON.stringify({
         sender: { email: fromEmail, name: fromName },
@@ -80,12 +87,14 @@ Deno.serve(async (req) => {
           <p style="font-size:12px;line-height:1.6;color:#55534C;">It works once, for 10 minutes. If you didn't ask for it, someone is signed in to your admin — sign out everywhere.</p>
         </div></div>`,
       }),
-    })
+    }, { timeoutMs: 15_000 })
     if (!res.ok) throw new Error(`Brevo ${res.status}: ${(await res.text()).slice(0, 200)}`)
 
     const [user, domain] = ADMIN_EMAIL.split('@')
     return json({ sent: true, to: `${user.slice(0, 1)}•••@${domain}` })
   } catch (err) {
+    Sentry.captureException(err)
+    await Sentry.flush(2000)
     console.error('[admin-code]', (err as Error).message)
     return json({ error: "Couldn't send the code. Try again." }, 400)
   }

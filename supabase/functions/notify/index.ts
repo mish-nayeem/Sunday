@@ -30,6 +30,14 @@
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { ADMIN_EMAIL, isAdminRequest } from '../_shared/admin.ts'
+import { fetchWithTimeout } from '../_shared/http.ts'
+import * as Sentry from 'npm:@sentry/deno@^8'
+
+// Errors reach Sentry when the SENTRY_DSN secret is set (audit MEDIUM-5);
+// without it every call is a safe no-op. defaultIntegrations: false — the
+// Deno SDK doesn't instrument Deno.serve, so scope from one request can't
+// bleed into another if the isolate is reused.
+Sentry.init({ dsn: Deno.env.get('SENTRY_DSN'), defaultIntegrations: false })
 
 const cors = {
   'Access-Control-Allow-Origin': '*',
@@ -119,9 +127,8 @@ export async function sendPush(
   vapid: { publicKey: string; privateJwk: JsonWebKey; subject: string },
 ): Promise<number> {
   const body = await encryptPayload(enc.encode(JSON.stringify(message)), sub.p256dh, sub.auth)
-  const res = await fetch(sub.endpoint, {
+  const res = await fetchWithTimeout(sub.endpoint, {
     method: 'POST',
-    signal: AbortSignal.timeout(10_000),
     headers: {
       Authorization: await vapidHeader(sub.endpoint, vapid.publicKey, vapid.privateJwk, vapid.subject),
       'Content-Encoding': 'aes128gcm',
@@ -436,6 +443,8 @@ Deno.serve(async (req) => {
 
     return json({ error: 'Unknown action' }, 400)
   } catch (err) {
+    Sentry.captureException(err)
+    await Sentry.flush(2000)
     const message = String((err as Error).message ?? err)
     console.error('[notify]', message)
     return json({ error: message }, 400)

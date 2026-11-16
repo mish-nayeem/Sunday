@@ -44,6 +44,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { isAdminRequest, toPauseOrder } from '../_shared/admin.ts'
 
 import * as Sentry from 'npm:@sentry/deno@^8'
+import { fetchWithTimeout } from '../_shared/http.ts'
 
 // defaultIntegrations: false — the Deno SDK doesn't instrument Deno.serve,
 // so without this, scope (tags, context) from one request could bleed into
@@ -192,7 +193,7 @@ async function pathaoToken(): Promise<string> {
   const password = env('PATHAO_PASSWORD')
   if (!client_id || !client_secret || !username || !password || !env('PATHAO_STORE_ID')) notConfigured('pathao')
 
-  const res = await fetch(`${pathaoBase()}/aladdin/api/v1/issue-token`, {
+  const res = await fetchWithTimeout(`${pathaoBase()}/aladdin/api/v1/issue-token`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
     body: JSON.stringify({ client_id, client_secret, username, password, grant_type: 'password' }),
@@ -208,7 +209,7 @@ const providers: Record<string, Provider> = {
     async createParcel(order) {
       const { base, headers } = steadfastKeys()
 
-      const res = await fetch(`${base}/create_order`, {
+      const res = await fetchWithTimeout(`${base}/create_order`, {
         method: 'POST',
         headers,
         body: JSON.stringify({
@@ -239,7 +240,7 @@ const providers: Record<string, Provider> = {
     async fetchStatus(consignmentId) {
       const { base, headers } = steadfastKeys()
 
-      const res = await fetch(`${base}/status_by_cid/${encodeURIComponent(consignmentId)}`, { headers })
+      const res = await fetchWithTimeout(`${base}/status_by_cid/${encodeURIComponent(consignmentId)}`, { headers }, { retries: 1 })
       if (!res.ok) await readCourierError(res)
 
       const json = await res.json()
@@ -249,7 +250,7 @@ const providers: Record<string, Provider> = {
     // The cheapest call that proves the keys: the account balance.
     async check() {
       const { base, headers } = steadfastKeys()
-      const res = await fetch(`${base}/get_balance`, { headers })
+      const res = await fetchWithTimeout(`${base}/get_balance`, { headers }, { retries: 1 })
       if (!res.ok) await readCourierError(res)
       const json = await res.json()
       if (json?.status && Number(json.status) !== 200) steadfastRefused(json)
@@ -261,7 +262,7 @@ const providers: Record<string, Provider> = {
     async createParcel(order) {
       const token = await pathaoToken()
 
-      const res = await fetch(`${pathaoBase()}/aladdin/api/v1/orders`, {
+      const res = await fetchWithTimeout(`${pathaoBase()}/aladdin/api/v1/orders`, {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json', Accept: 'application/json' },
         body: JSON.stringify({
@@ -293,9 +294,9 @@ const providers: Record<string, Provider> = {
 
     async fetchStatus(consignmentId) {
       const token = await pathaoToken()
-      const res = await fetch(`${pathaoBase()}/aladdin/api/v1/orders/${encodeURIComponent(consignmentId)}/info`, {
+      const res = await fetchWithTimeout(`${pathaoBase()}/aladdin/api/v1/orders/${encodeURIComponent(consignmentId)}/info`, {
         headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' },
-      })
+      }, { retries: 1 })
       if (!res.ok) await readCourierError(res)
       const json = await res.json()
       return String(json?.data?.order_status ?? 'unknown')
@@ -303,9 +304,9 @@ const providers: Record<string, Provider> = {
 
     async check() {
       const token = await pathaoToken()
-      const res = await fetch(`${pathaoBase()}/aladdin/api/v1/stores`, {
+      const res = await fetchWithTimeout(`${pathaoBase()}/aladdin/api/v1/stores`, {
         headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' },
-      })
+      }, { retries: 1 })
       if (!res.ok) await readCourierError(res)
       const json = await res.json()
       const stores = json?.data?.data ?? []

@@ -21,6 +21,7 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { isAdminRequest } from '../_shared/admin.ts'
 import * as Sentry from 'npm:@sentry/deno@^8'
+import { fetchWithTimeout } from '../_shared/http.ts'
 
 // defaultIntegrations: false — the Deno SDK doesn't instrument Deno.serve,
 // so without this, scope from one request could bleed into another if the
@@ -149,9 +150,10 @@ ${text ? `\nMessage text:\n${text}` : ''}`
       // Overload spikes are usually over in a second or two, so a 503 gets one
       // short retry on the same model before moving to the next one.
       for (let attempt = 0; attempt < 2; attempt++) {
-        res = await fetch(
+        res = await fetchWithTimeout(
           `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
-          { method: 'POST', headers: { 'Content-Type': 'application/json' }, body }
+          { method: 'POST', headers: { 'Content-Type': 'application/json' }, body },
+          { timeoutMs: 30_000 },
         )
         if (res.ok) break outer
 
