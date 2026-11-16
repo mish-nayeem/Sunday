@@ -39,7 +39,6 @@ scripts/            build helpers (security headers)
 supabase/
   migrations/       database changes, one file each (see supabase/README.md)
   functions/        edge functions: order and status emails, restock alerts, courier, notifications
-docs/legacy-sql/     the first schema, run by hand once; never run it again
 tests/              unit (Vitest), browser (Playwright) and database (tests/sql) tests
 ```
 
