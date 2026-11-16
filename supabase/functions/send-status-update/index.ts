@@ -7,6 +7,14 @@
 
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { isAdminRequest } from "../_shared/admin.ts";
+import { fetchWithTimeout } from '../_shared/http.ts'
+import * as Sentry from 'npm:@sentry/deno@^8'
+
+// Errors reach Sentry when the SENTRY_DSN secret is set (audit MEDIUM-5);
+// without it every call is a safe no-op. defaultIntegrations: false — the
+// Deno SDK doesn't instrument Deno.serve, so scope from one request can't
+// bleed into another if the isolate is reused.
+Sentry.init({ dsn: Deno.env.get('SENTRY_DSN'), defaultIntegrations: false })
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -164,7 +172,7 @@ Deno.serve(async (req: Request) => {
     // makes sure replies reach the real inbox. Same secret already used by send-order-confirmation.
     const REPLY_TO_EMAIL = Deno.env.get("BREVO_REPLY_TO_EMAIL") || SENDER_EMAIL;
 
-    const brevoRes = await fetch("https://api.brevo.com/v3/smtp/email", {
+    const brevoRes = await fetchWithTimeout("https://api.brevo.com/v3/smtp/email", {
       method: "POST",
       headers: {
         "api-key": BREVO_API_KEY,
@@ -188,6 +196,8 @@ Deno.serve(async (req: Request) => {
     const brevoData = await brevoRes.json();
     return jsonResponse({ success: true, messageId: brevoData.messageId ?? null });
   } catch (err) {
+    Sentry.captureException(err)
+    await Sentry.flush(2000)
     console.error("send-status-update error:", err);
     return jsonResponse({ error: err instanceof Error ? err.message : String(err) }, 500);
   }

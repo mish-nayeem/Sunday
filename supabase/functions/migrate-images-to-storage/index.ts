@@ -27,6 +27,7 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { isAdminRequest } from '../_shared/admin.ts'
 import * as Sentry from 'npm:@sentry/deno@^8'
+import { fetchWithTimeout } from '../_shared/http.ts'
 
 // defaultIntegrations: false — the Deno SDK doesn't instrument Deno.serve,
 // so without this, scope from one request could bleed into another if the
@@ -121,7 +122,7 @@ Deno.serve(async (req) => {
 
     for (const url of batch) {
       try {
-        const res = await fetch(url)
+        const res = await fetchWithTimeout(url, {}, { timeoutMs: 30_000 })
         if (!res.ok) throw new Error(`download ${res.status}`)
 
         const contentType = res.headers.get('content-type') || 'image/jpeg'

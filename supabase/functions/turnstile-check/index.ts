@@ -13,6 +13,14 @@
 // Supabase → Edge Functions → Secrets.
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2?target=deno'
+import { fetchWithTimeout } from '../_shared/http.ts'
+import * as Sentry from 'npm:@sentry/deno@^8'
+
+// Errors reach Sentry when the SENTRY_DSN secret is set (audit MEDIUM-5);
+// without it every call is a safe no-op. defaultIntegrations: false — the
+// Deno SDK doesn't instrument Deno.serve, so scope from one request can't
+// bleed into another if the isolate is reused.
+Sentry.init({ dsn: Deno.env.get('SENTRY_DSN'), defaultIntegrations: false })
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -41,7 +49,7 @@ Deno.serve(async (req) => {
     const ip = (req.headers.get('x-forwarded-for') || '').split(',')[0].trim()
     if (ip) form.append('remoteip', ip)
 
-    const res = await fetch('https://challenges.cloudflare.com/turnstile/v0/siteverify', { method: 'POST', body: form })
+    const res = await fetchWithTimeout('https://challenges.cloudflare.com/turnstile/v0/siteverify', { method: 'POST', body: form })
     const out = await res.json().catch(() => ({}))
     if (!out?.success) return json({ ok: false, reason: 'not verified' })
 
@@ -53,6 +61,8 @@ Deno.serve(async (req) => {
     }
     return json({ ok: true, pass: data.id })
   } catch (e) {
+    Sentry.captureException(e)
+    await Sentry.flush(2000)
     console.error('[turnstile-check]', (e as Error).message)
     return json({ ok: false }, 500)
   }

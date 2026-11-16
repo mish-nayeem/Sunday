@@ -20,6 +20,14 @@
 // With either missing it does nothing.
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2?target=deno'
+import { fetchWithTimeout } from '../_shared/http.ts'
+import * as Sentry from 'npm:@sentry/deno@^8'
+
+// Errors reach Sentry when the SENTRY_DSN secret is set (audit MEDIUM-5);
+// without it every call is a safe no-op. defaultIntegrations: false — the
+// Deno SDK doesn't instrument Deno.serve, so scope from one request can't
+// bleed into another if the isolate is reused.
+Sentry.init({ dsn: Deno.env.get('SENTRY_DSN'), defaultIntegrations: false })
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -117,11 +125,11 @@ Deno.serve(async (req) => {
     }
 
     const version = Deno.env.get('META_API_VERSION') || 'v21.0'
-    const res = await fetch(`https://graph.facebook.com/${version}/${pixel}/events?access_token=${encodeURIComponent(token)}`, {
+    const res = await fetchWithTimeout(`https://graph.facebook.com/${version}/${pixel}/events?access_token=${encodeURIComponent(token)}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ data: [event], ...(testCode ? { test_event_code: testCode } : {}) }),
-    })
+    }, { retries: 1 })
     const out = await res.json().catch(() => ({}))
     if (!res.ok) {
       console.error('[meta-capi] Meta said:', JSON.stringify(out).slice(0, 500))
@@ -129,6 +137,8 @@ Deno.serve(async (req) => {
     }
     return json({ sent: true, received: out?.events_received ?? null })
   } catch (e) {
+    Sentry.captureException(e)
+    await Sentry.flush(2000)
     console.error('[meta-capi]', (e as Error).message)
     return json({ error: 'failed' }, 500)
   }
