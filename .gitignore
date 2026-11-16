@@ -23,3 +23,7 @@ Thumbs.db
 
 # wrangler dev cache
 .wrangler/
+
+# Browser test output
+playwright-report/
+test-results/

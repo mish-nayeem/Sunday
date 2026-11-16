@@ -125,7 +125,7 @@ export function linkOf(b) {
     case 'drop': return b.drop ? `/shop?drop=${encodeURIComponent(b.drop)}` : null
     case 'all': return '/shop'
     // https://… or a path on this site — never //host or /\host.
-    case 'url': return /^(https:\/\/|\/(?![\/\\]))/.test(b.url || '') && !String(b.url).includes('\\') ? b.url : null
+    case 'url': return /^(https:\/\/|\/(?![/\\]))/.test(b.url || '') && !String(b.url).includes('\\') ? b.url : null
     default: return null
   }
 }
