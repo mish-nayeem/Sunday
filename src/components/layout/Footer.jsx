@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { fetchFooterAbout, DEFAULT_FOOTER_ABOUT } from '@/admin/lib/siteSettings.js';
 import { supabase } from '@/lib/supabaseClient';
+import { useBusiness } from '@/admin/lib/business.js';
 
 // One quiet band: the sign-up (a big, very light email line), the links in
 // spaced capitals two to a row — each opens its own page (Support opens the
@@ -31,6 +32,8 @@ export default function Footer() {
   // The label and line by the sign-up — Admin → Homepage → Footer text.
   const [about, setAbout] = useState(DEFAULT_FOOTER_ABOUT);
   useEffect(() => { fetchFooterAbout().then(setAbout).catch(() => {}); }, []);
+  // Trade licence and DBID in the small print, once filled in (Admin → Website → Business details).
+  const biz = useBusiness();
 
   const handleSubscribe = async (e) => {
     e.preventDefault();
@@ -109,7 +112,10 @@ export default function Footer() {
       {/* The small print, and in the middle the sun — SUNDAY's coral circle
           on cream — which takes you home. Clear of the chat button on the right. */}
       <div className="mt-7 flex flex-col gap-3 sm:grid sm:grid-cols-[1fr_auto_1fr] sm:items-center">
-        <p className="order-2 sm:order-none text-[12px] lg:text-[11px] text-graphite">© {new Date().getFullYear()} SUNDAY · Dhaka, Bangladesh</p>
+        <p className="order-2 sm:order-none text-[12px] lg:text-[11px] text-graphite">© {new Date().getFullYear()} SUNDAY · Dhaka, Bangladesh
+          {biz?.trade_license && <> · Trade licence {biz.trade_license}</>}
+          {biz?.dbid && <> · DBID {biz.dbid}</>}
+        </p>
         <Link
           to="/"
           aria-label="SUNDAY home"
