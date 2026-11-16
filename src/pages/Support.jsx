@@ -61,11 +61,24 @@ export default function Support() {
   );
 }
 
+// A section's heading: the admin's formatted one, or the plain words.
+function Heading({ block, className = '' }) {
+  if (block.headingHtml) {
+    return <h2 className={`rich-line font-heading text-[22px] ${className}`} dangerouslySetInnerHTML={{ __html: cleanHtml(block.headingHtml) }} />;
+  }
+  return block.heading ? <h2 className={`font-heading text-[22px] ${className}`}>{block.heading}</h2> : null;
+}
+
 function InfoBody({ page }) {
   return (
     <article className="max-w-2xl pt-8 md:pt-12">
-      <h1 className="font-heading text-[32px] md:text-[44px] leading-tight">{page.title}</h1>
-      {page.intro && <p className="mt-3 text-[15px] leading-relaxed text-graphite">{page.intro}</p>}
+      {/* Written in the admin's editor (bold, size, colour…) or plain, as before. */}
+      {page.titleHtml
+        ? <h1 className="rich-line font-heading text-[32px] md:text-[44px] leading-tight" dangerouslySetInnerHTML={{ __html: cleanHtml(page.titleHtml) }} />
+        : <h1 className="font-heading text-[32px] md:text-[44px] leading-tight">{page.title}</h1>}
+      {page.introHtml
+        ? <div className="rich-line mt-3 text-[15px] leading-relaxed text-graphite" dangerouslySetInnerHTML={{ __html: cleanHtml(page.introHtml) }} />
+        : page.intro && <p className="mt-3 text-[15px] leading-relaxed text-graphite">{page.intro}</p>}
 
       <div className="mt-10 space-y-10">
         {page.blocks.map((block, i) => {
@@ -84,7 +97,7 @@ function InfoBody({ page }) {
           if (block.type === 'table') {
             return (
               <section key={i}>
-                {block.heading && <h2 className="font-heading text-[22px] mb-3">{block.heading}</h2>}
+                <Heading block={block} className="mb-3" />
                 <div className="overflow-x-auto">
                   <table className="w-full text-[12px]">
                     <thead>
@@ -108,7 +121,7 @@ function InfoBody({ page }) {
           }
           return (
             <section key={i}>
-              {block.heading && <h2 className="font-heading text-[22px] mb-2">{block.heading}</h2>}
+              <Heading block={block} className="mb-2" />
               {/* Written in the admin's editor: its formatting, cleaned.
                   Older sections are plain text, as before. */}
               {block.html != null

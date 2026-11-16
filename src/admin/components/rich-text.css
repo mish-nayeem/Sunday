@@ -22,3 +22,11 @@
 .info-block .rich-text div,
 .info-block .rich-text li { font-weight: 400; white-space: normal; letter-spacing: 0.01em; }
 .info-block .rich-text h2 { font-size: 19px; letter-spacing: 0; text-transform: none; margin: 22px 0 10px; }
+
+/* A Support page's title, intro or section heading written in the editor:
+   its own size and look come from the page; only the admin's bold, colour,
+   size, alignment… are added. No paragraph gaps inside one line. */
+.rich-line { overflow-wrap: anywhere; }
+.rich-line p, .rich-line div { margin: 0; }
+.rich-line a { text-decoration: underline; text-underline-offset: 2px; }
+.rich-line ul, .rich-line ol { margin: 4px 0; padding-left: 22px; }

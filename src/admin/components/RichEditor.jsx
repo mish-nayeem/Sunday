@@ -27,7 +27,8 @@ function run(cmd, value = null) {
   document.execCommand(cmd, false, value)
 }
 
-export default function RichEditor({ value, onChange, placeholder = 'Write here…' }) {
+// compact: a short box (a title, an intro, a heading) instead of a page of text.
+export default function RichEditor({ value, onChange, placeholder = 'Write here…', compact = false }) {
   const box = useRef(null)
   const [menu, setMenu] = useState('') // '' | 'colour' | 'mark' | 'size'
   const [state, setState] = useState({})
@@ -145,7 +146,7 @@ export default function RichEditor({ value, onChange, placeholder = 'Write here�
   )
 
   return (
-    <div className="re">
+    <div className={`re${compact ? ' compact' : ''}`}>
       <div className="re-bar" role="toolbar" aria-label="Formatting">
         <span className="re-group">
           <B title="Paragraph" on={state.block === 'p' || state.block === 'div'} onPress={() => act('formatBlock', '<p>')} wide>Text</B>
