@@ -61,3 +61,16 @@ export async function deleteCoupon(code) {
   const { error } = await supabase.from('coupons').delete().eq('code', code)
   return { error }
 }
+
+// Whether any code can be used right now (public.any_live_coupon): the
+// checkout shows its Discount code box only then. Unknown (the function not
+// there yet, or no answer) counts as yes, so a working code is never hidden.
+export async function anyLiveCoupon() {
+  try {
+    const { data, error } = await supabase.rpc('any_live_coupon')
+    if (error) return true
+    return data !== false
+  } catch {
+    return true
+  }
+}
