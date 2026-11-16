@@ -10,9 +10,9 @@ import { supabase } from '@/lib/supabaseClient'
 // (CSP) doesn't run; this is the same stub written as a module, with only
 // connect.facebook.net allowed in (worker/security-headers.js).
 //
-// A purchase is also sent from the server (supabase/functions/meta-capi),
-// which ad blockers can't stop. Both carry the order's id as the event id,
-// so Meta counts it once.
+// Every event is also sent from the server (supabase/functions/meta-capi —
+// the Conversions API), which ad blockers and phone privacy settings can't
+// stop. Both copies carry one event id, so Meta counts it once.
 
 export const META_PIXEL_KEY = 'meta_pixel'
 
@@ -57,13 +57,25 @@ export function loadPixel() {
   return ready
 }
 
-// One standard event. `eventId` lets the server's copy of the same event be
-// matched and counted once.
+// One standard event, from the browser (the Pixel) and from the server
+// (meta-capi), under one event id so Meta counts it once. A Purchase's server
+// copy is sent by the checkout itself (it carries the order number, which the
+// server reads the order back from).
 export async function metaTrack(event, params = {}, eventId) {
   if (onAdmin()) return
   const id = await loadPixel()
   if (!id || !window.fbq || onAdmin()) return
-  window.fbq('track', event, params, eventId ? { eventID: String(eventId) } : undefined)
+  const eid = String(eventId || newEventId())
+  window.fbq('track', event, params, { eventID: eid })
+  if (event !== 'Purchase') {
+    supabase.functions
+      .invoke('meta-capi', { body: { event, event_id: eid, url: window.location.href, custom_data: params, ...metaCookies() } })
+      .catch(() => {})
+  }
+}
+
+function newEventId() {
+  try { return crypto.randomUUID() } catch { return `${Date.now()}-${Math.random().toString(36).slice(2)}` }
 }
 
 // The browser and click ids the Pixel keeps in cookies — sent along with the
