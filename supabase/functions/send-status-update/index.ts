@@ -75,7 +75,7 @@ function buildEmailHtml(order: any, message: { heading: string; body: string }, 
     </div>` : ""}
 
     <p style="font-size:13px;color:#8a8a8a;line-height:1.6;margin-top:24px;">
-      Track your order anytime at our Order Tracking page using Order ID <strong>${order.order_id}</strong> or your mobile number.
+      Track your order anytime at our Order Tracking page using Order ID <strong>${order.order_id}</strong> and the mobile number you ordered with.
     </p>
 
     <div style="text-align:center;padding:24px 0 8px;font-size:11px;color:#b0b0b0;letter-spacing:1px;">
