@@ -15,6 +15,7 @@ import { saveAbandonedCart, markCartConverted } from '@/lib/abandonedCart';
 import { fetchLiveSales } from '@/admin/lib/sales.js';
 import { withSale } from '@/lib/pricing';
 import { useBkashNumber } from '@/admin/lib/shopNumbers.js';
+import { useBkashPay } from '@/admin/lib/bkashPay.js';
 import { bdPhone } from '@/lib/phone';
 import { Sentry } from '@/lib/sentry';
 
@@ -69,6 +70,11 @@ const OUTSIDE_ADVANCE = DELIVERY.outsideAdvance;
 export default function Checkout() {
   // The bKash (Payment) number from Admin → Website → Settings.
   const BKASH_NUMBER = useBkashNumber();
+  // The bKash QR, if one's uploaded (Admin → Website → bKash payment). One
+  // that won't load (deleted, a bad link) is left out, never shown broken.
+  const bkashPay = useBkashPay();
+  const [qrFailed, setQrFailed] = useState('');
+  const qr = bkashPay.qr && qrFailed !== bkashPay.qr ? bkashPay.qr : '';
   // The Discount code box shows only while some code can be used.
   const [codesLive, setCodesLive] = useState(false);
   useEffect(() => {
@@ -510,8 +516,20 @@ export default function Checkout() {
                               {numberCopied ? <><Check size={13} /> Copied</> : <><Copy size={13} /> Copy</>}
                             </button>
                           </div>
+                          {qr && (
+                            <div className="flex items-center gap-4 bg-white border border-black/10 p-3">
+                              <img src={qr} alt={`bKash QR for ${BKASH_NUMBER}`} width="112" height="112" onError={() => setQrFailed(qr)}
+                                className="w-28 h-28 shrink-0 object-contain bg-white" />
+                              <div className="min-w-0 text-[13px] text-graphite">
+                                <p className="text-ink">Scan with the bKash app</p>
+                                <p className="mt-1">Or send to the number above.</p>
+                                <a href={qr} download="sunday-bkash-qr" target="_blank" rel="noreferrer"
+                                  className="inline-block mt-2 text-[11px] uppercase tracking-[0.14em] text-ink underline underline-offset-2">Save QR</a>
+                              </div>
+                            </div>
+                          )}
                           <ol className="grid sm:grid-cols-2 gap-x-6 gap-y-2.5 text-[13px] text-graphite">
-                            {['Open the bKash app or dial *247#', 'Choose Send Money', `Send Tk ${payNow.toLocaleString()} to the number above`, 'Copy the Transaction ID from the SMS'].map((step, i) => (
+                            {[qr ? 'Open the bKash app and scan the QR, or dial *247#' : 'Open the bKash app or dial *247#', 'Choose Send Money', `Send Tk ${payNow.toLocaleString()} to the number above`, 'Copy the Transaction ID from the SMS'].map((step, i) => (
                               <li key={step} className="flex gap-3">
                                 <span className="shrink-0 w-5 h-5 rounded-full bg-ink text-white text-[11px] flex items-center justify-center">{i + 1}</span>
                                 {step}
