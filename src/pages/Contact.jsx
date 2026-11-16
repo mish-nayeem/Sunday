@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { supabase } from '@/lib/supabaseClient';
 import { motion } from 'framer-motion';
 import { Mail, Phone, MapPin, Send } from 'lucide-react';
+import BusinessBlock from '@/components/support/BusinessBlock';
 
 export default function Contact() {
   const [form, setForm] = useState({ name: '', email: '', subject: '', message: '' });
@@ -107,6 +108,7 @@ export default function Contact() {
             )}
           </div>
         </div>
+        <BusinessBlock className="mt-14 max-w-2xl" />
       </div>
     </div>
   );
