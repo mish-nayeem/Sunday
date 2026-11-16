@@ -113,7 +113,7 @@ export default function Footer() {
         <Link
           to="/"
           aria-label="SUNDAY home"
-          className="order-1 sm:order-none self-start sm:self-center group w-9 h-9 rounded-full bg-[#FFEED6] ring-1 ring-black/10 flex items-center justify-center transition-transform hover:scale-110"
+          className="order-1 sm:order-none self-center group w-9 h-9 rounded-full bg-[#FFEED6] ring-1 ring-black/10 flex items-center justify-center transition-transform hover:scale-110"
         >
           <span aria-hidden="true" className="w-4 h-4 rounded-full bg-[#FF7254]" />
         </Link>
