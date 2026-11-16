@@ -71,7 +71,7 @@ function robots(url) {
   return new Response(body, { headers: { 'content-type': 'text/plain; charset=utf-8', 'cache-control': 'public, max-age=3600' } });
 }
 
-const SITEMAP_PAGES = ['/', '/shop', '/about', '/contact', '/faq', '/order-tracking', '/support'];
+const SITEMAP_PAGES = ['/', '/shop', '/about', '/contact', '/support/faq', '/order-tracking', '/support'];
 
 async function sitemap(url, env) {
   let products = [];

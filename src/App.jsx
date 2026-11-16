@@ -24,7 +24,6 @@ const OrderConfirmation = lazy(() => import('@/pages/OrderConfirmation'));
 const About = lazy(() => import('@/pages/About'));
 const Contact = lazy(() => import('@/pages/Contact'));
 const OrderTracking = lazy(() => import('@/pages/OrderTracking'));
-const FAQ = lazy(() => import('@/pages/FAQ'));
 const Wishlist = lazy(() => import('@/pages/Wishlist'));
 const Lookbook = lazy(() => import('@/pages/Lookbook'));
 const Support = lazy(() => import('@/pages/Support'));
@@ -65,7 +64,7 @@ const AuthenticatedApp = () => {
           <Route path="/size-guide" element={<Navigate to="/support/size-guide" replace />} />
           <Route path="/contact" element={<Contact />} />
           <Route path="/order-tracking" element={<OrderTracking />} />
-          <Route path="/faq" element={<FAQ />} />
+          <Route path="/faq" element={<Navigate to="/support/faq" replace />} />
           {/* The policy pages live under /support now, editable from the admin panel. */}
           <Route path="/privacy" element={<Navigate to="/support/privacy" replace />} />
           <Route path="/terms" element={<Navigate to="/support/terms" replace />} />

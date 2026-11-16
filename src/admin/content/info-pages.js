@@ -188,6 +188,36 @@ export const INFO_PAGES = {
       },
     ],
   },
+
+  // The questions people ask most, one block each (the heading is the
+  // question). Kept in step with checkout and the pages above.
+  faq: {
+    title: 'FAQ',
+    eyebrow: 'SUPPORT',
+    intro: 'Quick answers. Each topic has its own page in the tabs above.',
+    blocks: [
+      {
+        type: 'text',
+        heading: 'How do I pay?',
+        body: 'Inside Dhaka: cash on delivery for the full amount, or pay it all by bKash at checkout. Outside Dhaka: Tk 200 in advance by bKash and the rest in cash on delivery, or pay it all by bKash at checkout.',
+      },
+      {
+        type: 'text',
+        heading: 'How long does delivery take, and what does it cost?',
+        body: 'Inside Dhaka: 1–3 business days, Tk 80. Outside Dhaka: 3–7 business days, Tk 120.',
+      },
+      {
+        type: 'text',
+        heading: 'Can I return or exchange an item?',
+        body: 'We offer exchanges, not cash refunds. Ask within 3 days of delivery through the Return & Exchange Portal; the item must be unused, unwashed and unworn, with all tags attached. If you paid a bKash advance and the item turns out to be out of stock, that advance is refunded in full.',
+      },
+      {
+        type: 'text',
+        heading: 'How do I track my order?',
+        body: 'Use the Order Tracking page with your Order ID and the mobile number you ordered with.',
+      },
+    ],
+  },
 }
 
 export const SUPPORT_TABS = [
@@ -198,6 +228,7 @@ export const SUPPORT_TABS = [
   { slug: 'contact', label: 'Contact Info' },
   { slug: 'privacy', label: 'Privacy Policy' },
   { slug: 'terms', label: 'Terms of Service' },
+  { slug: 'faq', label: 'FAQ' },
   { slug: 'portal', label: 'Return & Exchange Portal' },
 ]
 
