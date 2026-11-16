@@ -1531,6 +1531,21 @@ export default function Admin() {
     setOrderBulkNote(`${done} marked ${status}${skipped ? ` · ${skipped} already were` : ''}.`)
   }
 
+  // Delete for good (test orders), with the code emailed to the admin.
+  // Returns { error } for CodeGate to show.
+  async function bulkDelete(code) {
+    const ids = pickedOrders.map((o) => o.id)
+    setOrderBulkBusy(`Deleting ${ids.length}…`)
+    const { data, error } = await supabase.rpc('admin_delete_orders', { p_ids: ids, p_code: code })
+    setOrderBulkBusy('')
+    if (error || data?.error) return { error: data?.error || error }
+    const gone = new Set(ids)
+    setOrders((prev) => prev.filter((o) => !gone.has(o.id)))
+    setOrderPicked(new Set())
+    setOrderBulkNote(`${Number(data?.deleted || 0)} deleted.`)
+    return { error: null }
+  }
+
   async function bulkCourier(courier) {
     const list = pickedOrders.filter((o) => !o.consignment_id && o.status !== 'cancelled')
     const failed = []
@@ -2162,6 +2177,7 @@ export default function Admin() {
                 onMark={bulkMark}
                 onPrint={() => setSlips(pickedOrders)}
                 onCourier={bulkCourier}
+                onDelete={bulkDelete}
                 onExit={stopOrderSelecting}
               />
             )}
