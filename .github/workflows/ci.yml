@@ -1,0 +1,50 @@
+# The checks every change has to pass — on each pull request, and again by
+# the Deploy workflow right before it puts the site live (a red check means
+# no deploy). Nothing here touches the live site or the live database.
+#
+#   lint   — ESLint: undefined names, hooks called conditionally, …
+#   unit   — Vitest (tests/unit): delivery charges (and that checkout's match
+#            create_order's), stock, sale prices, phone numbers, canonicals
+#   e2e    — Playwright (tests/e2e): a phone-sized shopper goes from a
+#            product to a placed order, and every main page opens, with
+#            Supabase mocked
+
+name: CI
+
+on:
+  pull_request:
+  workflow_call:
+    inputs:
+      ref:
+        type: string
+        required: false
+        default: ''
+
+jobs:
+  web:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref || github.sha }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Lint
+        run: npm run lint
+      - name: Unit tests
+        run: npm test
+      - name: Build
+        run: npm run build
+        env:
+          VITE_SUPABASE_URL: https://example.supabase.co
+          VITE_SUPABASE_ANON_KEY: test
+      - name: Install the test browser
+        run: npx playwright install --with-deps chromium
+      - name: Browser tests
+        run: npm run test:e2e
+        env:
+          CI: 'true'

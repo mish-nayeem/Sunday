@@ -7,7 +7,7 @@ import { motion } from 'framer-motion';
 import { Truck, ShieldCheck, ArrowLeft, Copy, Check } from 'lucide-react';
 import { getCart, clearCart, subscribeCart, updateCartItem, changeCartItemSize, removeFromCart } from '@/lib/cartStore';
 import { imgUrl } from '@/lib/storage';
-import { isSizeAvailable } from '@/lib/catalog';
+import { isSizeAvailable, DELIVERY } from '@/lib/catalog';
 import { useAuth } from '@/lib/AuthContext';
 import { checkCoupon, anyLiveCoupon } from '@/admin/lib/coupons.js';
 import { getAttribution } from '@/lib/attribution';
@@ -58,11 +58,13 @@ function savedInfo() {
 //   Dhaka          Tk 80 delivery — cash on delivery, or all by bKash now.
 //   Outside Dhaka  Tk 120 delivery — Tk 200 by bKash now and the rest on
 //                  delivery, or all by bKash now.
+// The numbers are DELIVERY's (src/lib/catalog.js), which a unit test checks
+// against create_order.
 const SHIPPING_METHODS = [
-  { key: 'inside_dhaka', label: 'Inside Dhaka', price: 80 },
-  { key: 'outside_dhaka_advance', label: 'Outside Dhaka', price: 120 },
+  { key: 'inside_dhaka', label: 'Inside Dhaka', price: DELIVERY.insideDhaka },
+  { key: 'outside_dhaka_advance', label: 'Outside Dhaka', price: DELIVERY.outsideDhaka },
 ];
-const OUTSIDE_ADVANCE = 200;
+const OUTSIDE_ADVANCE = DELIVERY.outsideAdvance;
 
 export default function Checkout() {
   // The bKash (Payment) number from Admin → Website → Settings.
@@ -421,7 +423,7 @@ export default function Checkout() {
                     <optgroup label="Inside Dhaka · cash on delivery">
                       <option value="Dhaka">Dhaka</option>
                     </optgroup>
-                    <optgroup label="Outside Dhaka · Tk 120 delivery, Tk 200 advance by bKash">
+                    <optgroup label={`Outside Dhaka · Tk ${DELIVERY.outsideDhaka} delivery, Tk ${DELIVERY.outsideAdvance} advance by bKash`}>
                       {OUTSIDE_DHAKA.map((d) => <option key={d} value={d}>{d}</option>)}
                     </optgroup>
                   </select>

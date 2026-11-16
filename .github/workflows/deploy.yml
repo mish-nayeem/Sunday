@@ -27,7 +27,15 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  # The checks in ci.yml first (lint, unit and browser tests). If any fails,
+  # nothing is deployed and the live site stays as it was.
+  checks:
+    uses: ./.github/workflows/ci.yml
+    with:
+      ref: ${{ github.sha }}
+
   deploy:
+    needs: checks
     runs-on: ubuntu-latest
     steps:
       - name: Check the secrets are set
