@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import InfoTip from './InfoTip.jsx'
+import CodeGate from './CodeGate.jsx'
 import { COURIERS } from '../lib/courier.js'
 import './order-bulk-bar.css'
 
@@ -13,8 +14,8 @@ const MARKS = [
 // Orders → Select: the bar along the bottom while orders are ticked. Every
 // action works on the ticked orders only; changing a status asks first,
 // because it emails each customer.
-export default function OrderBulkBar({ count, shown, busy, note, onAll, onNone, onMark, onPrint, onCourier, onExit }) {
-  const [asking, setAsking] = useState(null) // a MARKS key, or 'courier'
+export default function OrderBulkBar({ count, shown, busy, note, onAll, onNone, onMark, onPrint, onCourier, onDelete, onExit }) {
+  const [asking, setAsking] = useState(null) // a MARKS key, 'courier' or 'delete'
   const [courier, setCourier] = useState(COURIERS[0].key)
 
   const label = MARKS.find((m) => m.key === asking)?.label
@@ -30,6 +31,7 @@ export default function OrderBulkBar({ count, shown, busy, note, onAll, onNone, 
             <p><b>Mark returned</b> — the courier brought the parcels back (customer unreachable or refused). The pieces go back into stock; no email.</p>
             <p><b>Print slips</b> — one packing slip per order, each on its own page.</p>
             <p><b>Courier</b> — books every ticked order that isn't booked yet. Works once the courier's API keys are added (Orders → Courier setup).</p>
+            <p><b>Delete</b> — asks for a code sent to the admin email first. For test orders only: removes them for good, with their return / exchange requests, and puts back what they took from stock. No email.</p>
           </InfoTip>
         </span>
         <span className="obulk-links mono">
@@ -41,7 +43,21 @@ export default function OrderBulkBar({ count, shown, busy, note, onAll, onNone, 
 
       {note && <div className="obulk-note mono">{note}</div>}
 
-      {asking ? (
+      {asking === 'delete' ? (
+        <div className="obulk-ask mono" style={{ flexDirection: 'column', alignItems: 'stretch' }}>
+          <span>{`Delete ${count} order${count === 1 ? '' : 's'} for good? Their return / exchange requests go too, and what they took from stock goes back. This can't be undone.`}</span>
+          <CodeGate
+            action="delete_orders"
+            confirmLabel={`Delete ${count}`}
+            onCancel={() => setAsking(null)}
+            onConfirm={async (code) => {
+              const out = await onDelete(code)
+              if (!out?.error) setAsking(null)
+              return out
+            }}
+          />
+        </div>
+      ) : asking ? (
         <div className="obulk-ask mono">
           <span>
             {asking === 'courier'
@@ -78,6 +94,7 @@ export default function OrderBulkBar({ count, shown, busy, note, onAll, onNone, 
               Send to courier
             </button>
           </span>
+          {onDelete && <button type="button" className="obulk-btn cancelled" disabled={!count || busy} onClick={() => setAsking('delete')}>Delete</button>}
         </div>
       )}
       {busy && <div className="obulk-note mono">{busy}</div>}

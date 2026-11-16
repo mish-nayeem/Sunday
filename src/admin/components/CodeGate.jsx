@@ -2,7 +2,8 @@ import { useState } from 'react'
 import { supabase } from '../lib/supabaseClient.js'
 import './code-gate.css'
 
-// Before something that can't be undone (Abandoned cart → Clear all): a
+// Before something that can't be undone (Clear all, Delete orders, Start
+// fresh, Clean up): a
 // six-digit code goes to the admin's email (edge function admin-code) and
 // the action runs only with it. `onConfirm(code)` does the action and
 // returns { error } — the database's CODE_* answers are said plainly here.
@@ -17,7 +18,7 @@ export function codeMessage(err) {
   const raw = String(err?.message || err || '')
   const key = Object.keys(SAID).find((k) => raw.includes(k))
   if (key) return SAID[key]
-  if (/admin_clear_abandoned_carts|admin-code|Failed to send|NOT_FOUND/.test(raw)) return 'Waiting for the update to go out — try again in a few minutes.'
+  if (/admin_clear_abandoned_carts|admin_delete_orders|admin_reset_analytics|admin_trim_page_views|admin-code|Failed to send|NOT_FOUND/.test(raw)) return 'Waiting for the update to go out — try again in a few minutes.'
   return raw || 'Something went wrong. Try again.'
 }
 

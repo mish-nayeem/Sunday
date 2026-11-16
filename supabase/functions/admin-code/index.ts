@@ -6,7 +6,7 @@
 // (migration 20261115120000_admin_codes_clear_delete.sql). A code works for
 // its own action, for 10 minutes, once.
 //
-// Body: { action: 'clear_abandoned' }
+// Body: { action: 'clear_abandoned' | 'delete_orders' | 'reset_analytics' | 'trim_analytics' }
 // Admin only. The code goes to the admin's own address.
 // Secrets: BREVO_API_KEY, BREVO_FROM_EMAIL (or BREVO_SENDER_EMAIL) — the same
 // ones the marketing emails use.
@@ -15,6 +15,9 @@ import { ADMIN_EMAIL, isAdminRequest, serviceClient } from '../_shared/admin.ts'
 
 const ACTIONS: Record<string, string> = {
   clear_abandoned: 'clear the abandoned carts list (Orders → Abandoned cart → Clear all)',
+  delete_orders: 'delete orders (Orders → Select → Delete)',
+  reset_analytics: 'clear the visit counts (Analytics → Start fresh)',
+  trim_analytics: 'delete old visits (Analytics → Clean up)',
 }
 
 const cors = {

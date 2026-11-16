@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { supabase } from '../lib/supabaseClient.js'
 import { imgUrl } from '../lib/images.js'
 import InfoTip from './InfoTip.jsx'
+import CodeGate from './CodeGate.jsx'
 import './analytics-manager.css'
 import { unsold } from '../lib/admin.js'
 
@@ -82,6 +83,37 @@ export default function AnalyticsManager({ sub, orders, products }) {
   const [data, setData] = useState(null)
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(true)
+  const [tick, setTick] = useState(0)
+
+  // "Start fresh": every visit counted so far (often the team's own, before
+  // launch) — admin_reset_analytics(), with the code emailed to the admin.
+  // Orders stay.
+  const [asking, setAsking] = useState(false)
+  const [freshNote, setFreshNote] = useState('')
+  async function startFresh(code) {
+    const { data: out, error: e } = await supabase.rpc('admin_reset_analytics', { p_code: code })
+    if (e || out?.error) return { error: out?.error || e }
+    setAsking(false)
+    setFreshNote(`Cleared ${Number(out?.cleared || 0).toLocaleString()} page views — counting from now.`)
+    setTick((t) => t + 1)
+    return { error: null }
+  }
+
+  // "Clean up": page views older than 180 days, with the emailed code.
+  const [old, setOld] = useState(null)
+  const [trimAsk, setTrimAsk] = useState(false)
+  const [trimNote, setTrimNote] = useState('')
+  useEffect(() => {
+    supabase.rpc('admin_old_page_views', { p_days: 180 }).then(({ data: o, error: e }) => setOld(e ? null : o))
+  }, [tick])
+  async function trimOld(code) {
+    const { data: out, error: e } = await supabase.rpc('admin_trim_page_views', { p_code: code, p_days: 180 })
+    if (e || out?.error) return { error: out?.error || e }
+    setTrimAsk(false)
+    setTrimNote(`Deleted ${Number(out?.deleted || 0).toLocaleString()} old page views.`)
+    setTick((t) => t + 1)
+    return { error: null }
+  }
 
   useEffect(() => {
     let alive = true
@@ -99,7 +131,7 @@ export default function AnalyticsManager({ sub, orders, products }) {
       setData(data)
     })
     return () => { alive = false }
-  }, [days])
+  }, [days, tick])
 
   const productsById = useMemo(() => new Map(products.map((p) => [String(p.id), p])), [products])
 
@@ -201,6 +233,27 @@ export default function AnalyticsManager({ sub, orders, products }) {
         </span>
         {loading && <span className="an-loading">Loading…</span>}
       </div>
+
+      {/* Start fresh / Clean up — each behind the code emailed to the admin. */}
+      <div className="an-how mono" style={{ margin: '0 0 12px', flexWrap: 'wrap', gap: '8px 14px' }}>
+        {!asking && <button type="button" className="ab-btn" onClick={() => { setAsking(true); setFreshNote('') }}>Start fresh</button>}
+        {freshNote && <span>{freshNote}</span>}
+        {Number(old?.older) > 0 && <span>{Number(old.older).toLocaleString()} page views are older than 180 days</span>}
+        {Number(old?.older) > 0 && !trimAsk && <button type="button" className="ab-btn" onClick={() => { setTrimAsk(true); setTrimNote('') }}>Clean up</button>}
+        {trimNote && <span>{trimNote}</span>}
+      </div>
+      {asking && (
+        <div style={{ margin: '0 0 14px' }}>
+          <div className="mono" style={{ fontSize: 12, marginBottom: 8 }}>Delete every visit and page view counted so far, and start counting from now? Orders stay as they are. This can't be undone.</div>
+          <CodeGate action="reset_analytics" confirmLabel="Start fresh" onConfirm={startFresh} onCancel={() => setAsking(false)} />
+        </div>
+      )}
+      {trimAsk && (
+        <div style={{ margin: '0 0 14px' }}>
+          <div className="mono" style={{ fontSize: 12, marginBottom: 8 }}>Delete the page views older than 180 days? The ranges here (up to 90 days) aren't affected. This can't be undone.</div>
+          <CodeGate action="trim_analytics" confirmLabel="Clean up" onConfirm={trimOld} onCancel={() => setTrimAsk(false)} />
+        </div>
+      )}
 
       {error && <div className="err-banner mono">{error}</div>}
 
