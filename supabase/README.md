@@ -15,5 +15,8 @@ Every push or merge to `main` deploys to the production project:
   and redirect URLs here match the live site; keep them in step with
   Authentication → URL Configuration in the dashboard.
 
-The original schema (`../sunday_supabase_schema.sql`) was run by hand before
-this integration existed, so it is not a migration and must not be re-run.
+The original schema (now `../docs/legacy-sql/sunday_supabase_schema.sql`) was
+run by hand before migrations existed; never re-run it. Its tables are in
+`migrations/20261018000000_core_tables.sql` as the live database has them
+(a no-op on the live database), so the folder builds the whole database:
+`tests/sql/run.sh` does exactly that on a throwaway Postgres and tests it.

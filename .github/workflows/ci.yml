@@ -8,6 +8,9 @@
 #   e2e    — Playwright (tests/e2e): a phone-sized shopper goes from a
 #            product to a placed order, and every main page opens, with
 #            Supabase mocked
+#   sql    — the whole database built from supabase/migrations on a
+#            throwaway Postgres, then tests/sql (create_order: charges,
+#            advance, stock, sold-out sizes, hidden products, phones)
 
 name: CI
 
@@ -48,3 +51,25 @@ jobs:
         run: npm run test:e2e
         env:
           CI: 'true'
+
+  sql:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_PASSWORD: postgres
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U postgres" --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      PGHOST: localhost
+      PGUSER: postgres
+      PGPASSWORD: postgres
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref || github.sha }}
+      - name: Migrations + database tests
+        run: bash tests/sql/run.sh
