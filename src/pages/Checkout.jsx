@@ -56,7 +56,7 @@ function savedInfo() {
 
 // Delivery and payment (the same rule as create_order):
 //   Dhaka          Tk 80 delivery — cash on delivery, or all by bKash now.
-//   Outside Dhaka  Tk 120 delivery — Tk 200 by bKash now and the rest on
+//   Outside Dhaka  Tk 150 delivery — Tk 200 by bKash now and the rest on
 //                  delivery, or all by bKash now.
 // The numbers are DELIVERY's (src/lib/catalog.js), which a unit test checks
 // against create_order.

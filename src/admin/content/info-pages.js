@@ -61,7 +61,7 @@ export const INFO_PAGES = {
         head: ['AREA', 'TIME', 'CHARGE', 'PAYMENT'],
         rows: [
           ['Inside Dhaka', '1–3 business days', 'Tk 80', 'Cash on delivery'],
-          ['Outside Dhaka', '3–7 business days', 'Tk 120', 'Tk 200 by bKash in advance, the rest in cash'],
+          ['Outside Dhaka', '3–7 business days', 'Tk 150', 'Tk 200 by bKash in advance, the rest in cash'],
         ],
       },
       {
@@ -204,7 +204,7 @@ export const INFO_PAGES = {
       {
         type: 'text',
         heading: 'How long does delivery take, and what does it cost?',
-        body: 'Inside Dhaka: 1–3 business days, Tk 80. Outside Dhaka: 3–7 business days, Tk 120.',
+        body: 'Inside Dhaka: 1–3 business days, Tk 80. Outside Dhaka: 3–7 business days, Tk 150.',
       },
       {
         type: 'text',

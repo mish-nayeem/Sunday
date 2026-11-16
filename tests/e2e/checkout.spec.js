@@ -57,7 +57,11 @@ test('a shopper can buy a shirt in Dhaka', async ({ page }) => {
   await page.selectOption('#co-district', 'Dhaka')
   await page.fill('#co-area', 'Dhanmondi')
   await page.fill('#co-address', 'House 1, Road 2')
+  // Outside Dhaka: Tk 150 delivery (1,500 + 150).
+  await page.selectOption('#co-district', 'Sylhet')
+  await expect(page.getByText('Tk 1,650').first()).toBeVisible()
   // Dhaka: Tk 80 delivery, cash on delivery.
+  await page.selectOption('#co-district', 'Dhaka')
   await expect(page.getByText('Tk 1,580').first()).toBeVisible()
   await page.locator('input[type="checkbox"]').last().check()
   await page.getByRole('button', { name: /place order/i }).click()
