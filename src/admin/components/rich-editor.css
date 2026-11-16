@@ -63,3 +63,6 @@
 }
 .re-box:focus { box-shadow: inset 0 0 0 1px var(--cobalt, #2a4dff); border-radius: 0 0 12px 12px; }
 .re-box:empty::before { content: attr(data-placeholder); color: var(--steel); pointer-events: none; }
+
+/* A title, intro or heading: one or two lines, not a page. */
+.re.compact .re-box { min-height: 48px; }

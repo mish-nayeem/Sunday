@@ -18,7 +18,7 @@ import useDragSort from '../lib/useDragSort.js'
 import AdminBox from './AdminBox.jsx'
 import InfoTip from './InfoTip.jsx'
 import RichEditor from './RichEditor.jsx'
-import { textToHtml } from '../lib/richText.js'
+import { textToHtml, plainText } from '../lib/richText.js'
 import './support-manager.css'
 
 const MIGRATION = 'check the connection and try again.'
@@ -284,10 +284,23 @@ export function SupportPages() {
             <input className="ab-input" key={`tab-${slug}`} defaultValue={label} maxLength={40} onBlur={(e) => renameTab(slug, e.target.value)} />
           </>
         )}
+        {/* The title, intro and each heading take the same editor as the
+            sections (bold, size, colour, alignment…). Their plain words are
+            kept too, for the browser tab and Google. */}
         <span className="ab-label">PAGE TITLE</span>
-        <input className="ab-input" value={draft.title || ''} onChange={(e) => set({ title: e.target.value })} />
+        <RichEditor
+          compact
+          placeholder="Page title"
+          value={draft.titleHtml != null ? draft.titleHtml : textToHtml(draft.title)}
+          onChange={(html) => set({ titleHtml: html, title: plainText(html).trim() })}
+        />
         <span className="ab-label">INTRO</span>
-        <textarea className="ab-input" rows={2} value={draft.intro || ''} onChange={(e) => set({ intro: e.target.value })} />
+        <RichEditor
+          compact
+          placeholder="A line or two under the title"
+          value={draft.introHtml != null ? draft.introHtml : textToHtml(draft.intro)}
+          onChange={(html) => set({ introHtml: html, intro: plainText(html).trim() })}
+        />
 
         <span className="ab-label">SECTIONS</span>
         <div className="sm-blocks">
@@ -303,11 +316,11 @@ export function SupportPages() {
               </div>
 
               {b.type !== 'contact' && (
-                <input
-                  className="ab-input sm-heading"
+                <RichEditor
+                  compact
                   placeholder="Heading"
-                  value={b.heading || ''}
-                  onChange={(e) => setBlock(i, { heading: e.target.value })}
+                  value={b.headingHtml != null ? b.headingHtml : textToHtml(b.heading)}
+                  onChange={(html) => setBlock(i, { headingHtml: html, heading: plainText(html).trim() })}
                 />
               )}
 
