@@ -52,6 +52,7 @@ import LookbookManager from '../components/LookbookManager.jsx'
 import CollectionManager from '../components/CollectionManager.jsx'
 import DropReport from '../components/DropReport.jsx'
 import AboutManager from '../components/AboutManager.jsx'
+import BkashPaymentManager from '../components/BkashPaymentManager.jsx'
 import PromoManager from '../components/PromoManager.jsx'
 import LinkGenerator from '../components/LinkGenerator.jsx'
 import AudienceManager from '../components/AudienceManager.jsx'
@@ -159,6 +160,7 @@ const SITE_TABS = [
   { key: 'menu', label: 'Side menu' },
   { key: 'about', label: 'About us' },
   { key: 'banners', label: 'Banners' },
+  { key: 'payment', label: 'bKash payment' },
   { key: 'settings', label: 'Settings' },
 ]
 const SITE_KEYS = SITE_TABS.map((t) => t.key)
@@ -175,6 +177,7 @@ const TAB_LABELS = {
   menu: 'Side menu',
   about: 'About us page',
   banners: 'Banners',
+  payment: 'bKash payment',
   settings: 'Settings',
   support: 'Support',
 }
@@ -2863,6 +2866,7 @@ export default function Admin() {
         )}
         {tab === 'about' && <AboutManager />}
         {!loading && tab === 'banners' && <PromoManager products={products} />}
+        {tab === 'payment' && <BkashPaymentManager />}
         {!loading && tab === 'settings' && <SettingsManager />}
         {!loading && tab === 'support' && (
           <>
