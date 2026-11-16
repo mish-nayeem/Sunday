@@ -19,16 +19,24 @@ function createOrderSql() {
 describe('delivery — checkout and create_order charge the same', () => {
   const sql = createOrderSql()
 
-  it('Tk 80 in Dhaka and Tk 120 outside, as create_order sets them', () => {
+  it('Tk 80 in Dhaka and Tk 150 outside, as create_order sets them', () => {
     const charges = [...sql.matchAll(/v_delivery_charge\s*:=\s*(\d+)\s*;/g)].map((m) => Number(m[1]))
     expect(charges).toContain(DELIVERY.insideDhaka)
     expect(charges).toContain(DELIVERY.outsideDhaka)
-    expect(DELIVERY).toMatchObject({ insideDhaka: 80, outsideDhaka: 120 })
+    expect(DELIVERY).toMatchObject({ insideDhaka: 80, outsideDhaka: 150, outsideAdvance: 200 })
   })
 
   it('the bKash advance is the one create_order asks for', () => {
     const m = sql.match(/'bkash_advance'\s+then\s+least\((\d+),/i)
     expect(Number(m?.[1])).toBe(DELIVERY.outsideAdvance)
+  })
+
+  it('the admin\'s manual orders use the same numbers', async () => {
+    const { quote } = await import('../../src/admin/lib/delivery.js')
+    expect(quote(1000, 'Dhaka')).toMatchObject({ fee: 80, advance: 0, total: 1080 })
+    expect(quote(1000, 'Sylhet')).toMatchObject({ fee: 150, advance: 200, total: 1150, due: 950 })
+    // Never more up front than the order is worth.
+    expect(quote(30, 'Sylhet', 0).advance).toBe(180)
   })
 
   it('Checkout reads its charges from DELIVERY, not numbers of its own', () => {

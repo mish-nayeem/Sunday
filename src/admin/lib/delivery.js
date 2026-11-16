@@ -1,6 +1,6 @@
 // Delivery zones, districts, and the advance-payment rule that hangs off them.
 //
-// Dhaka district: Tk 80 delivery, cash on delivery. Everywhere else: Tk 120
+// Dhaka district: Tk 80 delivery, cash on delivery. Everywhere else: Tk 150
 // delivery, Tk 200 paid in advance by bKash, and the rider collects the
 // rest at the door. Either can instead pay the whole order by bKash.
 // create_order (supabase/migrations/20261023000200_payment_options.sql)
@@ -12,13 +12,15 @@
 // server-side and refuses an order that doesn't match — change the fees,
 // the advance or the Dhaka rule there too.
 
+import { DELIVERY } from '../../lib/catalog.js'
+
 export const BKASH_NUMBER = '01629178834'
 
 export const ZONES = [
   {
     key: 'inside',
     label: 'Inside Dhaka',
-    fee: 80,
+    fee: DELIVERY.insideDhaka,
     advance: 0,
     title: 'INSIDE DHAKA — CASH ON DELIVERY',
     note: 'No advance payment needed',
@@ -26,8 +28,8 @@ export const ZONES = [
   {
     key: 'outside',
     label: 'Outside Dhaka',
-    fee: 120,
-    advance: 200,
+    fee: DELIVERY.outsideDhaka,
+    advance: DELIVERY.outsideAdvance,
     title: 'OUTSIDE DHAKA — ADVANCE PAY',
     note: 'bKash advance payment required',
   },
