@@ -12,7 +12,7 @@ const PRODUCT = {
   colors: [], stock_status: 'in_stock', hidden: false, created_at: '2026-11-01T00:00:00Z', publish_at: null,
 }
 
-function mock(page, onOrder) {
+function mock(page, onOrder, settings = {}) {
   return page.route(SB, async (route) => {
     const req = route.request()
     const url = new URL(req.url())
@@ -23,6 +23,10 @@ function mock(page, onOrder) {
     }
     if (url.pathname === '/rest/v1/rpc/track_order') {
       return route.fulfill({ contentType: 'application/json', body: JSON.stringify([{ order_id: 'SND-TEST-1', status: 'pending', items: [{ product_name: 'Test Shirt', size: 'M', quantity: 1, price: 1500 }], subtotal: 1500, delivery_charge: 80, total: 1580, advance_amount: 0, full_name: 'Test Shopper', mobile: '01711111111', created_at: new Date().toISOString(), courier_steps: [] }]) })
+    }
+    if (url.pathname === '/rest/v1/site_settings') {
+      const key = Object.keys(settings).find((k) => url.search.includes(`key=eq.${k}`))
+      if (key) return route.fulfill({ contentType: 'application/json', body: JSON.stringify(one ? { value: settings[key] } : [{ value: settings[key] }]) })
     }
     if (url.pathname === '/rest/v1/products') {
       return route.fulfill({ contentType: 'application/json', body: JSON.stringify(one ? PRODUCT : [PRODUCT]) })
@@ -87,4 +91,35 @@ test('every main page opens without a crash', async ({ page }) => {
     await expect(page.locator('h1').first()).toBeAttached()
   }
   expect(crashes).toEqual([])
+})
+
+// A 1×1 PNG, standing in for the QR picture.
+const PNG = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==', 'base64')
+
+async function toOutsideDhakaPayment(page) {
+  await page.goto(`/product/${ID}`)
+  const bar = page.locator('div.fixed.bottom-0').filter({ hasText: 'Add to bag' })
+  await bar.getByRole('button', { name: 'Add to bag' }).click()
+  await bar.getByRole('button', { name: /^M$/ }).click()
+  await bar.getByRole('button', { name: 'Add to bag' }).click()
+  await expect(page.getByText('Item added to cart')).toBeVisible()
+  await page.goto('/checkout')
+  await page.selectOption('#co-district', 'Sylhet')
+  await expect(page.locator('#co-trx')).toBeVisible()
+}
+
+test('outside Dhaka: the bKash QR from the admin shows beside the number', async ({ page }) => {
+  await mock(page, null, { bkash_payment: { qr: 'https://qr.example.test/bkash.png' } })
+  await page.route('https://qr.example.test/**', (route) => route.fulfill({ contentType: 'image/png', body: PNG }))
+  await toOutsideDhakaPayment(page)
+  await expect(page.getByAltText(/bKash QR for/)).toBeVisible()
+  await expect(page.getByRole('link', { name: 'Save QR' })).toBeVisible()
+})
+
+test('outside Dhaka: no QR saved, or one that won\'t load — the number alone', async ({ page }) => {
+  await mock(page, null, { bkash_payment: { qr: 'https://qr.example.test/gone.png' } })
+  await page.route('https://qr.example.test/**', (route) => route.fulfill({ status: 404, body: '' }))
+  await toOutsideDhakaPayment(page)
+  await expect(page.getByText('bKash number · Send money')).toBeVisible()
+  await expect(page.getByAltText(/bKash QR for/)).toHaveCount(0)
 })
