@@ -583,25 +583,28 @@ export default function Checkout() {
                           <span className="shrink-0 font-medium">Tk {(item.price * item.quantity).toLocaleString()}</span>
                         </div>
                         <div className="mt-2 flex flex-wrap items-center gap-2 text-[12px]">
-                          {/* Size: another size of the same piece, or more of it. */}
+                          {/* Size and quantity always side by side; Remove drops under them only on the narrowest phones. */}
+                          <div className="flex items-center gap-2 shrink-0">
+                            {/* Size: another size of the same piece, or more of it. */}
                           <label className="sr-only" htmlFor={`size-${item.productId}-${item.size}`}>Size</label>
                           <select
                             id={`size-${item.productId}-${item.size}`}
                             value={item.size}
                             onChange={(e) => changeCartItemSize(item.productId, item.size, e.target.value)}
-                            className="h-8 border border-rule bg-white px-2 pr-6 outline-none focus:border-ink"
+                            className="h-8 w-[96px] shrink-0 border border-rule bg-white pl-2 pr-6 outline-none focus:border-ink"
                           >
                             {sizes.map((sz) => {
                               const ok = !product || isSizeAvailable(product, sz) || sz === item.size;
                               return <option key={sz} value={sz} disabled={!ok}>Size {sz}{ok ? '' : ' (sold out)'}</option>;
                             })}
                           </select>
-                          <div className="flex items-center h-8 border border-rule">
-                            <button type="button" onClick={() => updateCartItem(item.productId, item.size, item.quantity - 1)} className="w-8 h-full hover:bg-stone" aria-label={`One less ${item.name}`}>−</button>
-                            <span className="w-7 text-center tabular-nums" aria-live="polite">{item.quantity}</span>
-                            <button type="button" onClick={() => updateCartItem(item.productId, item.size, item.quantity + 1)} className="w-8 h-full hover:bg-stone" aria-label={`One more ${item.name}`}>+</button>
+                          <div className="flex shrink-0 items-center h-8 border border-rule">
+                            <button type="button" onClick={() => updateCartItem(item.productId, item.size, item.quantity - 1)} className="w-7 h-full hover:bg-stone" aria-label={`One less ${item.name}`}>−</button>
+                            <span className="w-6 text-center tabular-nums" aria-live="polite">{item.quantity}</span>
+                            <button type="button" onClick={() => updateCartItem(item.productId, item.size, item.quantity + 1)} className="w-7 h-full hover:bg-stone" aria-label={`One more ${item.name}`}>+</button>
                           </div>
-                          <button type="button" onClick={() => removeFromCart(item.productId, item.size)} className="ml-auto text-graphite underline underline-offset-2 hover:text-ink">Remove</button>
+                          </div>
+                          <button type="button" onClick={() => removeFromCart(item.productId, item.size)} className="ml-auto shrink-0 text-graphite underline underline-offset-2 hover:text-ink">Remove</button>
                         </div>
                       </div>
                     </div>
