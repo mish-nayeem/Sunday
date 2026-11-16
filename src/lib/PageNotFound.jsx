@@ -1,7 +1,17 @@
-import React from 'react';
+import React, { useEffect } from 'react';
+import { applyPageMeta } from '@/lib/pageMeta';
 import { Link } from 'react-router-dom';
 
 export default function PageNotFound() {
+  // An address with nothing behind it: say so to Google too (the server
+  // answers 200, so this tag is what keeps it out of search results).
+  useEffect(() => {
+    applyPageMeta('Page not found');
+    const tag = document.querySelector('meta[name="robots"]');
+    const before = tag?.getAttribute('content');
+    tag?.setAttribute('content', 'noindex');
+    return () => { if (tag && before) tag.setAttribute('content', before); };
+  }, []);
   return (
     <div className="min-h-screen flex flex-col items-center justify-center px-5 text-center">
       <p className="text-6xl font-light tracking-wide text-charcoal/20 mb-4">404</p>

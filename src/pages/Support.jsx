@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Link, Navigate, useParams } from 'react-router-dom';
+import usePageMeta from '@/lib/pageMeta';
 import { INFO_PAGES, SUPPORT_TABS } from '@/admin/content/info-pages.js';
 import { fetchSupportPages, fetchSupportTabs } from '@/admin/lib/support.js';
 import { cleanHtml } from '@/admin/lib/richText.js';
@@ -38,6 +39,10 @@ export default function Support() {
   }, [slug]);
 
   const page = slug === 'portal' ? null : pages[slug];
+  usePageMeta(
+    !asked ? 'Support' : slug === 'portal' ? 'Return & Exchange Portal' : page?.title || 'Support',
+    !asked ? 'Delivery, exchanges, size guide and policies at SUNDAY.' : page?.intro || undefined,
+  );
   // An address with nothing behind it (a tab since deleted) goes to the
   // first tab — once the admin's tabs are in, so a new tab isn't bounced.
   if (ready && slug !== 'portal' && !page) return <Navigate to="/support" replace />;
