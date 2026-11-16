@@ -23,7 +23,11 @@ begin
   if r.subtotal <> 1500 or r.delivery_charge <> 80 or r.total <> 1580 then
     raise exception 'Dhaka order: got % + % = %', r.subtotal, r.delivery_charge, r.total;
   end if;
-  if r.order_id !~ '^SND-' then raise exception 'order number %', r.order_id; end if;
+  -- SND- and 10 random digits; the invoice carries the same digits.
+  if r.order_id !~ '^SND-[0-9]{10}$' then raise exception 'order number %', r.order_id; end if;
+  if r.invoice_number <> 'SND-' || to_char(now(), 'YYYY') || '-' || substr(r.order_id, 5) then
+    raise exception 'invoice number % for %', r.invoice_number, r.order_id;
+  end if;
   select * into o from public.orders where order_id = r.order_id;
   if o.payment_method <> 'cod' or o.advance_amount <> 0 or o.mobile <> '01711111111' then
     raise exception 'Dhaka order saved as % / % / %', o.payment_method, o.advance_amount, o.mobile;
