@@ -9,7 +9,7 @@ import { getCart, clearCart, subscribeCart, updateCartItem, changeCartItemSize, 
 import { imgUrl } from '@/lib/storage';
 import { isSizeAvailable } from '@/lib/catalog';
 import { useAuth } from '@/lib/AuthContext';
-import { checkCoupon } from '@/admin/lib/coupons.js';
+import { checkCoupon, anyLiveCoupon } from '@/admin/lib/coupons.js';
 import { getAttribution } from '@/lib/attribution';
 import { saveAbandonedCart, markCartConverted } from '@/lib/abandonedCart';
 import { fetchLiveSales } from '@/admin/lib/sales.js';
@@ -67,6 +67,13 @@ const OUTSIDE_ADVANCE = 200;
 export default function Checkout() {
   // The bKash (Payment) number from Admin → Website → Settings.
   const BKASH_NUMBER = useBkashNumber();
+  // The Discount code box shows only while some code can be used.
+  const [codesLive, setCodesLive] = useState(false);
+  useEffect(() => {
+    let alive = true;
+    anyLiveCoupon().then((yes) => { if (alive) setCodesLive(yes); });
+    return () => { alive = false; };
+  }, []);
   const navigate = useNavigate();
   const { isAuthenticated, user } = useAuth();
   const [bag, setBag] = useState(getCart());
@@ -620,7 +627,7 @@ export default function Checkout() {
                 <span className="text-sm font-mono">{form.district ? `Tk ${deliveryCharge}` : 'Choose a district'}</span>
               </div>
 
-              {!coupon && (
+              {!coupon && codesLive && (
                 <div className="mb-5">
                   <div className="flex border border-rule">
                     <label htmlFor="coupon" className="sr-only">Discount code</label>
