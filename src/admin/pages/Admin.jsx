@@ -52,6 +52,7 @@ import LookbookManager from '../components/LookbookManager.jsx'
 import CollectionManager from '../components/CollectionManager.jsx'
 import DropReport from '../components/DropReport.jsx'
 import AboutManager from '../components/AboutManager.jsx'
+import DamagedPieces from '../components/DamagedPieces.jsx'
 import PromoManager from '../components/PromoManager.jsx'
 import LinkGenerator from '../components/LinkGenerator.jsx'
 import AudienceManager from '../components/AudienceManager.jsx'
@@ -218,6 +219,7 @@ const PRODUCTS_SUBS = [
   { key: 'best', label: 'Best sellers' },
   { key: 'drops', label: 'Stock & sales' },
   { key: 'margin', label: 'Cost & margin' },
+  { key: 'damaged', label: 'Damaged' },
   { key: 'collections', label: 'Collections' },
 ]
 
@@ -2568,6 +2570,7 @@ export default function Admin() {
           )}
 
           {productsSub === 'drops' && <DropReport products={products} orders={orders} />}
+          {productsSub === 'damaged' && <DamagedPieces returns={returns} products={products} onOpenOrder={openOrder} />}
 
           {productsSub === 'margin' && (
             <div className="margin-views mono" role="tablist">

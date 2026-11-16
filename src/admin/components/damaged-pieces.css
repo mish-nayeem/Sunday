@@ -1,0 +1,18 @@
+/* Products / Inventory → Damaged (DamagedPieces.jsx). */
+.dmg-range { margin-bottom: 14px; }
+.dmg-kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; margin-bottom: 14px; }
+.dmg-kpi { display: flex; flex-direction: column; gap: 4px; padding: 14px 16px; border: 1px solid var(--steel-line); border-radius: 14px; }
+.dmg-kpi span { font-size: 10.5px; letter-spacing: 0.08em; color: var(--steel); }
+.dmg-kpi b { font-size: 24px; color: var(--ink); }
+.dmg-kpi em { font-style: normal; font-size: 10.5px; color: var(--steel); }
+.dmg-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
+.dmg-row { display: grid; grid-template-columns: 52px 1fr auto; gap: 12px; align-items: center; padding: 10px 0; border-top: 1px solid var(--steel-line); }
+.dmg-row:first-child { border-top: none; }
+.dmg-thumb { width: 52px; height: 52px; border-radius: 10px; overflow: hidden; background: var(--steel-line); }
+.dmg-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.dmg-main { display: flex; flex-direction: column; gap: 2px; min-width: 0; font-size: 12.5px; }
+.dmg-main b { font-size: 14px; color: var(--ink); }
+.dmg-main .dim, .dmg-money .dim { color: var(--steel); font-size: 11.5px; }
+.dmg-money { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; font-size: 12px; white-space: nowrap; }
+.dmg-money b { color: var(--signal); font-size: 14px; }
+.dmg-order { border: none; background: none; padding: 0; font: inherit; color: var(--cobalt); cursor: pointer; text-decoration: underline; text-underline-offset: 2px; }
