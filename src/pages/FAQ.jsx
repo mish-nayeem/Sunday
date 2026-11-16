@@ -1,10 +1,32 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
+import { DELIVERY } from '@/lib/catalog';
 
+// Short answers, kept the same as checkout and the Support pages
+// (src/admin/content/info-pages.js): the delivery charges come from the
+// same numbers checkout uses, and each answer links to its full page.
+const tk = (n) => `Tk ${n}`;
 const faqs = [
-  { q: 'How does Cash on Delivery work?', a: 'You pay in cash when your order is delivered to your doorstep. No advance payment needed.' },
-  { q: 'How long does delivery take?', a: 'Inside Dhaka: 1-2 business days. Outside Dhaka: 2-4 business days.' },
-  { q: 'What is your return policy?', a: 'You can return unused items with tags within 7 days of delivery.' },
-  { q: 'How do I track my order?', a: 'Use the Order Tracking page with your Order ID or mobile number.' },
+  {
+    q: 'How do I pay?',
+    a: `Inside Dhaka: cash on delivery for the full amount, or pay it all by bKash at checkout. Outside Dhaka: ${tk(DELIVERY.outsideAdvance)} in advance by bKash and the rest in cash on delivery, or pay it all by bKash at checkout.`,
+    link: { to: '/support/delivery', label: 'Delivery info' },
+  },
+  {
+    q: 'How long does delivery take, and what does it cost?',
+    a: `Inside Dhaka: 1–3 business days, ${tk(DELIVERY.insideDhaka)}. Outside Dhaka: 3–7 business days, ${tk(DELIVERY.outsideDhaka)}.`,
+    link: { to: '/support/delivery', label: 'Delivery info' },
+  },
+  {
+    q: 'Can I return or exchange an item?',
+    a: 'We offer exchanges, not cash refunds. Ask within 3 days of delivery; the item must be unused, unwashed and unworn, with all tags attached. If you paid a bKash advance and the item turns out to be out of stock, that advance is refunded in full.',
+    link: { to: '/support/portal', label: 'Return & Exchange Portal' },
+  },
+  {
+    q: 'How do I track my order?',
+    a: 'Use the Order Tracking page with your Order ID and the mobile number you ordered with.',
+    link: { to: '/order-tracking', label: 'Track your order' },
+  },
 ];
 
 export default function FAQ() {
@@ -19,6 +41,11 @@ export default function FAQ() {
           <div key={i} className="border-b border-sand/20 pb-6">
             <p className="text-sm font-medium mb-2">{f.q}</p>
             <p className="text-sm text-charcoal/60">{f.a}</p>
+            {f.link && (
+              <Link to={f.link.to} className="inline-block mt-2 text-[12px] underline underline-offset-2 text-charcoal/70 hover:text-ink">
+                {f.link.label}
+              </Link>
+            )}
           </div>
         ))}
       </div>
