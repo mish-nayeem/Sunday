@@ -15,8 +15,9 @@ Every push or merge to `main` deploys to the production project:
   and redirect URLs here match the live site; keep them in step with
   Authentication → URL Configuration in the dashboard.
 
-The original schema (now `../docs/legacy-sql/sunday_supabase_schema.sql`) was
-run by hand before migrations existed; never re-run it. Its tables are in
+The first schema (the Base44 import) was run by hand before migrations
+existed; it's gone from the repo (git history has it) and must never be run
+again — it would bring back old, weaker policies. Its tables are in
 `migrations/20261018000000_core_tables.sql` as the live database has them
 (a no-op on the live database), so the folder builds the whole database:
 `tests/sql/run.sh` does exactly that on a throwaway Postgres and tests it.
