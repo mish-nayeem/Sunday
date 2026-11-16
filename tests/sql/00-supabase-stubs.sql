@@ -60,3 +60,10 @@ create schema if not exists vault;
 do $$ begin
   if not exists (select 1 from pg_publication where pubname = 'supabase_realtime') then create publication supabase_realtime; end if;
 end $$;
+
+-- Supabase's defaults: tables, sequences and functions made in public are
+-- usable by its API roles; row level security decides what each may do.
+grant usage on schema public to anon, authenticated, service_role;
+alter default privileges in schema public grant all on tables to anon, authenticated, service_role;
+alter default privileges in schema public grant all on sequences to anon, authenticated, service_role;
+alter default privileges in schema public grant execute on functions to anon, authenticated, service_role;
