@@ -7,7 +7,7 @@ import react from 'eslint-plugin-react'
 import reactHooks from 'eslint-plugin-react-hooks'
 
 export default [
-  { ignores: ['dist/**', 'node_modules/**', 'supabase/functions/**', '.wrangler/**', 'playwright-report/**', 'test-results/**', 'json'] },
+  { ignores: ['dist/**', 'node_modules/**', 'supabase/functions/**', '.wrangler/**', 'playwright-report/**', 'test-results/**', 'docs/**'] },
   js.configs.recommended,
   {
     files: ['src/**/*.{js,jsx}'],
