@@ -36,9 +36,13 @@ on:
     branches: [main]
   workflow_dispatch:
 
+# One deploy at a time, and none cancels another: a run that will do nothing
+# (the Supabase workflow finished red, or was started by hand) gets a group of
+# its own, so it can't push out a real deploy; and a real deploy that's
+# already running is left to finish (the next one follows it).
 concurrency:
-  group: deploy
-  cancel-in-progress: true
+  group: ${{ (github.event_name == 'workflow_run' && (github.event.workflow_run.conclusion != 'success' || github.event.workflow_run.event != 'push')) && format('deploy-noop-{0}', github.run_id) || 'deploy' }}
+  cancel-in-progress: false
 
 jobs:
   # What to deploy, and whether now: a push that touches the database waits
