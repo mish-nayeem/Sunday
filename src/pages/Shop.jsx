@@ -202,6 +202,9 @@ export default function Shop() {
 
   return (
     <div className="pb-20">
+      {/* The page's heading for search engines and screen readers (the design
+          shows no title here). */}
+      <h1 className="sr-only">{drop ? `${drop} — SUNDAY` : search ? `Search: ${search} — SUNDAY` : 'Shop all — SUNDAY menswear'}</h1>
       {/* One quiet bar: the lists to hop between on the left — the other drops
           inside a drop, the categories everywhere else, as set in Admin → Side
           menu — and a single Filter button (sold out, size) on the right. */}

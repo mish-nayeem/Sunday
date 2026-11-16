@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import usePageMeta from '@/lib/pageMeta';
 import { metaTrack } from '@/lib/metaPixel';
 import { useParams, Link } from 'react-router-dom';
 import { supabase } from '@/lib/supabaseClient';
@@ -28,6 +29,19 @@ function useWide() {
   return wide;
 }
 
+function productDescription(p) {
+  const own = String(p.description || '').replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+  if (own.length >= 60) return own.slice(0, 160);
+  const sizes = (p.sizes || []).filter(Boolean);
+  return [
+    `${p.name}${p.variant ? ` in ${String(p.variant).toLowerCase()}` : ''} from SUNDAY, premium menswear from Bangladesh.`,
+    own,
+    Number(p.price) > 0 ? `Tk ${Number(p.price).toLocaleString('en-IN')}.` : '',
+    sizes.length ? `Sizes ${sizes.join(', ')}.` : '',
+    'Cash on Delivery all over Bangladesh.',
+  ].filter(Boolean).join(' ');
+}
+
 export default function ProductDetail() {
   const { id } = useParams();
   const [raw, setRaw] = useState(null);
@@ -46,6 +60,13 @@ export default function ProductDetail() {
   const [added, setAdded] = useState(null);
   const buy = useBuyPanel(product, { onAdded: wide ? undefined : setAdded });
   useEffect(() => { setAdded(null); }, [id]);
+  // The tab title and Google's description: the product's own words, or a
+  // line made from its name, price and sizes.
+  usePageMeta(
+    raw ? `${raw.name}${raw.variant ? ` — ${raw.variant}` : ''}` : null,
+    raw ? productDescription(raw) : undefined,
+    !!raw,
+  );
 
   useEffect(() => {
     let cancelled = false;

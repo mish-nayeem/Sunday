@@ -5,6 +5,7 @@ import { imgUrl } from '@/lib/storage';
 import { fetchLooks, dropKey, fetchHiddenLookbooks } from '@/admin/lib/lookbook.js';
 import { useMenus, dropLink, lookbookLink } from '@/lib/menus';
 import LookView from '@/components/lookbook/LookView';
+import usePageMeta from '@/lib/pageMeta';
 
 // A drop's lookbook (EXPLORE in the side menu): the photos uploaded in
 // Admin → Lookbook. Tapping a photo opens it as a shoppable look (LookView):
@@ -14,6 +15,7 @@ import LookView from '@/components/lookbook/LookView';
 // which is how the homepage's drop photos open a look straight away.
 export default function Lookbook() {
   const { drop } = useParams();
+  usePageMeta(`${drop} — Lookbook`, `The ${drop} lookbook from SUNDAY: the looks, and the pieces in each.`);
   const [params, setParams] = useSearchParams();
   const lookId = params.get('look');
   const menus = useMenus();

@@ -1,5 +1,6 @@
 import { withSecurityHeaders } from './security-headers.js';
 import { cleanShortLinks, cleanSlug } from '../src/lib/shortLinkRules.js';
+import { canonicalPath } from '../src/lib/canonical.js';
 
 // Link previews for shared product and lookbook pages.
 //
@@ -44,7 +45,7 @@ async function handle(request, env, ctx) {
 
   try {
     const meta = await previewFor(url, env);
-    return meta ? rewrite(page, meta) : page;
+    return meta ? rewrite(page, meta) : withCanonical(page, url);
   } catch {
     return page; // a preview is never worth a broken page
   }
@@ -75,6 +76,7 @@ const SITEMAP_PAGES = ['/', '/shop', '/about', '/contact', '/faq', '/order-track
 
 async function sitemap(url, env) {
   let products = [];
+  let lookbooks = [];
   try {
     const cfgRes = await env.ASSETS.fetch(new Request(new URL('/og-config.json', url)));
     const cfg = cfgRes.ok ? await cfgRes.json() : {};
@@ -83,6 +85,22 @@ async function sitemap(url, env) {
         headers: { apikey: cfg.key, Authorization: `Bearer ${cfg.key}` },
       });
       if (r.ok) products = await r.json();
+      // Each drop's lookbook with visible looks, less the ones the admin hid.
+      const get = (path) => fetch(`${cfg.url}/rest/v1/${path}`, { headers: { apikey: cfg.key, Authorization: `Bearer ${cfg.key}` } })
+        .then((res) => (res.ok ? res.json() : []))
+        .catch(() => []);
+      const [looks, hiddenRows] = await Promise.all([
+        get('lookbook_looks?select=drop_name&active=eq.true'),
+        get('site_settings?select=value&key=eq.lookbook_hidden'),
+      ]);
+      const key = (n) => String(n || '').trim().replace(/\s+/g, ' ').toLowerCase();
+      const hidden = new Set((Array.isArray(hiddenRows?.[0]?.value) ? hiddenRows[0].value : []).map(key));
+      const seen = new Map();
+      for (const l of Array.isArray(looks) ? looks : []) {
+        const k = key(l.drop_name);
+        if (k && !hidden.has(k) && !seen.has(k)) seen.set(k, String(l.drop_name).trim());
+      }
+      lookbooks = [...seen.values()];
     }
   } catch { /* pages only */ }
 
@@ -93,6 +111,7 @@ async function sitemap(url, env) {
     '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">',
     ...SITEMAP_PAGES.map((p) => entry(p, null, p === '/' ? '1.0' : p === '/shop' ? '0.9' : '0.5')),
     ...products.map((p) => entry(`/product/${encodeURIComponent(p.id)}`, p.updated_at || p.created_at, '0.8')),
+    ...lookbooks.map((d) => entry(`/lookbook/${encodeURIComponent(d)}`, null, '0.6')),
     '</urlset>',
     '',
   ].join('\n');
@@ -262,6 +281,17 @@ function absolute(src, url) {
 function clip(text, n) {
   const t = String(text || '').replace(/\s+/g, ' ').trim();
   return t.length > n ? `${t.slice(0, n - 1).trimEnd()}…` : t;
+}
+
+// Every other page: its own address as the one to index, in the first HTML
+// a crawler gets (index.html says the homepage). src/lib/pageMeta.js keeps it
+// right as the visitor moves around.
+function withCanonical(page, url) {
+  const own = url.origin + canonicalPath(url.pathname, url.search);
+  return new HTMLRewriter()
+    .on('link[rel="canonical"]', { element: (el) => el.setAttribute('href', own) })
+    .on('meta[property="og:url"]', { element: (el) => el.setAttribute('content', own) })
+    .transform(page);
 }
 
 function rewrite(page, meta) {
