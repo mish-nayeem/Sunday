@@ -105,7 +105,7 @@ export default function BotCheckSetup() {
             <li>In the left menu, open <b>Turnstile</b> (under "Application security" or "Protect &amp; Connect" — or type "Turnstile" in the search box at the top).</li>
             <li>Click <b>Add widget</b> (or "Add site").</li>
             <li><b>Widget name:</b> <code>SUNDAY</code>.</li>
-            <li><b>Hostnames:</b> add <code>sunday.mish-nayeem.workers.dev</code>. When the shop gets its own domain, come back and add that too (Edit → Hostnames).</li>
+            <li><b>Hostnames:</b> add <code>sundayclothin.com</code> and <code>www.sundayclothin.com</code>.</li>
             <li><b>Widget mode:</b> <b>Managed</b> — invisible for most people, a tick box only when Cloudflare isn't sure.</li>
             <li>"Pre-clearance": leave it <b>No</b>. Click <b>Create</b>.</li>
             <li>Cloudflare now shows two keys: a <b>Site key</b> (starts with <code>0x4AAA…</code>) and a <b>Secret key</b>. Keep this page open for the next two steps. You can always see them again under Turnstile → SUNDAY → Settings.</li>

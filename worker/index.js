@@ -28,11 +28,25 @@ export default {
   },
 };
 
+// The shop's one address. www and the workers.dev address the Worker also
+// answers on send a visitor (and Google) here, path and query kept, so
+// links, search results and the Meta Pixel all see a single site.
+export const SITE_HOST = 'sundayclothin.com';
+const OTHER_HOSTS = new Set(['www.sundayclothin.com', 'sunday.sunday-8e5.workers.dev']);
+
+export function hostRedirect(request) {
+  const url = new URL(request.url);
+  if (!OTHER_HOSTS.has(url.hostname) || (request.method !== 'GET' && request.method !== 'HEAD')) return null;
+  return Response.redirect(`https://${SITE_HOST}${url.pathname}${url.search}`, 301);
+}
+
 async function handle(request, env, ctx) {
+  const moved = hostRedirect(request);
+  if (moved) return moved;
   const url = new URL(request.url);
   if (request.method === 'GET' && url.pathname === '/robots.txt') return robots(url);
   if (request.method === 'GET' && url.pathname === '/sitemap.xml') return sitemap(url, env);
-  // Short links (sunday.com.bd/ig): on to where they point.
+  // Short links (sundayclothin.com/ig): on to where they point.
   if (request.method === 'GET') {
     const short = await shortLinkFor(url, env, ctx);
     if (short) return short;

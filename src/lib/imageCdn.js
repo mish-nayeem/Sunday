@@ -6,7 +6,7 @@
 // browser gets AVIF/WebP at the size it shows.
 //
 // Off until the build variable VITE_IMAGE_CDN_HOST names the domain (for
-// example sunday.com.bd) — set it only once Cloudflare → Images →
+// example sundayclothin.com) — set it only once Cloudflare → Images →
 // Transformations is enabled for that zone with this Supabase project as an
 // allowed source, or every photo there would break. Anywhere else (another
 // address, local dev, a preview) the photos come as before.

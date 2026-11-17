@@ -162,7 +162,7 @@ Deno.serve(async (req) => {
       .single()
 
     const name = product?.name ?? waiting[0].product_name
-    const siteUrl = (Deno.env.get('SITE_URL') ?? 'https://sunday.mish-nayeem.workers.dev').replace(
+    const siteUrl = (Deno.env.get('SITE_URL') ?? 'https://sundayclothin.com').replace(
       /\/+$/,
       ''
     )

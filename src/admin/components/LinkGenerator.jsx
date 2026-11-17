@@ -65,7 +65,7 @@ export default function LinkGenerator({ products }) {
   const [copied, setCopied] = useState(false)
   const [templateCopied, setTemplateCopied] = useState(false)
 
-  // Short links (sunday.com.bd/ig): the saved list, and the one being made.
+  // Short links (sundayclothin.com/ig): the saved list, and the one being made.
   const [shortLinks, setShortLinks] = useState({})
   const [shortSlug, setShortSlug] = useState('')
   const [shortNote, setShortNote] = useState('')
