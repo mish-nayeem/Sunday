@@ -441,3 +441,8 @@ verify_jwt = false
 # Meta Conversions API: the checkout (no login) asks it to send the purchase.
 [functions.meta-capi]
 verify_jwt = false
+
+# The invoice link in the confirmation email: opened from the customer's
+# browser with no login; the signed token is the check.
+[functions.invoice]
+verify_jwt = false
