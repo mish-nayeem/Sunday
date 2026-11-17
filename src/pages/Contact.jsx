@@ -43,7 +43,7 @@ export default function Contact() {
               <Mail size={20} strokeWidth={1} className="text-sand mt-1" />
               <div>
                 <p className="text-[11px] tracking-[0.15em] uppercase font-medium mb-1">Email</p>
-                <p className="text-sm text-charcoal/60">sundayclothin@gmail.com</p>
+                <p className="text-sm text-charcoal/60">support@sundayclothin.com</p>
               </div>
             </div>
             <div className="flex items-start gap-4">
