@@ -6,7 +6,7 @@ export default function InstagramSection() {
   return (
     <section className="py-20 md:py-32 px-5 md:px-10 bg-mist">
       <div className="max-w-[1440px] mx-auto text-center">
-        <SectionHeader label="Follow Along" title="@sunday.com.bd" />
+        <SectionHeader label="Follow Along" title="@sunday.clothin" />
         <a
           href="https://instagram.com"
           target="_blank" rel="noopener noreferrer"

@@ -62,9 +62,9 @@ const clip = (v: unknown, n = 500) => String(v ?? '').slice(0, n)
 
 // The events the shop's pages send besides Purchase.
 const BROWSER_EVENTS = new Set(['PageView', 'ViewContent', 'AddToCart', 'InitiateCheckout'])
-// The shop's own addresses: sunday.com.bd (and www) once it's on its domain,
-// and the workers.dev address it's on until then.
-const SHOP_HOSTS = /^https:\/\/((www\.)?sunday\.com\.bd|sunday\.mish-nayeem\.workers\.dev)(\/|$)/
+// The shop's own addresses: sundayclothin.com (and www), and the workers.dev
+// address the Worker also answers on (it redirects to the domain).
+const SHOP_HOSTS = /^https:\/\/((www\.)?sundayclothin\.com|sunday\.sunday-8e5\.workers\.dev)(\/|$)/
 
 const num = (v: unknown, max: number) => {
   const n = Number(v)

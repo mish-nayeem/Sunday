@@ -281,10 +281,10 @@ export default function Home() {
         '@context': 'https://schema.org',
         '@type': 'WebSite',
         name: 'SUNDAY',
-        url: 'https://sunday.com.bd',
+        url: 'https://sundayclothin.com',
         potentialAction: {
           '@type': 'SearchAction',
-          target: 'https://sunday.com.bd/shop?search={search_term_string}',
+          target: 'https://sundayclothin.com/shop?search={search_term_string}',
           'query-input': 'required name=search_term_string',
         },
       }) }} />

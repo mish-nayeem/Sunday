@@ -1,4 +1,4 @@
-// Short links — sunday.com.bd/ig instead of a long tracked address in an
+// Short links — sundayclothin.com/ig instead of a long tracked address in an
 // Instagram bio. Kept in site_settings 'short_links' as { slug: target },
 // made in Admin → Marketing → Tracked links; worker/index.js sends a visit
 // to /<slug> on to <target> (its utm_ tags and all, so the visit still counts
