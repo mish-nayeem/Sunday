@@ -542,7 +542,7 @@ function PackingSlip({ order }) {
         </div>
 
         <div className="slip-foot mono">
-          Check the parcel in front of the rider · sundayclothin@gmail.com
+          Check the parcel in front of the rider · support@sundayclothin.com
         </div>
       </div>
   )

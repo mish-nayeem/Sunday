@@ -3,7 +3,9 @@
 // pages replace these defaults whole — see lib/support.js mergePages).
 // Built from the policy pages SUNDAY already had.
 
-export const CONTACT_EMAIL = 'sundayclothin@gmail.com'
+// The address customers see (Cloudflare Email Routing forwards it to the
+// shop's Gmail). The admin login stays sundayclothin@gmail.com (adminEmail.js).
+export const CONTACT_EMAIL = 'support@sundayclothin.com'
 export const CONTACT_PHONE = '01629178834'
 export const INSTAGRAM = 'https://www.instagram.com/sunday.clothin'
 export const FACEBOOK = 'https://www.facebook.com/share/19U1FfCwMY/'
